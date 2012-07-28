@@ -197,7 +197,6 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 				}
 			}
 		}
-		
 		return network;
 	}
 	

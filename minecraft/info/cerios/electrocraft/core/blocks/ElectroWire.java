@@ -33,51 +33,51 @@ public class ElectroWire extends ElectroBlock implements ITextureProvider {
 
 	public ElectroWire(int id) {
 		super(id, 6, Material.circuits);
-        this.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 0.0625F, 1.0F);
+		this.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 0.0625F, 1.0F);
 	}
-	
+
 	@Override
 	public int idDropped(int par1, Random par2Random, int par3) {
-        return ElectroItems.ELECTRO_DUST.getItem().shiftedIndex;
-    }
-	
+		return ElectroItems.ELECTRO_DUST.getItem().shiftedIndex;
+	}
+
 	// Adapted from BlockRedstoneWire
 	public static boolean isPowerProviderOrWire(IBlockAccess blockAccess, int x, int y, int z, int par4) {
-        int blockId = blockAccess.getBlockId(x, y, z);
+		int blockId = blockAccess.getBlockId(x, y, z);
 
-        if (blockId == ElectroBlocks.ELECTRO_WIRE.getBlock().blockID) {
-            return true;
-        } else if (blockAccess.getBlockTileEntity(x, y, z) instanceof ElectricityReceiver || blockAccess.getBlockTileEntity(x, y, z) instanceof ElectricityProvider) {
-        	return true;
-        }
-        
-        return false;  
-    }
+		if (blockId == ElectroBlocks.ELECTRO_WIRE.getBlock().blockID) {
+			return true;
+		} else if (blockAccess.getBlockTileEntity(x, y, z) instanceof ElectricityReceiver || blockAccess.getBlockTileEntity(x, y, z) instanceof ElectricityProvider) {
+			return true;
+		}
+
+		return false;  
+	}
 
 	@Override
 	public TileEntity getBlockEntity() {
 		return new TileEntityElectroWire();
 	}
-	
+
 	// ============ BEGIN COPIED STUFF FROM BlockRedstoneWire ================= //
-	
+
 	@Override
 	public AxisAlignedBB getCollisionBoundingBoxFromPool(World world, int x, int y, int z) {
-        return null;
-    }
-	
+		return null;
+	}
+
 	@Override
-    public boolean isOpaqueCube() {
-        return false;
-    }
-	
+	public boolean isOpaqueCube() {
+		return false;
+	}
+
 	@Override
-    public boolean renderAsNormalBlock() {
-        return false;
-    }
-	
+	public boolean renderAsNormalBlock() {
+		return false;
+	}
+
 	@Override
-    public int getRenderType() {
-        return renderId;
-    }
+	public int getRenderType() {
+		return renderId;
+	}
 }

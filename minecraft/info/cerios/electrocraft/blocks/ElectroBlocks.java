@@ -5,6 +5,7 @@ import info.cerios.electrocraft.blocks.render.IBlockRenderer;
 import info.cerios.electrocraft.config.ConfigHandler;
 import info.cerios.electrocraft.core.blocks.BlockComputer;
 import info.cerios.electrocraft.core.blocks.BlockRedstoneAdapter;
+import info.cerios.electrocraft.core.blocks.BlockRibbonCable;
 import info.cerios.electrocraft.core.blocks.CopperOre;
 import info.cerios.electrocraft.core.blocks.ElectroWire;
 import info.cerios.electrocraft.core.blocks.MagnetiteOre;
@@ -13,6 +14,7 @@ import info.cerios.electrocraft.core.blocks.Wire;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityElectroWire;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRedstoneAdapter;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityStaticGenerator;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityWire;
 
@@ -62,7 +64,12 @@ public enum ElectroBlocks {
 			"redstoneAdapter", "Redstone Adapter",
 			new BlockRedstoneAdapter(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("redstoneAdapter", 3980).getInt(3980)).setBlockName("redstoneAdapter"),
 			null, TileEntityRedstoneAdapter.class, null,
-			16);
+			16),
+	RIBBON_CABLE(false,
+			"ribbonCable", "Ribbon Cable",
+			new BlockRibbonCable(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("ribbonCable", 3981).getInt(3981)).setBlockName("ribbonCable"),
+			null, TileEntityRibbonCable.class, null,
+			10, 11, 12, 13, 26, 27);
 	
 	private boolean isOreDicBlock;
 	private String name, humanName;

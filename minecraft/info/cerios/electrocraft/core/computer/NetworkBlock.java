@@ -12,6 +12,7 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 	
 	protected boolean hasBeenNetworkProbed = false;
 	protected Map<Integer, NetworkBlock> connectedDevices = new HashMap<Integer, NetworkBlock>();
+	protected ComputerNetwork network;
 
 	public abstract boolean canConnectNetwork(NetworkBlock block);
 	
@@ -31,35 +32,63 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 		return false;
 	}
 	
+	public void update(NetworkBlock block) {
+		super.update(block);
+	}
+	
+	public void updateComputerNetwork() {
+		this.network = checkConnectedBlocksForComputerNetworks();
+		if (network == null)
+			network = new ComputerNetwork();
+		computeConnections();
+		network.updateProviderChain(this);
+	}
+	
+	public ComputerNetwork checkConnectedBlocksForComputerNetworks() {
+		ComputerNetwork network = this.network;
+		for (NetworkBlock block : connectedDevices.values()) {
+			if (block.network != null) {
+				if (network != null) {
+					network.mergeNetwork(block.network);
+					block.network = network;
+					block.needsUpdate = true;
+				} else {
+					network = block.network;
+				}
+			}
+		}
+		return network;
+	}
+	
 	public void computeConnections() {
 		connectedDevices.clear();
 		// X
 		if (worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord) instanceof NetworkBlock) {
-			if (canConnect((NetworkBlock) worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord)))
+			if (canConnectNetwork((NetworkBlock) worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord)))
 				connectedDevices.put(Orientations.XPos.ordinal(), (NetworkBlock) worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord));
 		}
 		if (worldObj.getBlockTileEntity(xCoord - 1, yCoord, zCoord) instanceof NetworkBlock) {
-			if (canConnect((NetworkBlock) worldObj.getBlockTileEntity(xCoord - 1, yCoord, zCoord)))
+			if (canConnectNetwork((NetworkBlock) worldObj.getBlockTileEntity(xCoord - 1, yCoord, zCoord)))
 				connectedDevices.put(Orientations.XNeg.ordinal(), (NetworkBlock) worldObj.getBlockTileEntity(xCoord - 1, yCoord, zCoord));
 		}
 		
 		// Y
 		if (worldObj.getBlockTileEntity(xCoord, yCoord + 1, zCoord) instanceof NetworkBlock) {
-			if (canConnect((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord + 1, zCoord)))
+			if (canConnectNetwork((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord + 1, zCoord)))
 				connectedDevices.put(Orientations.YPos.ordinal(), (NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord + 1, zCoord));
 		}
 		if (worldObj.getBlockTileEntity(xCoord, yCoord - 1, zCoord) instanceof NetworkBlock) {
-			if (canConnect((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord - 1, zCoord)))
+			if (canConnectNetwork((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord - 1, zCoord)))
 				connectedDevices.put(Orientations.YNeg.ordinal(), (NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord - 1, zCoord));
 		}
 		
 		// Z
 		if (worldObj.getBlockTileEntity(xCoord, yCoord, zCoord + 1) instanceof NetworkBlock) {
-			if (canConnect((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord + 1)))
+			if (canConnectNetwork((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord + 1)))
 				connectedDevices.put(Orientations.ZPos.ordinal(), (NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord + 1)); 
 		}
 		if (worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1) instanceof NetworkBlock) {
-			if (canConnect((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1)))
+			if (canConnectNetwork((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1)))
 				connectedDevices.put(Orientations.ZNeg.ordinal(), (NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1));
 		}
 	}
