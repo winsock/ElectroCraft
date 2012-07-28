@@ -8,11 +8,12 @@ import net.minecraft.src.ModLoader;
 
 import info.cerios.electrocraft.core.computer.ComputerHandler;
 import info.cerios.electrocraft.core.computer.IOPortCapableMinecraft;
+import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
 import info.cerios.electrocraft.core.electricity.ElectricityReceiver;
 import info.cerios.electrocraft.core.jpc.emulator.PC;
 
-public class TileEntityComputer extends IOPortCapableMinecraft implements ElectricityReceiver {
+public class TileEntityComputer extends NetworkBlock implements ElectricityReceiver {
 
 	private PC computer;
 	
@@ -52,7 +53,7 @@ public class TileEntityComputer extends IOPortCapableMinecraft implements Electr
 
 	@Override
 	public void ioPortWriteByte(int address, int data) {
-		if (address == 0xCF) {
+		if (address == 222) {
 			if (data == 1) {
 				// Close out of the computer monitor screen
 				ModLoader.getMinecraftInstance().displayGuiScreen(null);
@@ -92,7 +93,7 @@ public class TileEntityComputer extends IOPortCapableMinecraft implements Electr
 
 	@Override
 	public int[] ioPortsRequested() {
-		return new int[] { 0xCE, 0xCF };
+		return new int[] { 223, 224 };
 	}
 
 	@Override
@@ -105,5 +106,10 @@ public class TileEntityComputer extends IOPortCapableMinecraft implements Electr
 	public void saveState(DataOutput output) throws IOException {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public boolean canConnectNetwork(NetworkBlock block) {
+		return true;
 	}
 }

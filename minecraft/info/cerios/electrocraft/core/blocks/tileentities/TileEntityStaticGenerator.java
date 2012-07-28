@@ -41,9 +41,9 @@ public class TileEntityStaticGenerator extends IOPortCapableMinecraft implements
 
 	@Override
 	public void ioPortWriteByte(int address, int data) {
-		if (address == 0xCC) {
+		if (address == 227) {
 			outputSetting = data;
-		} else if (address == 0xCD) {
+		} else if (address == 228) {
 			if (data == 0) {
 				currentVoltage = 0;
 			} else if (data > 0) {
@@ -93,7 +93,7 @@ public class TileEntityStaticGenerator extends IOPortCapableMinecraft implements
 
 	@Override
 	public int[] ioPortsRequested() {
-		return new int[] { 0xCC, 0xCD };
+		return new int[] { 227, 228 };
 	}
 
 	@Override

@@ -62,15 +62,15 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 		currentCurrent = nbttagcompound.getFloat("currentCurrent");
 		currentElectricityType = ElectricityTypes.valueOf(nbttagcompound.getString("currentElectricityType"));
 		NBTTagList connectedDevices = nbttagcompound.getTagList("connectedDevices");
-		for (int i = 0; i < connectedDevices.tagCount(); i++) {
-			NBTTagCompound device = (NBTTagCompound)connectedDevices.tagAt(i);
-			int[] location = device.getIntArray("location");
-			if (worldObj.getBlockTileEntity(location[0], location[1], location[2]) instanceof ElectricBlock)
-				this.connectedDevices.put(device.getInteger("orientation"), (ElectricBlock) worldObj.getBlockTileEntity(location[0], location[1], location[2]));
-			else
-				// Invalid stored location of a electric block, something changed, call update
-				update(this);
-		}
+//		for (int i = 0; i < connectedDevices.tagCount(); i++) {
+//			NBTTagCompound device = (NBTTagCompound)connectedDevices.tagAt(i);
+//			int[] location = device.getIntArray("location");
+//			if (worldObj.getBlockTileEntity(location[0], location[1], location[2]) instanceof ElectricBlock)
+//				this.connectedDevices.put(device.getInteger("orientation"), (ElectricBlock) worldObj.getBlockTileEntity(location[0], location[1], location[2]));
+//			else
+//				// Invalid stored location of a electric block, something changed, call update
+//				update(this);
+//		}
 	}
 	
 	public void computePower() {
@@ -122,7 +122,6 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 				return true;
 		}
 		return false;
-		
 	}
 	
 	public void setProbedStatus(boolean status) {

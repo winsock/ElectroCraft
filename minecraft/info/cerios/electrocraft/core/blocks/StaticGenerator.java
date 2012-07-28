@@ -8,7 +8,7 @@ import net.minecraft.src.TileEntity;
 public class StaticGenerator extends ElectroBlock {
 
 	public StaticGenerator(int id) {
-		super(id, 10, Material.iron);
+		super(id, 14, Material.iron);
 	}
 
 	@Override

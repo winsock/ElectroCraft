@@ -13,17 +13,13 @@ import net.minecraft.src.World;
 public class BlockComputer extends ElectroBlock {
 
 	public BlockComputer(int id) {
-		super(id, 11, Material.iron);
+		super(id, 15, Material.iron);
 	}
 
 	@Override
 	public TileEntity getBlockEntity() {
 		return new TileEntityComputer(mod_ElectroCraft.instance.getComputerHandler());
 	}
-	
-    public boolean isIndirectlyPoweringTo(World par1World, int par2, int par3, int par4, int par5) {
-    	return true;
-    }
     
 	public boolean blockActivated(World par1World, int par2, int par3, int par4, EntityPlayer par5EntityPlayer)
     {

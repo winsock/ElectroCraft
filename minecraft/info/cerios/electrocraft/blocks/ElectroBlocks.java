@@ -4,6 +4,7 @@ import info.cerios.electrocraft.blocks.render.ElectroWireRenderer;
 import info.cerios.electrocraft.blocks.render.IBlockRenderer;
 import info.cerios.electrocraft.config.ConfigHandler;
 import info.cerios.electrocraft.core.blocks.BlockComputer;
+import info.cerios.electrocraft.core.blocks.BlockRedstoneAdapter;
 import info.cerios.electrocraft.core.blocks.CopperOre;
 import info.cerios.electrocraft.core.blocks.ElectroWire;
 import info.cerios.electrocraft.core.blocks.MagnetiteOre;
@@ -11,6 +12,7 @@ import info.cerios.electrocraft.core.blocks.StaticGenerator;
 import info.cerios.electrocraft.core.blocks.Wire;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityElectroWire;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRedstoneAdapter;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityStaticGenerator;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityWire;
 
@@ -50,12 +52,17 @@ public enum ElectroBlocks {
 			"staticGenerator", "Static Generator",
 			new StaticGenerator(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("staticGenerator", 3978).getInt(3978)).setBlockName("staticGenerator"),
 			null, TileEntityStaticGenerator.class, null,
-			10),
+			14),
 	COMPUTER(true,
 			"computer", "Computer",
 			new BlockComputer(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("computer", 3979).getInt(3979)).setBlockName("computer"),
 			null, TileEntityComputer.class, null,
-			10);
+			15),
+	REDSTONE_ADAPTER(true,
+			"redstoneAdapter", "Redstone Adapter",
+			new BlockRedstoneAdapter(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("redstoneAdapter", 3980).getInt(3980)).setBlockName("redstoneAdapter"),
+			null, TileEntityRedstoneAdapter.class, null,
+			16);
 	
 	private boolean isOreDicBlock;
 	private String name, humanName;

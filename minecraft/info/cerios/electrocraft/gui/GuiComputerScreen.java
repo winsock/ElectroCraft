@@ -25,11 +25,13 @@ public class GuiComputerScreen extends GuiScreen {
 	private DefaultVGACard vgaCard;
 	private int displayTextureId;
 	private info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard keyboard;
+	private boolean repeatEventsOldState = Keyboard.areRepeatEventsEnabled();
 	
 	public GuiComputerScreen(PC computer) {
 		this.computer = computer;
 		this.vgaCard = (DefaultVGACard)computer.getComponent(VGACard.class);
 		this.keyboard = (info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard) computer.getComponent(info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard.class);
+		Keyboard.enableRepeatEvents(true);
 	}
 	
 	public void initGui() {
@@ -72,7 +74,7 @@ public class GuiComputerScreen extends GuiScreen {
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 		
 		// Draw the screen title
-		fontRenderer.drawString("JPC Terminal", 20, 10, 0x404040);
+		fontRenderer.drawString("JPC Laptop", 20, 10, 0x404040);
 		
 		super.drawScreen(par1, par2, par3);
 	}
@@ -93,6 +95,7 @@ public class GuiComputerScreen extends GuiScreen {
 
 	@Override
     public void onGuiClosed() {
+		Keyboard.enableRepeatEvents(repeatEventsOldState);
 		GL11.glDeleteTextures(displayTextureId);
 	}
 	
@@ -102,17 +105,20 @@ public class GuiComputerScreen extends GuiScreen {
     }
 	
 	@Override
-	public void handleKeyboardInput() {
-		if (Keyboard.getEventKeyState()) {
-			keyboard.keyPressed((byte)Keyboard.getEventKey());
-		} else {
-	        keyboard.keyReleased((byte)Keyboard.getEventKey());
+	public void handleInput() {
+		keyboard.putMouseEvent(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel(), Mouse.getEventButton());
+
+		while(Mouse.next()) {
+			handleMouseInput();
 		}
-	}
-	
-	@Override
-	public void handleMouseInput() {
-		super.handleMouseInput();
-		keyboard.putMouseEvent(Mouse.getEventDX(), Mouse.getEventDY(), 0, Mouse.getEventButton());
+		
+        while (Keyboard.next())
+        {
+        	if (Keyboard.getEventKeyState()) {
+    			keyboard.keyPressed((byte)Keyboard.getEventKey());
+    		} else {
+    	        keyboard.keyReleased((byte)Keyboard.getEventKey());
+    		}
+        }
 	}
 }
