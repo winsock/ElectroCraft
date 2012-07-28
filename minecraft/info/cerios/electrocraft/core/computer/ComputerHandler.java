@@ -104,6 +104,9 @@ public class ComputerHandler {
 				}
 			} catch (Exception e) {
 	            ModLoader.getLogger().log(Level.INFO, "ElectroCraft: PC Threw an exception while executing!");
+	            // Close the GUI if it is still open
+	            if (ModLoader.getMinecraftInstance().currentScreen instanceof GuiComputerScreen)
+	            	ModLoader.getMinecraftInstance().displayGuiScreen(null);
 			}
 	        pc.stop();
             ModLoader.getLogger().log(Level.INFO, "ElectroCraft: PC Stopped");

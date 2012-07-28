@@ -12,11 +12,14 @@ import info.cerios.electrocraft.core.jpc.emulator.PC;
 import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.DefaultVGACard;
 import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.VGACard;
 import info.cerios.electrocraft.core.jpc.j2se.KeyMapping;
+import net.minecraft.src.GuiButton;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.ModLoader;
 import net.minecraft.src.Tessellator;
 
 public class GuiComputerScreen extends GuiScreen {
+	
+	public static final int CLOSE_BUTTON = 0;
 	
 	private PC computer;
 	private DefaultVGACard vgaCard;
@@ -27,9 +30,12 @@ public class GuiComputerScreen extends GuiScreen {
 		this.computer = computer;
 		this.vgaCard = (DefaultVGACard)computer.getComponent(VGACard.class);
 		this.keyboard = (info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard) computer.getComponent(info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard.class);
-
+	}
+	
+	public void initGui() {
+		controlList.add(new GuiButton(CLOSE_BUTTON, width - 5 - 4 - 17, 5 + 4, 17, 17, "X"));
+		
 		// Get the GPU ready for us
-		vgaCard.resizeDisplay(1920, 1080);
 		updateScreen();
 		
 		displayTextureId = GL11.glGenTextures();
@@ -55,7 +61,6 @@ public class GuiComputerScreen extends GuiScreen {
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
         // Display the Video Card contents
-		GL11.glPushMatrix();
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
 		GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, vgaCard.getDisplaySize().width, vgaCard.getDisplaySize().height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, vgaCard.getByteBuffer());
 		tess.startDrawingQuads();
@@ -65,10 +70,16 @@ public class GuiComputerScreen extends GuiScreen {
 		tess.addVertexWithUV(width - 30, height - 22, 0, 1, 1);
 		tess.draw();
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-		GL11.glPopMatrix();
 		
 		// Draw the screen title
 		fontRenderer.drawString("JPC Terminal", 20, 10, 0x404040);
+		
+		super.drawScreen(par1, par2, par3);
+	}
+	
+	@Override
+	protected void actionPerformed(GuiButton par1GuiButton) {
+		mc.displayGuiScreen(null);
 	}
 	
 	@Override
@@ -101,7 +112,7 @@ public class GuiComputerScreen extends GuiScreen {
 	
 	@Override
 	public void handleMouseInput() {
-		super.handleInput();
+		super.handleMouseInput();
 		keyboard.putMouseEvent(Mouse.getEventDX(), Mouse.getEventDY(), 0, Mouse.getEventButton());
 	}
 }
