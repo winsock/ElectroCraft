@@ -41,6 +41,9 @@ public class GuiComputerScreen extends GuiScreen {
 	
 	@Override
     public void drawScreen(int par1, int par2, float par3) {
+		if (!mod_ElectroCraft.instance.getComputerHandler().isComputerRunning(computer))
+			return;
+		
 		Tessellator tess = Tessellator.instance;
 
 		// Draw the background
@@ -76,8 +79,10 @@ public class GuiComputerScreen extends GuiScreen {
 	
 	@Override
 	public void updateScreen() {
-		if (!mod_ElectroCraft.instance.getComputerHandler().isComputerRunning(computer))
+		if (!mod_ElectroCraft.instance.getComputerHandler().isComputerRunning(computer)) {
 			mc.displayGuiScreen(null);
+			return;
+		}
 		vgaCard.prepareUpdate();
         vgaCard.updateDisplay();
 	}
@@ -95,19 +100,21 @@ public class GuiComputerScreen extends GuiScreen {
 	
 	@Override
 	public void handleInput() {
-		keyboard.putMouseEvent(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel(), Mouse.getEventButton());
 
 		while(Mouse.next()) {
 			handleMouseInput();
 		}
-		
-        while (Keyboard.next())
-        {
-        	if (Keyboard.getEventKeyState()) {
-    			keyboard.keyPressed((byte)Keyboard.getEventKey());
-    		} else {
-    	        keyboard.keyReleased((byte)Keyboard.getEventKey());
-    		}
-        }
+		if (keyboard.initialised()) {
+			keyboard.putMouseEvent(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel(), Mouse.getEventButton());
+
+			while (Keyboard.next())
+			{
+				if (Keyboard.getEventKeyState()) {
+					keyboard.keyPressed((byte)Keyboard.getEventKey());
+				} else {
+					keyboard.keyReleased((byte)Keyboard.getEventKey());
+				}
+			}
+		}
 	}
 }

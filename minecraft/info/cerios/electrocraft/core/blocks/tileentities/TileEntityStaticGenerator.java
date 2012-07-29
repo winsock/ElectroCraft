@@ -13,7 +13,7 @@ import info.cerios.electrocraft.core.electricity.ElectricityTypes;
 
 public class TileEntityStaticGenerator extends NetworkBlock implements ElectricityProvider {
 
-	private int currentVoltage = 0;
+	private int currentVoltage = 5;
 	private int outputSetting = 0;
 
 	public TileEntityStaticGenerator() {

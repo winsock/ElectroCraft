@@ -8,12 +8,14 @@ import info.cerios.electrocraft.config.ConfigHandler;
 import info.cerios.electrocraft.core.computer.ComputerHandler;
 import info.cerios.electrocraft.items.ElectroItems;
 import info.cerios.electrocraft.items.ItemHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.src.BaseMod;
 import net.minecraft.src.Block;
 import net.minecraft.src.CraftingManager;
 import net.minecraft.src.IBlockAccess;
 import net.minecraft.src.Item;
 import net.minecraft.src.ItemStack;
+import net.minecraft.src.ModLoader;
 import net.minecraft.src.RenderBlocks;
 import net.minecraft.src.World;
 import net.minecraft.src.WorldGenMinable;
@@ -65,8 +67,17 @@ public class mod_ElectroCraft extends BaseMod {
 		MinecraftForgeClient.preloadTexture("/info/cerios/electrocraft/gfx/blocks.png");
 		MinecraftForgeClient.preloadTexture("/info/cerios/electrocraft/gfx/items.png");
 		
+		// Register for on tick events
+		ModLoader.setInGameHook(this, true, false);
+		
 		// Create the computer handler
 		this.computerHandler = new ComputerHandler();
+	}
+	
+	@Override
+	public boolean onTickInGame(float time, Minecraft minecraftInstance) {
+		computerHandler.update();
+		return true;
 	}
 	
 	@Override

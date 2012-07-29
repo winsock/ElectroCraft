@@ -7,25 +7,37 @@ import java.io.IOException;
 import info.cerios.electrocraft.core.computer.ComputerHandler;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
+import info.cerios.electrocraft.core.utils.ObjectTriplet;
+import info.cerios.electrocraft.core.utils.Orientations;
 
 public class TileEntityRibbonCable extends NetworkBlock {
 
 	@Override
+	public boolean canConnectNetwork(NetworkBlock block) {
+		return true;
+	}
+
+	@Override
+	public boolean canConnect(ElectricBlock block) {
+		return false;
+	}
+
+	@Override
 	public void ioPortWriteByte(int address, int data) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
 	public void ioPortWriteWord(int address, int data) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
 	public void ioPortWriteLong(int address, int data) {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
@@ -49,23 +61,12 @@ public class TileEntityRibbonCable extends NetworkBlock {
 	@Override
 	public void loadState(DataInput input) throws IOException {
 		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
 	public void saveState(DataOutput output) throws IOException {
 		// TODO Auto-generated method stub
-
+		
 	}
-
-	@Override
-	public boolean canConnectNetwork(NetworkBlock block) {
-		return true;
-	}
-
-	@Override
-	public boolean canConnect(ElectricBlock block) {
-		return false;
-	}
-
 }

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.src.Material;
+import net.minecraft.src.ModLoader;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagInt;
 import net.minecraft.src.NBTTagIntArray;
@@ -16,6 +17,7 @@ import net.minecraft.src.NBTTagList;
 import net.minecraft.src.forge.ObjectPair;
 import info.cerios.electrocraft.core.blocks.ElectroBlock;
 import info.cerios.electrocraft.core.blocks.tileentities.ElectroTileEntity;
+import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 import info.cerios.electrocraft.core.utils.Orientations;
 import info.cerios.electrocraft.core.utils.Utils;
@@ -32,7 +34,7 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 	protected float currentCurrent = 0.0f;
 	protected ElectricityTypes currentElectricityType = ElectricityTypes.VC;
 	
-	protected Map<Integer, ElectricBlock> connectedDevices = new HashMap<Integer, ElectricBlock>();
+	protected Map<Integer, ObjectTriplet<Integer, Integer, Integer>> connectedDevices = new HashMap<Integer, ObjectTriplet<Integer, Integer, Integer>>();
 	
 	protected ElectricNetwork network;
 	
@@ -45,15 +47,17 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 		nbttagcompound.setString("currentElectricityType", currentElectricityType.name());
 		NBTTagList connectedDevices = new NBTTagList();
 		for (int orientation : this.connectedDevices.keySet()) {
-			ElectricBlock block = this.connectedDevices.get(orientation);
+			ObjectTriplet<Integer, Integer, Integer> block = this.connectedDevices.get(orientation);
 			if (block == null)
 				continue;
 			NBTTagCompound device = new NBTTagCompound();
 			device.setInteger("orientation", orientation);
-			device.setIntArray("location", new int[] { block.xCoord, block.yCoord, block.zCoord });
+			device.setIntArray("location", new int[] { block.getValue1(), block.getValue2(), block.getValue3() });
 			connectedDevices.appendTag(device);
 		}
 		nbttagcompound.setTag("connectedDevices", connectedDevices);
+		if (network != null)
+			network.writeToNBT(nbttagcompound);
 	}
 	
 	public void readFromNBT(NBTTagCompound nbttagcompound) {
@@ -62,15 +66,17 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 		currentCurrent = nbttagcompound.getFloat("currentCurrent");
 		currentElectricityType = ElectricityTypes.valueOf(nbttagcompound.getString("currentElectricityType"));
 		NBTTagList connectedDevices = nbttagcompound.getTagList("connectedDevices");
-//		for (int i = 0; i < connectedDevices.tagCount(); i++) {
-//			NBTTagCompound device = (NBTTagCompound)connectedDevices.tagAt(i);
-//			int[] location = device.getIntArray("location");
-//			if (worldObj.getBlockTileEntity(location[0], location[1], location[2]) instanceof ElectricBlock)
-//				this.connectedDevices.put(device.getInteger("orientation"), (ElectricBlock) worldObj.getBlockTileEntity(location[0], location[1], location[2]));
-//			else
-//				// Invalid stored location of a electric block, something changed, call update
-//				update(this);
-//		}
+		for (int i = 0; i < connectedDevices.tagCount(); i++) {
+			NBTTagCompound device = (NBTTagCompound)connectedDevices.tagAt(i);
+			int[] location = device.getIntArray("location");
+			this.connectedDevices.put(device.getInteger("orientation"), new ObjectTriplet<Integer, Integer, Integer>(location[0], location[1], location[2]));
+		}
+		
+		// Load the network
+		if (network == null) {
+			network = new ElectricNetwork();
+		}
+		network.readFromNBT(nbttagcompound);
 	}
 	
 	public void computePower() {
@@ -78,6 +84,9 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 			updateNetwork();
 		
 		Set<ElectricityProvider> providers = network.getProviders();
+		
+		if (providers == null)
+			return;
 
 		// Check for any voltage mismatches and or current type mismatches and get the current, voltage, and current type values
 		int lastVoltage = 0;
@@ -117,8 +126,8 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 	}
 	
 	public boolean isConnectedTo(ElectricBlock block) {
-		for (ElectricBlock testBlock : connectedDevices.values()) {
-			if (testBlock.xCoord == block.xCoord && testBlock.yCoord == block.yCoord && testBlock.zCoord == block.zCoord)
+		for (ObjectTriplet<Integer, Integer, Integer> testBlock : connectedDevices.values()) {
+			if (testBlock.getValue1() == block.xCoord && testBlock.getValue2() == block.yCoord && testBlock.getValue3() == block.zCoord)
 				return true;
 		}
 		return false;
@@ -184,16 +193,27 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 		needsUpdate = true;
 	}
 	
+	public ElectricBlock getElectricBlockFromLocation(int x, int y, int z) {
+		if (worldObj.getBlockTileEntity(x, y, z) instanceof ElectricBlock)
+			return (ElectricBlock) worldObj.getBlockTileEntity(x, y, z);
+		return null;
+	}
+	
 	public ElectricNetwork checkConnectedBlocksForNetworks() {
 		ElectricNetwork network = this.network;
-		for (ElectricBlock block : connectedDevices.values()) {
-			if (block.network != null) {
+		for (ObjectTriplet<Integer, Integer, Integer> block : connectedDevices.values()) {
+			if (getElectricBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) == null) {
+				connectedDevices.remove(block);
+				continue;
+			}
+			ElectricBlock electricBlock = getElectricBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3());
+			if (electricBlock.network != null) {
 				if (network != null) {
-					network.mergeNetwork(block.network);
-					block.network = network;
-					block.needsUpdate = true;
+					network.mergeNetwork(electricBlock.network);
+					electricBlock.network = network;
+					electricBlock.needsUpdate = true;
 				} else {
-					network = block.network;
+					network = electricBlock.network;
 				}
 			}
 		}
@@ -201,8 +221,12 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 	}
 	
 	public void computeConnectingBlocksPower() {
-		for (ElectricBlock device: connectedDevices.values()) {
-			device.computePower();
+		for (ObjectTriplet<Integer, Integer, Integer> block: connectedDevices.values()) {
+			if (getElectricBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) == null) {
+				connectedDevices.remove(block);
+				continue;
+			}
+			getElectricBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()).computePower();
 		}
 	}
 	
@@ -211,31 +235,31 @@ public abstract class ElectricBlock extends ElectroTileEntity {
 		// X
 		if (worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord) instanceof ElectricBlock) {
 			if (canConnect((ElectricBlock) worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord)))
-				connectedDevices.put(Orientations.XPos.ordinal(), (ElectricBlock) worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord));
+				connectedDevices.put(Orientations.XPos.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord + 1, yCoord, zCoord));
 		}
 		if (worldObj.getBlockTileEntity(xCoord - 1, yCoord, zCoord) instanceof ElectricBlock) {
 			if (canConnect((ElectricBlock) worldObj.getBlockTileEntity(xCoord - 1, yCoord, zCoord)))
-				connectedDevices.put(Orientations.XNeg.ordinal(), (ElectricBlock) worldObj.getBlockTileEntity(xCoord - 1, yCoord, zCoord));
+				connectedDevices.put(Orientations.XNeg.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord - 1, yCoord, zCoord));
 		}
 		
 		// Y
 		if (worldObj.getBlockTileEntity(xCoord, yCoord + 1, zCoord) instanceof ElectricBlock) {
 			if (canConnect((ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord + 1, zCoord)))
-				connectedDevices.put(Orientations.YPos.ordinal(), (ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord + 1, zCoord));
+				connectedDevices.put(Orientations.YPos.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord + 1, zCoord));
 		}
 		if (worldObj.getBlockTileEntity(xCoord, yCoord - 1, zCoord) instanceof ElectricBlock) {
 			if (canConnect((ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord - 1, zCoord)))
-				connectedDevices.put(Orientations.YNeg.ordinal(), (ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord - 1, zCoord));
+				connectedDevices.put(Orientations.YNeg.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord - 1, zCoord));
 		}
 		
 		// Z
 		if (worldObj.getBlockTileEntity(xCoord, yCoord, zCoord + 1) instanceof ElectricBlock) {
 			if (canConnect((ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord + 1)))
-				connectedDevices.put(Orientations.ZPos.ordinal(), (ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord + 1)); 
+				connectedDevices.put(Orientations.ZPos.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord, zCoord + 1)); 
 		}
 		if (worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1) instanceof ElectricBlock) {
 			if (canConnect((ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1)))
-				connectedDevices.put(Orientations.ZNeg.ordinal(), (ElectricBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1));
+				connectedDevices.put(Orientations.ZNeg.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord, zCoord - 1));
 		}
 	}
 }

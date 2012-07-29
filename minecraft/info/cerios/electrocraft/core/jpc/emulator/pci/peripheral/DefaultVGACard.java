@@ -49,13 +49,16 @@ import javax.imageio.ImageIO;
 
 import org.lwjgl.opengl.GL11;
 
+import info.cerios.electrocraft.core.computer.ComputerHandler;
+import info.cerios.electrocraft.core.computer.IComputerCallback;
+import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import info.cerios.electrocraft.core.jpc.j2se.PCMonitor;
 
 /**
  *
  * @author Ian Preston
  */
-public final class DefaultVGACard extends VGACard {
+public final class DefaultVGACard extends VGACard implements IComputerCallback, IComputerRunnable {
 
     private int[] rawImageData;
     private byte[] rawImageBytes;
@@ -64,9 +67,14 @@ public final class DefaultVGACard extends VGACard {
     private ByteBuffer byteBuffer;
     PCMonitor monitor;
 	private int displayTextureId;
+	private ComputerHandler handler;
+	private boolean deleteTexture = false;
+	private boolean updateOpenGL = false;
+	private boolean recreateTexture = false;
 
-    public DefaultVGACard() 
+    public DefaultVGACard(ComputerHandler computerHandler) 
     {
+    	handler = computerHandler;
     }
 
     public int getXMin() {
@@ -95,8 +103,8 @@ public final class DefaultVGACard extends VGACard {
             return;
         // Delete the old texture if needs to be resized
         if (displayTextureId >= 0 && (width != this.width || height != this.height))
-        	GL11.glDeleteTextures(displayTextureId);
-        
+            deleteTexture = true;
+            
         this.width = width;
         this.height = height;
 
@@ -106,13 +114,7 @@ public final class DefaultVGACard extends VGACard {
         rawImageData = buf.getData();
         byteBuffer = ByteBuffer.allocateDirect(width * height * 3);
         
-        // OpenGL Stuff
-        displayTextureId = GL11.glGenTextures();
-		GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-		GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, getByteBuffer());
-		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR); 
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+        recreateTexture = true;
     }
 
     public void saveScreenshot()
@@ -168,9 +170,8 @@ public final class DefaultVGACard extends VGACard {
     }
 
     public int updateOpenGL() {
-    	GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-		GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, getByteBuffer());
-    	GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+    	updateOpenGL = true;
+        handler.registerRunnableOnMainThread(this, this);
     	return displayTextureId;
     }
     
@@ -182,5 +183,35 @@ public final class DefaultVGACard extends VGACard {
             byteBuffer.put(j++, (byte) (val));
         }
         return byteBuffer;
+	}
+
+	@Override
+	public Object run() {
+		if (recreateTexture) {
+			if (deleteTexture) {
+				GL11.glDeleteTextures(displayTextureId);
+			}
+			// OpenGL Stuff
+			if (!GL11.glIsTexture(displayTextureId))
+				displayTextureId = GL11.glGenTextures();
+			GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, getByteBuffer());
+			GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR); 
+			GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+			GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+		}
+		if (updateOpenGL) {
+			GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, getByteBuffer());
+	    	GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+	    }
+		return null;
+	}
+
+	@Override
+	public void onTaskComplete(Object object) {
+		recreateTexture = false;
+    	updateOpenGL = false;
+    	deleteTexture = false;
 	}
 }

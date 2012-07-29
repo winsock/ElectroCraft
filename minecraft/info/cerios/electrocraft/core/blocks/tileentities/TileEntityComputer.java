@@ -7,6 +7,7 @@ import java.io.IOException;
 import net.minecraft.src.ModLoader;
 
 import info.cerios.electrocraft.core.computer.ComputerHandler;
+import info.cerios.electrocraft.core.computer.IComputerCallback;
 import info.cerios.electrocraft.core.computer.IOPortCapableMinecraft;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
@@ -23,11 +24,15 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 	}
 	
 	public PC getComputer() {
-		if (computer == null)
-			computer = computerHandler.createAndStartCompuer(this);
 		return computer;
 	}
 
+	public void setComputer(PC computer) {
+		if (this.computer != null)
+			computerHandler.stopComputer(this.computer);
+		this.computer = computer;
+	}
+	
 	@Override
 	public int getRequiredVoltage() {
 		return 5;
@@ -59,6 +64,10 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 			if (data == 1) {
 				// Close out of the computer monitor screen
 				ModLoader.getMinecraftInstance().displayGuiScreen(null);
+			} else if (data == 2) {
+				computerHandler.stopComputer(computer);
+			} else if (data == 3) {
+				computerHandler.resetComputer(computer);
 			}
 		}
 	}

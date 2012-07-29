@@ -47,7 +47,9 @@ public class Processor implements HardwareComponent
     
     public static final int STATE_VERSION = 1;
     public static final int STATE_MINOR_VERSION = 0;
-    
+
+    public static final int IPS = 50000000; //CPU "Clock Speed" in instructions per second
+
     public static final int IFLAGS_HARDWARE_INTERRUPT = 0x1;
     public static final int IFLAGS_PROCESSOR_EXCEPTION = 0x2;
     public static final int IFLAGS_RESET_REQUEST = 0x4;

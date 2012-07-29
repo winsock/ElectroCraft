@@ -62,6 +62,11 @@ public class ElectroWire extends ElectroBlock implements ITextureProvider {
 	// ============ BEGIN COPIED STUFF FROM BlockRedstoneWire ================= //
 
 	@Override
+	public boolean canPlaceBlockAt(World par1World, int par2, int par3, int par4) {
+        return par1World.isBlockSolidOnSide(par2, par3 - 1, par4, 1) || par1World.getBlockId(par2, par3 - 1, par4) == Block.glowStone.blockID;
+    }
+
+	@Override
 	public AxisAlignedBB getCollisionBoundingBoxFromPool(World world, int x, int y, int z) {
 		return null;
 	}

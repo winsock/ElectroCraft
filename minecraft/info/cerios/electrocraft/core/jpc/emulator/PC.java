@@ -26,6 +26,7 @@
 
 package info.cerios.electrocraft.core.jpc.emulator;
 
+import info.cerios.electrocraft.mod_ElectroCraft;
 import info.cerios.electrocraft.core.jpc.emulator.motherboard.*;
 import info.cerios.electrocraft.core.jpc.emulator.memory.*;
 import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.*;
@@ -107,7 +108,7 @@ public class PC {
         //Peripherals
         parts.add(new PIIX3IDEInterface());
         parts.add(ethernet = new EthernetCard());
-        parts.add(new DefaultVGACard());
+        parts.add(new DefaultVGACard(mod_ElectroCraft.instance.getComputerHandler()));
 
         parts.add(new SerialPort(0));
         parts.add(new Keyboard());

@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import net.minecraft.src.Material;
+import net.minecraft.src.NBTTagCompound;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
 import info.cerios.electrocraft.core.jpc.emulator.AbstractHardwareComponent;
 import info.cerios.electrocraft.core.jpc.emulator.HardwareComponent;
@@ -18,9 +19,8 @@ public abstract class IOPortCapableMinecraft extends ElectricBlock implements IO
 	
 	public IOPortCapableMinecraft(ComputerHandler computerHandler) {
 		this.computerHandler = computerHandler;
-		this.computerHandler.registerIOPortToAllComputers(this);
 	}
-    
+
 	@Override
 	public boolean initialised() {
 		return ioportRegistered;

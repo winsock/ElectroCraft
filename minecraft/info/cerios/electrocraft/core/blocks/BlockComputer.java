@@ -4,6 +4,9 @@ import info.cerios.electrocraft.mod_ElectroCraft;
 import info.cerios.electrocraft.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.ComputerHandler;
+import info.cerios.electrocraft.core.computer.IComputerCallback;
+import info.cerios.electrocraft.core.computer.IComputerRunnable;
+import info.cerios.electrocraft.core.jpc.emulator.PC;
 import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.VGACard;
 import info.cerios.electrocraft.gui.GuiComputerScreen;
 import net.minecraft.src.EntityPlayer;
@@ -13,7 +16,7 @@ import net.minecraft.src.ModLoader;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
 
-public class BlockComputer extends BlockNetwork {
+public class BlockComputer extends BlockNetwork implements IComputerCallback {
 
 	public BlockComputer(int id) {
 		super(id, 40, Material.iron);
@@ -38,14 +41,24 @@ public class BlockComputer extends BlockNetwork {
 		if (par1World.getBlockTileEntity(par2, par3, par4) instanceof TileEntityComputer) {
 			TileEntityComputer computerTileEntity = (TileEntityComputer)par1World.getBlockTileEntity(par2, par3, par4);
 			if (computerTileEntity != null) {
-				if (!mod_ElectroCraft.instance.getComputerHandler().isComputerRunning(computerTileEntity.getComputer())) {
-					mod_ElectroCraft.instance.getComputerHandler().startComputer(computerTileEntity.getComputer());
-				}
-				
-				ModLoader.getMinecraftInstance().displayGuiScreen(new GuiComputerScreen(computerTileEntity.getComputer()));
+				if (computerTileEntity.getComputer() == null)
+					mod_ElectroCraft.instance.getComputerHandler().createAndStartCompuer(computerTileEntity, this);
+				else
+					this.onTaskComplete(computerTileEntity.getComputer());
 		        return true;
 			}
 		}
 		return false;
     }
+
+	@Override
+	public void onTaskComplete(Object object) {
+		if (object instanceof PC) {
+			if (!mod_ElectroCraft.instance.getComputerHandler().isComputerRunning((PC) object)) {
+				mod_ElectroCraft.instance.getComputerHandler().startComputer((PC) object, this);
+			}
+			
+			ModLoader.getMinecraftInstance().displayGuiScreen(new GuiComputerScreen((PC) object));
+		}
+	}
 }
