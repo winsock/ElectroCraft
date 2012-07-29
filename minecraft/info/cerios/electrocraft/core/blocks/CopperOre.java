@@ -8,7 +8,7 @@ import net.minecraft.src.forge.MinecraftForge;
 public class CopperOre extends Block implements ITextureProvider {
 
 	public CopperOre(int id) {
-		super(id, 0, Material.rock);
+		super(id, 3, Material.rock);
 		this.setHardness(3.0f);
 		this.setResistance(5.0f);
 		this.setStepSound(soundStoneFootstep);

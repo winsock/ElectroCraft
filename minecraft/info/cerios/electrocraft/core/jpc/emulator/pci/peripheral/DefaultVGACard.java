@@ -46,6 +46,9 @@ import java.nio.ByteOrder;
 import java.util.Hashtable;
 
 import javax.imageio.ImageIO;
+
+import org.lwjgl.opengl.GL11;
+
 import info.cerios.electrocraft.core.jpc.j2se.PCMonitor;
 
 /**
@@ -60,6 +63,7 @@ public final class DefaultVGACard extends VGACard {
     private BufferedImage buffer;
     private ByteBuffer byteBuffer;
     PCMonitor monitor;
+	private int displayTextureId;
 
     public DefaultVGACard() 
     {
@@ -89,6 +93,10 @@ public final class DefaultVGACard extends VGACard {
     {
         if ((width == 0) || (height == 0))
             return;
+        // Delete the old texture if needs to be resized
+        if (displayTextureId >= 0 && (width != this.width || height != this.height))
+        	GL11.glDeleteTextures(displayTextureId);
+        
         this.width = width;
         this.height = height;
 
@@ -97,7 +105,14 @@ public final class DefaultVGACard extends VGACard {
         DataBufferInt buf = (DataBufferInt) buffer.getRaster().getDataBuffer();
         rawImageData = buf.getData();
         byteBuffer = ByteBuffer.allocateDirect(width * height * 3);
-        // monitor.resizeDisplay(width, height);
+        
+        // OpenGL Stuff
+        displayTextureId = GL11.glGenTextures();
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+		GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, getByteBuffer());
+		GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR); 
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
     }
 
     public void saveScreenshot()
@@ -152,14 +167,20 @@ public final class DefaultVGACard extends VGACard {
         ymax = 0;
     }
 
-	public ByteBuffer getByteBuffer() {
+    public int updateOpenGL() {
+    	GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+		GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, getByteBuffer());
+    	GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+    	return displayTextureId;
+    }
+    
+	private ByteBuffer getByteBuffer() {
         for (int i = 0, j = 0; i < rawImageData.length; i++) {
             int val = rawImageData[i];
             byteBuffer.put(j++, (byte) (val >> 16));
             byteBuffer.put(j++, (byte) (val >> 8));
             byteBuffer.put(j++, (byte) (val));
         }
-
         return byteBuffer;
 	}
 }

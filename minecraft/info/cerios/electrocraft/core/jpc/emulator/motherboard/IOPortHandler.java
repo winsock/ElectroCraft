@@ -36,7 +36,7 @@ import info.cerios.electrocraft.core.jpc.emulator.AbstractHardwareComponent;
  */
 public class IOPortHandler extends AbstractHardwareComponent implements IOPortCapable
 {
-    private static final int MAX_IOPORTS = 65536;
+    public static final int MAX_IOPORTS = 65536;
     private static final IOPortCapable defaultDevice = new UnconnectedIOPort();
     private IOPortCapable[] ioPortDevice;
 

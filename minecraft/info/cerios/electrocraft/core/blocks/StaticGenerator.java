@@ -13,6 +13,6 @@ public class StaticGenerator extends ElectroBlock {
 
 	@Override
 	public TileEntity getBlockEntity() {
-		return new TileEntityStaticGenerator(mod_ElectroCraft.instance.getComputerHandler());
+		return new TileEntityStaticGenerator();
 	}
 }

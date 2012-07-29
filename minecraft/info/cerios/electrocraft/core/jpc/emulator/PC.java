@@ -130,15 +130,18 @@ public class PC {
     
     /**
      * Adds a new part to the <code>PC</code> instance
-     * It turns off the computer, resets it, and configures the parts
      * @param part The part to add
      */
     public void addPart(HardwareComponent part) {
-    	stop(); // Stop the computer
-    	reset(); // Reset the computer
     	parts.add(part);
-    	reset(); // Reset the computer again with the new part
-    	configure(); // Make sure the parts are configured
+    }
+    
+    /**
+     * Removes a part from the <code>PC</code> instance
+     * @param part The part to remove
+     */
+    public void removePart(HardwareComponent part) {
+    	parts.remove(part);
     }
 
     /**

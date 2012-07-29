@@ -10,10 +10,6 @@ import info.cerios.electrocraft.core.electricity.ElectricBlock;
 
 public class TileEntityRibbonCable extends NetworkBlock {
 
-	public TileEntityRibbonCable(ComputerHandler computerHandler) {
-		super(computerHandler);
-	}
-
 	@Override
 	public void ioPortWriteByte(int address, int data) {
 		// TODO Auto-generated method stub
@@ -48,12 +44,6 @@ public class TileEntityRibbonCable extends NetworkBlock {
 	public int ioPortReadLong(int address) {
 		// TODO Auto-generated method stub
 		return 0;
-	}
-
-	@Override
-	public int[] ioPortsRequested() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override

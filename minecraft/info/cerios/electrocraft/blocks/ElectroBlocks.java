@@ -2,6 +2,7 @@ package info.cerios.electrocraft.blocks;
 
 import info.cerios.electrocraft.blocks.render.ElectroWireRenderer;
 import info.cerios.electrocraft.blocks.render.IBlockRenderer;
+import info.cerios.electrocraft.blocks.render.RibbonCableRenderer;
 import info.cerios.electrocraft.config.ConfigHandler;
 import info.cerios.electrocraft.core.blocks.BlockComputer;
 import info.cerios.electrocraft.core.blocks.BlockRedstoneAdapter;
@@ -29,22 +30,24 @@ import net.minecraft.src.RenderBlocks;
 import net.minecraft.src.TileEntity;
 
 public enum ElectroBlocks {
+	// TODO XXX FIXME Remember to credit billythegoat101 for textures of the blocks
+	
 	COPPER_ORE(true,
 			"copperOre", "Copper Ore",
 			new CopperOre(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("copperOre", 3974).getInt(3974)).setBlockName("copperOre"),
 			null, null, null,
-			0),
+			3),
 	WIRE(false,
 			"wire", "Wire",
 			new Wire(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("wire", 3975).getInt(3975)).setBlockName("wire"),
 			info.cerios.electrocraft.items.Wire.class, TileEntityWire.class, null,
 			// 4 Different Blocks with texture id's as follows
-			1, 2, 3, 4), // 1 = Tin, 2 = Copper, 3 = Gold, 4 = Redstone
+			1, 2, 5, 13), // 1 = Tin, 2 = Copper, 3 = Gold, 4 = Redstone
 	MAGNETITE_ORE(true,
 			"magnetiteOre", "Magnetite Ore",
 			new MagnetiteOre(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("magnetiteOre", 3976).getInt(3976)).setBlockName("magnetiteOre"),
 			null, null, null,
-			5),
+			4),
 	ELECTRO_WIRE(false,
 			"electroWire", "Electro Wire",
 			new ElectroWire(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("electroWire", 3977).getInt(3977)).setBlockName("electroWire"),
@@ -54,22 +57,22 @@ public enum ElectroBlocks {
 			"staticGenerator", "Static Generator",
 			new StaticGenerator(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("staticGenerator", 3978).getInt(3978)).setBlockName("staticGenerator"),
 			null, TileEntityStaticGenerator.class, null,
-			14),
+			10),
 	COMPUTER(true,
 			"computer", "Computer",
 			new BlockComputer(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("computer", 3979).getInt(3979)).setBlockName("computer"),
 			null, TileEntityComputer.class, null,
-			15),
+			37, 36, 34, 32, 35, 33),
 	REDSTONE_ADAPTER(true,
 			"redstoneAdapter", "Redstone Adapter",
 			new BlockRedstoneAdapter(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("redstoneAdapter", 3980).getInt(3980)).setBlockName("redstoneAdapter"),
 			null, TileEntityRedstoneAdapter.class, null,
-			16),
+			149, 148, 147, 147, 147, 147),
 	RIBBON_CABLE(false,
 			"ribbonCable", "Ribbon Cable",
 			new BlockRibbonCable(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("ribbonCable", 3981).getInt(3981)).setBlockName("ribbonCable"),
-			null, TileEntityRibbonCable.class, null,
-			10, 11, 12, 13, 26, 27);
+			null, TileEntityRibbonCable.class, new RibbonCableRenderer(),
+			74, 74, 75, 91, 90);
 	
 	private boolean isOreDicBlock;
 	private String name, humanName;

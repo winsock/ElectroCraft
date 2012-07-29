@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.mod_ElectroCraft;
 import info.cerios.electrocraft.core.utils.Orientations;
 
 import java.io.DataInput;
@@ -13,11 +14,12 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 	protected boolean hasBeenNetworkProbed = false;
 	protected Map<Integer, NetworkBlock> connectedDevices = new HashMap<Integer, NetworkBlock>();
 	protected ComputerNetwork network;
+	protected int controlAddress = 0, dataAddress = 0;
 
 	public abstract boolean canConnectNetwork(NetworkBlock block);
 	
-	public NetworkBlock(ComputerHandler computerHandler) {
-		super(computerHandler);
+	public NetworkBlock() {
+		super(mod_ElectroCraft.instance.getComputerHandler());
 	}
 	
 	public void setNetworkProbedStatus(boolean status) {
@@ -42,6 +44,21 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 			network = new ComputerNetwork();
 		computeConnections();
 		network.updateProviderChain(this);
+	}
+	
+	public void setControlAddress(int controlAddress) {
+		this.controlAddress = controlAddress;
+		this.network.registerIOPort(this);
+	}
+	
+	public void setDataAddress(int dataAddress) {
+		this.dataAddress = dataAddress;
+		this.network.registerIOPort(this);
+	}
+	
+	@Override
+	public int[] ioPortsRequested() {
+		return new int[] { controlAddress, dataAddress };
 	}
 	
 	public ComputerNetwork checkConnectedBlocksForComputerNetworks() {
@@ -91,5 +108,9 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 			if (canConnectNetwork((NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1)))
 				connectedDevices.put(Orientations.ZNeg.ordinal(), (NetworkBlock) worldObj.getBlockTileEntity(xCoord, yCoord, zCoord - 1));
 		}
+	}
+
+	public ComputerNetwork getComputerNetwork() {
+		return network;
 	}
 }

@@ -2,6 +2,8 @@ package info.cerios.electrocraft.core.computer;
 
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.jpc.emulator.PC;
+import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.DefaultVGACard;
+import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.VGACard;
 import info.cerios.electrocraft.core.jpc.j2se.VirtualClock;
 import info.cerios.electrocraft.core.jpc.support.Clock;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
@@ -28,9 +30,12 @@ public class ComputerHandler {
 		PC pc = null;
         try {
 			pc = new PC(new VirtualClock(), args);
+			// Set the default resolution
+			((DefaultVGACard)pc.getComponent(VGACard.class)).resizeDisplay(720, 480);
 			pc.addPart(computerBlock);
 			ComputerThread computerThreadObject = new ComputerThread(pc);
 			Thread computerThread = new Thread(computerThreadObject);
+			pc.start();
 			computerThread.start();
 			computers.put(pc, new ObjectPair<Thread, ComputerThread>(computerThread, computerThreadObject));
 		} catch (IOException e) {
@@ -44,17 +49,20 @@ public class ComputerHandler {
 		for (PC computer : computers.keySet()) {
 			stopComputer(computer);
 			computer.addPart(ioPort);
+			computer.reset();
 		}
 	}
-	
+		
 	public void startComputer(PC pc) {
 		if (computers.containsKey(pc)) {
+			pc.start();
 			computers.get(pc).getValue2().setRunning(true);
 			computers.get(pc).setValue1(new Thread(computers.get(pc).getValue2()));
 			computers.get(pc).getValue1().start();
 		} else {
 			ComputerThread computerThreadObject = new ComputerThread(pc);
 			Thread computerThread = new Thread(computerThreadObject);
+			pc.start();
 			computerThread.start();
 			computers.put(pc, new ObjectPair<Thread, ComputerThread>(computerThread, computerThreadObject));
 		}
@@ -97,7 +105,6 @@ public class ComputerHandler {
 		
 		@Override
 		public void run() {
-			pc.start();
 			try {
 				while (running) {
 					pc.execute();

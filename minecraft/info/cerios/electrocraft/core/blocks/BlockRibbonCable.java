@@ -11,6 +11,7 @@ import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
 
 import info.cerios.electrocraft.mod_ElectroCraft;
+import info.cerios.electrocraft.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
@@ -26,7 +27,12 @@ public class BlockRibbonCable extends ElectroBlock {
 
 	@Override
 	public TileEntity getBlockEntity() {
-		return new TileEntityRibbonCable(mod_ElectroCraft.instance.getComputerHandler());
+		return new TileEntityRibbonCable();
+	}
+	
+	@Override
+	public int getBlockTextureFromSide(int side) {
+		return ElectroBlocks.RIBBON_CABLE.getDefaultTextureIndices()[side];
 	}
 
 	// ============ BEGIN COPIED STUFF FROM BlockRedstoneWire ================= //
@@ -48,6 +54,6 @@ public class BlockRibbonCable extends ElectroBlock {
 
 	@Override
 	public int getRenderType() {
-		return 0;
+		return renderId;
 	}
 }

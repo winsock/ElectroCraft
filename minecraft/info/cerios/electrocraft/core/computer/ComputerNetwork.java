@@ -1,6 +1,8 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.mod_ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
+import info.cerios.electrocraft.core.jpc.emulator.PC;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -20,6 +22,27 @@ public class ComputerNetwork {
 	public Set<TileEntityComputer> getComputers() {
 		return computers;
 	}
+	
+	public void registerIOPort(IOPortCapableMinecraft ioPort) {
+		for (TileEntityComputer computer : computers) {
+			mod_ElectroCraft.instance.getComputerHandler().stopComputer(computer.getComputer());
+			computer.getComputer().addPart(ioPort);
+			computer.getComputer().reset();
+		}
+	}
+	
+	public void removeIOPort(IOPortCapableMinecraft ioPort) {
+		for (TileEntityComputer computer : computers) {
+			mod_ElectroCraft.instance.getComputerHandler().stopComputer(computer.getComputer());
+			computer.getComputer().removePart(ioPort);
+			computer.getComputer().reset();
+		}
+	}
+	
+	public void resetComputers() {
+		for (TileEntityComputer computer : computers)
+			computer.reset();
+	}
 
 	private Collection<TileEntityComputer> getComputersInChain(NetworkBlock block) {
 		if (block.getProbedStatus())
@@ -36,10 +59,6 @@ public class ComputerNetwork {
 			// Exit recursion when provider found
 			if (nextBlock instanceof TileEntityComputer) {
 				providers.add((TileEntityComputer) nextBlock);
-				for (NetworkBlock providerBlock : nextBlock.connectedDevices.values()) {
-					if (providerBlock instanceof TileEntityComputer)
-						providers.add((TileEntityComputer) providerBlock);
-				}
 				break;
 			} else {
 				Collection<TileEntityComputer> result = getComputersInChain(nextBlock);

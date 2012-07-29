@@ -6,15 +6,17 @@ import java.io.IOException;
 
 import info.cerios.electrocraft.core.computer.ComputerHandler;
 import info.cerios.electrocraft.core.computer.IOPortCapableMinecraft;
+import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
 
-public class TileEntityRedstoneAdapter extends IOPortCapableMinecraft {
+public class TileEntityRedstoneAdapter extends NetworkBlock {
 
 	private boolean redstonePower = false;
 	private boolean receiveMode = false;
 	
-	public TileEntityRedstoneAdapter(ComputerHandler computerHandler) {
-		super(computerHandler);
+	public TileEntityRedstoneAdapter() {
+		this.dataAddress = 225;
+		this.controlAddress = 226;
 	}
 	
 	public boolean getRedstonePower() {
@@ -23,14 +25,14 @@ public class TileEntityRedstoneAdapter extends IOPortCapableMinecraft {
 
 	@Override
 	public void ioPortWriteByte(int address, int data) {
-		if (address == 225) {
+		if (address == dataAddress) {
 			if (data > 0)
 				redstonePower = true;
 			else if (data <= 0)
 				redstonePower = false;
 			worldObj.setBlockMetadataWithNotify(xCoord, yCoord, zCoord, 15);
 			worldObj.notifyBlocksOfNeighborChange(xCoord, yCoord, zCoord, this.getBlockType().blockID);
-		} else if (address == 226) {
+		} else if (address == controlAddress) {
 			if (data > 0)
 				receiveMode = true;
 			else if (data <= 0)
@@ -48,7 +50,7 @@ public class TileEntityRedstoneAdapter extends IOPortCapableMinecraft {
 
 	@Override
 	public int ioPortReadByte(int address) {
-		if (address == 225) {
+		if (address == dataAddress) {
 			if (receiveMode) {
 				return this.worldObj.isBlockGettingPowered(xCoord, yCoord, zCoord) ? 1 : 0;
 			} else {
@@ -69,11 +71,6 @@ public class TileEntityRedstoneAdapter extends IOPortCapableMinecraft {
 	}
 
 	@Override
-	public int[] ioPortsRequested() {
-		return new int[] { 225, 226 };
-	}
-
-	@Override
 	public void loadState(DataInput input) throws IOException {
 	}
 
@@ -86,4 +83,8 @@ public class TileEntityRedstoneAdapter extends IOPortCapableMinecraft {
 		return true;
 	}
 
+	@Override
+	public boolean canConnectNetwork(NetworkBlock block) {
+		return true;
+	}
 }

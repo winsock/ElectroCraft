@@ -6,17 +6,19 @@ import java.io.IOException;
 
 import info.cerios.electrocraft.core.computer.ComputerHandler;
 import info.cerios.electrocraft.core.computer.IOPortCapableMinecraft;
+import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
 import info.cerios.electrocraft.core.electricity.ElectricityProvider;
 import info.cerios.electrocraft.core.electricity.ElectricityTypes;
 
-public class TileEntityStaticGenerator extends IOPortCapableMinecraft implements ElectricityProvider {
+public class TileEntityStaticGenerator extends NetworkBlock implements ElectricityProvider {
 
 	private int currentVoltage = 0;
 	private int outputSetting = 0;
-	
-	public TileEntityStaticGenerator(ComputerHandler computerHandler) {
-		super(computerHandler);
+
+	public TileEntityStaticGenerator() {
+		this.controlAddress = 227;
+		this.dataAddress = 228;
 	}
 
 	@Override
@@ -41,9 +43,9 @@ public class TileEntityStaticGenerator extends IOPortCapableMinecraft implements
 
 	@Override
 	public void ioPortWriteByte(int address, int data) {
-		if (address == 227) {
+		if (address == controlAddress) {
 			outputSetting = data;
-		} else if (address == 228) {
+		} else if (address == dataAddress) {
 			if (data == 0) {
 				currentVoltage = 0;
 			} else if (data > 0) {
@@ -72,7 +74,7 @@ public class TileEntityStaticGenerator extends IOPortCapableMinecraft implements
 	@Override
 	public int ioPortReadByte(int address) {
 		if (outputSetting == 0) {
-		return getVoltage();
+			return getVoltage();
 		} else if (outputSetting == 1) {
 			return Float.floatToRawIntBits(getCurrent());
 		}
@@ -92,11 +94,6 @@ public class TileEntityStaticGenerator extends IOPortCapableMinecraft implements
 	}
 
 	@Override
-	public int[] ioPortsRequested() {
-		return new int[] { 227, 228 };
-	}
-
-	@Override
 	public void loadState(DataInput input) throws IOException {
 		// TODO Auto-generated method stub
 		
@@ -106,5 +103,10 @@ public class TileEntityStaticGenerator extends IOPortCapableMinecraft implements
 	public void saveState(DataOutput output) throws IOException {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public boolean canConnectNetwork(NetworkBlock block) {
+		return true;
 	}
 }

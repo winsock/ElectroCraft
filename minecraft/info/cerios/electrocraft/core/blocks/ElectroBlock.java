@@ -24,9 +24,6 @@ public abstract class ElectroBlock extends BlockContainer implements ITexturePro
         if (world.getBlockTileEntity(x, y, z) instanceof ElectricBlock) {
     		((ElectricBlock)world.getBlockTileEntity(x, y, z)).updateNetwork();
         }
-        if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).updateComputerNetwork();
-        }
 	}
 	
 	@Override
@@ -34,9 +31,6 @@ public abstract class ElectroBlock extends BlockContainer implements ITexturePro
         super.onBlockRemoval(world, x, y, z);
         if (world.getBlockTileEntity(x, y, z) instanceof ElectricBlock) {
     		((ElectricBlock)world.getBlockTileEntity(x, y, z)).updateNetwork();
-        }
-        if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).updateComputerNetwork();
         }
 	}
 	

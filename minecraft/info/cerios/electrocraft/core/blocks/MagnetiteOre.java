@@ -15,7 +15,7 @@ import net.minecraft.src.forge.MinecraftForge;
 public class MagnetiteOre extends Block implements ITextureProvider {
 
 	public MagnetiteOre(int blockId) {
-		super(blockId, 5, Material.rock);
+		super(blockId, 4, Material.rock);
 		this.setHardness(1.0f);
 		this.setResistance(2.0f);
 		this.setStepSound(soundStoneFootstep);

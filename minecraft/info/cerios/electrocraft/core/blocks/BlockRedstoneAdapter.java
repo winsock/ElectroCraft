@@ -10,13 +10,15 @@ import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
 
 import info.cerios.electrocraft.mod_ElectroCraft;
+import info.cerios.electrocraft.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRedstoneAdapter;
 import info.cerios.electrocraft.core.computer.IOPortCapableMinecraft;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
 
-public class BlockRedstoneAdapter extends ElectroBlock {
+public class BlockRedstoneAdapter extends BlockNetwork {
 	public BlockRedstoneAdapter(int id) {
-		super(id, 15, Material.rock);
+		super(id, 117, Material.rock);
+		this.setBlockBounds(0f, 0f, 0f, 1.0f, 0.55f, 1.0f);
 	}
 	
 	@Override
@@ -33,11 +35,26 @@ public class BlockRedstoneAdapter extends ElectroBlock {
         return false;
     }
 	
+	@Override
+	public int getBlockTextureFromSide(int side) {
+		return ElectroBlocks.REDSTONE_ADAPTER.getDefaultTextureIndices()[side];
+	}
+	
 	// Needed to allow block to emit a redstone signal
 	@Override
     public boolean renderAsNormalBlock() {
         return false;
     }
+	
+	@Override
+	public boolean isOpaqueCube() {
+		return false;
+	}
+	
+	@Override
+	public int getRenderType() {
+		return 0;
+	}
 	
     @Override
     public boolean canProvidePower() {
@@ -46,6 +63,6 @@ public class BlockRedstoneAdapter extends ElectroBlock {
     
 	@Override
 	public TileEntity getBlockEntity() {
-		return new TileEntityRedstoneAdapter(mod_ElectroCraft.instance.getComputerHandler());
+		return new TileEntityRedstoneAdapter();
 	}
 }

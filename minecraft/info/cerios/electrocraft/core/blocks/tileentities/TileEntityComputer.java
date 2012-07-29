@@ -17,12 +17,14 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 
 	private PC computer;
 	
-	public TileEntityComputer(ComputerHandler computerHandler) {
-		super(computerHandler);
-		computer = computerHandler.createAndStartCompuer(this);
+	public TileEntityComputer() {
+		this.controlAddress = 223;
+		this.dataAddress = 224;
 	}
 	
 	public PC getComputer() {
+		if (computer == null)
+			computer = computerHandler.createAndStartCompuer(this);
 		return computer;
 	}
 
@@ -53,7 +55,7 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 
 	@Override
 	public void ioPortWriteByte(int address, int data) {
-		if (address == 222) {
+		if (address == dataAddress) {
 			if (data == 1) {
 				// Close out of the computer monitor screen
 				ModLoader.getMinecraftInstance().displayGuiScreen(null);
@@ -89,11 +91,6 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 	public int ioPortReadLong(int address) {
 		// TODO Auto-generated method stub
 		return 0;
-	}
-
-	@Override
-	public int[] ioPortsRequested() {
-		return new int[] { 223, 224 };
 	}
 
 	@Override

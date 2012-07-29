@@ -186,5 +186,4 @@ public class ElectroWireRenderer implements IBlockRenderer {
 
         return true;
 	}
-
 }
