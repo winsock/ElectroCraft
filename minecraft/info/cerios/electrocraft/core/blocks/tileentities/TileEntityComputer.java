@@ -35,27 +35,27 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 	
 	public void writeToNBT(NBTTagCompound nbttagcompound) {
 		super.writeToNBT(nbttagcompound);
-//		NBTTagList ioPortList = new NBTTagList("ioPorts");
-//		for (ObjectTriplet<Integer, Integer, Integer> ioPort: ioPorts) {
-//			NBTTagCompound ioPortData = new NBTTagCompound("ioPortData");
-//			ioPortData.setInteger("x", ioPort.getValue1());
-//			ioPortData.setInteger("y", ioPort.getValue2());
-//			ioPortData.setInteger("z", ioPort.getValue3());
-//			ioPortList.appendTag(ioPortData);
-//		}
-//		nbttagcompound.setTag("ioPorts", ioPortList);
+		NBTTagList ioPortList = new NBTTagList("ioPorts");
+		for (ObjectTriplet<Integer, Integer, Integer> ioPort: ioPorts) {
+			NBTTagCompound ioPortData = new NBTTagCompound("ioPortData");
+			ioPortData.setInteger("x", ioPort.getValue1());
+			ioPortData.setInteger("y", ioPort.getValue2());
+			ioPortData.setInteger("z", ioPort.getValue3());
+			ioPortList.appendTag(ioPortData);
+		}
+		nbttagcompound.setTag("ioPorts", ioPortList);
 	}
 	
 	public void readFromNBT(NBTTagCompound nbttagcompound) {
 		super.readFromNBT(nbttagcompound);
-//		NBTTagList ioPortList = nbttagcompound.getTagList("ioPorts");
-//		for (int i = 0; i < ioPortList.tagCount(); i++) {
-//			if (ioPortList.tagAt(i) instanceof NBTTagCompound) {
-//				NBTTagCompound ioPortData = (NBTTagCompound) ioPortList.tagAt(i);
-//				ioPorts.add(new ObjectTriplet<Integer, Integer, Integer>(ioPortData.getInteger("x"), ioPortData.getInteger("y"), ioPortData.getInteger("z")));
-//			}
-//		}
-//		hasRegistered = false;
+		NBTTagList ioPortList = nbttagcompound.getTagList("ioPorts");
+		for (int i = 0; i < ioPortList.tagCount(); i++) {
+			if (ioPortList.tagAt(i) instanceof NBTTagCompound) {
+				NBTTagCompound ioPortData = (NBTTagCompound) ioPortList.tagAt(i);
+				ioPorts.add(new ObjectTriplet<Integer, Integer, Integer>(ioPortData.getInteger("x"), ioPortData.getInteger("y"), ioPortData.getInteger("z")));
+			}
+		}
+		hasRegistered = false;
 	}
 	
 	public PC getComputer() {
@@ -88,7 +88,7 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 			return;
 		for (ObjectTriplet<Integer, Integer, Integer> ioPort: ioPorts) {
 			if (this.getNetworkBlockFromLocation(ioPort.getValue1(), ioPort.getValue2(), ioPort.getValue3()) == null)
-				return;
+				continue;
 			computer.removePart(this.getNetworkBlockFromLocation(ioPort.getValue1(), ioPort.getValue2(), ioPort.getValue3()));
 			computer.addPart(this.getNetworkBlockFromLocation(ioPort.getValue1(), ioPort.getValue2(), ioPort.getValue3()));
 		}
