@@ -24,7 +24,7 @@ public abstract class BlockNetwork extends ElectroBlock {
 	public void onBlockAdded(World world, int x, int y, int z) {
         super.onBlockAdded(world, x, y, z);
         if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).updateComputerNetwork();
+    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).update((NetworkBlock) world.getBlockTileEntity(x, y, z));
     		((NetworkBlock)world.getBlockTileEntity(x, y, z)).getComputerNetwork().registerIOPort((NetworkBlock)world.getBlockTileEntity(x, y, z));
         }
 	}
@@ -33,7 +33,7 @@ public abstract class BlockNetwork extends ElectroBlock {
 	public void onBlockRemoval(World world, int x, int y, int z) {
         super.onBlockRemoval(world, x, y, z);
         if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).updateComputerNetwork();
+    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).update((NetworkBlock) world.getBlockTileEntity(x, y, z));
     		((NetworkBlock)world.getBlockTileEntity(x, y, z)).getComputerNetwork().removeIOPort((NetworkBlock)world.getBlockTileEntity(x, y, z));
         }
 	}

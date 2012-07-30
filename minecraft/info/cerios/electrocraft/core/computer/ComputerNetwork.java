@@ -17,7 +17,7 @@ import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
 
 public class ComputerNetwork {
-	protected Set<ObjectTriplet<Integer, Integer, Integer>> devices;
+	protected Set<ObjectTriplet<Integer, Integer, Integer>> devices = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
 	protected Map<ObjectTriplet<Integer, Integer, Integer>, Boolean> probeStatus = new HashMap<ObjectTriplet<Integer, Integer, Integer>, Boolean>();
 	
 	public void writeToNBT(NBTTagCompound nbttagcompound) {
@@ -43,8 +43,6 @@ public class ComputerNetwork {
 				int y = computerData.getInteger("y");
 				int z = computerData.getInteger("z");
 				
-				if (devices == null)
-					devices = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
 				devices.add(new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
 			}
 		}
@@ -52,6 +50,7 @@ public class ComputerNetwork {
 	
 	public void updateProviderChain(NetworkBlock startBlock) {
 		devices = getDevicesInChain(new ObjectTriplet<Integer, Integer, Integer>(startBlock.xCoord, startBlock.yCoord, startBlock.zCoord));
+		probeStatus.clear();
 	}
 	
 	public void mergeNetwork(ComputerNetwork network) {
@@ -63,7 +62,7 @@ public class ComputerNetwork {
 		for (ObjectTriplet<Integer, Integer, Integer> computer : devices) {
 			TileEntityComputer computerTileEntity = getTileEntityComputerFromLocation(computer.getValue1(), computer.getValue2(), computer.getValue3());
 			if (computerTileEntity == null)
-				break;
+				continue;
 			tempSet.add(computerTileEntity);
 		}
 		return tempSet;
@@ -73,8 +72,8 @@ public class ComputerNetwork {
 		for (ObjectTriplet<Integer, Integer, Integer> computer : devices) {
 			TileEntityComputer computerTileEntity = getTileEntityComputerFromLocation(computer.getValue1(), computer.getValue2(), computer.getValue3());
 			if (computerTileEntity == null)
-				break;
-			computerTileEntity.getComputer().addPart(ioPort);
+				continue;
+			computerTileEntity.registerIOPort(ioPort);
 		}
 	}
 	
@@ -82,20 +81,23 @@ public class ComputerNetwork {
 		for (ObjectTriplet<Integer, Integer, Integer> computer : devices) {
 			TileEntityComputer computerTileEntity = getTileEntityComputerFromLocation(computer.getValue1(), computer.getValue2(), computer.getValue3());
 			if (computerTileEntity == null)
-				break;
-			computerTileEntity.getComputer().removePart(ioPort);
+				continue;
+			computerTileEntity.removeIOPort(ioPort);
 		}
 	}
 	
-	public void resetComputers() {
-		for (ObjectTriplet<Integer, Integer, Integer> computer : devices) {
-			TileEntityComputer computerTileEntity = getTileEntityComputerFromLocation(computer.getValue1(), computer.getValue2(), computer.getValue3());
-			if (computerTileEntity == null)
-				break;
-			computerTileEntity.reset();
+	public void reRegisterAllDevices() {
+		Set<TileEntityComputer> computers = getComputers();
+		for (TileEntityComputer computer : computers) {
+			for (ObjectTriplet<Integer, Integer, Integer> device : devices) {
+				NetworkBlock deviceBlock = getNetworkBlockFromLocation(device.getValue1(), device.getValue2(), device.getValue3());
+				if (deviceBlock == null)
+					continue;
+				computer.registerIOPort(deviceBlock);
+			}
 		}
 	}
-	
+
 	public TileEntityComputer getTileEntityComputerFromLocation(int x, int y, int z) {
 		if (ModLoader.getMinecraftInstance().theWorld.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
 			return (TileEntityComputer) ModLoader.getMinecraftInstance().theWorld.getBlockTileEntity(x, y, z);
@@ -112,36 +114,24 @@ public class ComputerNetwork {
 
 	private Set<ObjectTriplet<Integer, Integer, Integer>> getDevicesInChain(ObjectTriplet<Integer, Integer, Integer> block) {
 		if (probeStatus.get(block) != null && probeStatus.get(block))
-			return null;
+			return new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
 		probeStatus.put(block, true);
 		
-		// Check if the block is a device
-		Set<ObjectTriplet<Integer, Integer, Integer>> devices = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
-		if (getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) != null)
-			if (!(getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) instanceof TileEntityRibbonCable))
-				devices.add(block);
-		else
-			return null;
-		
-		// Check if any connected blocks are devices
-		for (ObjectTriplet<Integer, Integer, Integer> nextBlock : getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()).connectedDevices.values()) {
-			// Exit recursion when device found
-			if (getNetworkBlockFromLocation(nextBlock.getValue1(), nextBlock.getValue2(), nextBlock.getValue3()) != null) {
-				if (!(getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) instanceof TileEntityRibbonCable)) {
-					devices.add(new ObjectTriplet<Integer, Integer, Integer>(nextBlock.getValue1(), nextBlock.getValue2(), nextBlock.getValue3()));
-					break;
-				} else {
-					Collection<ObjectTriplet<Integer, Integer, Integer>> result = getDevicesInChain(nextBlock);
-					if (result != null)
-						devices.addAll(result);
-				}
-			} else {
-				Collection<ObjectTriplet<Integer, Integer, Integer>> result = getDevicesInChain(nextBlock);
-				if (result != null)
-					devices.addAll(result);
-			}
+		if (getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) == null) {
+			return new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
 		}
-		probeStatus.put(block, false);
-		return devices;
+		
+		Set<ObjectTriplet<Integer, Integer, Integer>> connections = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
+		NetworkBlock netBlock = getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3());
+		if (!(netBlock instanceof TileEntityRibbonCable)) {
+			connections.add(block);
+		}
+		for (ObjectTriplet<Integer, Integer, Integer> connection : netBlock.connectedDevices.values()) {
+			if (!(getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) instanceof TileEntityRibbonCable))
+				connections.add(connection);
+			connections.addAll(getDevicesInChain(connection));
+		}
+		
+		return connections;
 	}
 }

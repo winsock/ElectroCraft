@@ -44,7 +44,7 @@ public class ComputerHandler {
 				PC pc = null;
 				try {
 					pc = new PC(new VirtualClock(), args);
-					pc.addPart(computerBlock);
+					computerBlock.setComputer(pc);
 					pc.reset();
 					// Set the default resolution
 					((DefaultVGACard)pc.getComponent(VGACard.class)).resizeDisplay(720, 480);
@@ -56,7 +56,6 @@ public class ComputerHandler {
 				} catch (IOException e) {
 					ModLoader.getLogger().severe("ElectroCraft: Unable to start JPC Emulator!");
 				}
-				computerBlock.setComputer(pc);
 				return pc;
 			}}.init(computerBlock), finishedCallback);
 	}

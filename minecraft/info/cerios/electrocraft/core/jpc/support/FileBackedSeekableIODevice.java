@@ -62,7 +62,7 @@ public class FileBackedSeekableIODevice implements SeekableIODevice
         fileName = spec;
 
         try {
-            image = new RandomAccessFile(fileName, "rw");
+            image = new RandomAccessFile(fileName, "rwd");
             readOnly = false;
         } catch (IOException e) {
             try {
@@ -93,20 +93,7 @@ public class FileBackedSeekableIODevice implements SeekableIODevice
     public int write(byte[] data, int offset, int length) throws IOException
     {
         image.write(data, offset, length);
-        // Sync the file to the hard drive
-        new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					synchronized(image) {
-						image.getFD().sync();
-					}
-				} catch (SyncFailedException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}}).start();
+        image.getFD().sync();
         return length;
     }
 

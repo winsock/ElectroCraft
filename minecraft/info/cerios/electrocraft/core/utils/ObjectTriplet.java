@@ -38,4 +38,30 @@ public class ObjectTriplet<T1, T2, T3> {
     public void setValue3(T3 value) {
     	this.object3 = value;
     }
+    
+    @Override
+    public int hashCode() {
+    	return getValue1().hashCode() + getValue2().hashCode() + getValue3().hashCode();
+    }
+    
+    @Override
+    public boolean equals(Object anotherObject) {
+    	if (!(anotherObject instanceof ObjectTriplet)) {
+    		return false;
+    	}
+    	
+    	if (!((ObjectTriplet) anotherObject).getValue1().equals(getValue1())){
+    		return false;
+    	}
+    	
+    	if (!((ObjectTriplet) anotherObject).getValue2().equals(getValue2())){
+    		return false;
+    	}
+    	
+    	if (!((ObjectTriplet) anotherObject).getValue3().equals(getValue3())){
+    		return false;
+    	}
+    	
+    	return true;
+    }
 }

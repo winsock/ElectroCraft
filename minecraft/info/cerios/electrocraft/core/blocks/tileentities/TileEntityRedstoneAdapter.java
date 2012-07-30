@@ -4,6 +4,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import net.minecraft.src.NBTTagCompound;
+
 import info.cerios.electrocraft.core.computer.ComputerHandler;
 import info.cerios.electrocraft.core.computer.IOPortCapableMinecraft;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
@@ -21,6 +23,18 @@ public class TileEntityRedstoneAdapter extends NetworkBlock {
 	
 	public boolean getRedstonePower() {
 		return redstonePower;
+	}
+	
+	public void writeToNBT(NBTTagCompound nbttagcompound) {
+		super.writeToNBT(nbttagcompound);
+		nbttagcompound.setBoolean("redstonePower", redstonePower);
+		nbttagcompound.setBoolean("receiveMode", receiveMode);
+	}
+	
+	public void readFromNBT(NBTTagCompound nbttagcompound) {
+		super.readFromNBT(nbttagcompound);
+		this.redstonePower = nbttagcompound.getBoolean("redstonePower");
+		this.receiveMode = nbttagcompound.getBoolean("receiveMode");
 	}
 
 	@Override
@@ -52,7 +66,7 @@ public class TileEntityRedstoneAdapter extends NetworkBlock {
 	public int ioPortReadByte(int address) {
 		if (address == dataAddress) {
 			if (receiveMode) {
-				return this.worldObj.isBlockGettingPowered(xCoord, yCoord, zCoord) ? 1 : 0;
+				return worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord) ? 1 : 0;
 			} else {
 				return redstonePower ? 1 : 0;
 			}

@@ -17,7 +17,7 @@ import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
 
-public class BlockRibbonCable extends ElectroBlock {
+public class BlockRibbonCable extends BlockNetwork {
 
 	public static int renderId = ModLoader.getUniqueBlockModelID(mod_ElectroCraft.instance, false);
 	
@@ -34,22 +34,6 @@ public class BlockRibbonCable extends ElectroBlock {
 	@Override
 	public int getBlockTextureFromSide(int side) {
 		return ElectroBlocks.RIBBON_CABLE.getDefaultTextureIndices()[side];
-	}
-	
-	@Override
-	public void onBlockAdded(World world, int x, int y, int z) {
-        super.onBlockAdded(world, x, y, z);
-        if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).updateComputerNetwork();
-        }
-	}
-	
-	@Override
-	public void onBlockRemoval(World world, int x, int y, int z) {
-        super.onBlockRemoval(world, x, y, z);
-        if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-    		((NetworkBlock)world.getBlockTileEntity(x, y, z)).updateComputerNetwork();
-        }
 	}
 
 	// ============ BEGIN COPIED STUFF FROM BlockRedstoneWire ================= //

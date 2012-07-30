@@ -1,6 +1,8 @@
 package info.cerios.electrocraft.core.electricity;
 
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
+import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 
 import java.util.Collection;
@@ -15,7 +17,7 @@ import net.minecraft.src.NBTTagList;
 
 public class ElectricNetwork {
 		
-	protected Set<ObjectTriplet<Integer, Integer, Integer>> providers;
+	protected Set<ObjectTriplet<Integer, Integer, Integer>> providers = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
 	protected Map<ObjectTriplet<Integer, Integer, Integer>, Boolean> probeStatus = new HashMap<ObjectTriplet<Integer, Integer, Integer>, Boolean>();
 
 	public void writeToNBT(NBTTagCompound nbttagcompound) {
@@ -41,11 +43,7 @@ public class ElectricNetwork {
 				int y = providerData.getInteger("y");
 				int z = providerData.getInteger("z");
 				
-				if (ModLoader.getMinecraftInstance().theWorld.getBlockTileEntity(x, y, z) instanceof ElectricityProvider) {
-					if (providers == null)
-						providers = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
-					providers.add(new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
-				}
+				providers.add(new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
 			}
 		}
 	}
@@ -65,8 +63,6 @@ public class ElectricNetwork {
 		for (ObjectTriplet<Integer, Integer, Integer> provider : providers) {
 			if (getProviderFromLocation(provider.getValue1(), provider.getValue2(), provider.getValue3()) != null) {
 				tempSet.add(getProviderFromLocation(provider.getValue1(), provider.getValue2(), provider.getValue3()));
-			} else {
-				providers.remove(provider);
 			}
 		}
 		return tempSet;
@@ -79,6 +75,13 @@ public class ElectricNetwork {
 		return null;
 	}
 	
+	public ElectricBlock getElectricBlockFromLocation(int x, int y, int z) {
+		if (ModLoader.getMinecraftInstance().theWorld.getBlockTileEntity(x, y, z) instanceof ElectricBlock) {
+			return (ElectricBlock) ModLoader.getMinecraftInstance().theWorld.getBlockTileEntity(x, y, z);
+		}
+		return null;
+	}
+	
 	public ElectricBlock getElectricBlockFromProvider(ElectricityProvider provider) {
 		if (provider instanceof ElectricBlock)
 			return (ElectricBlock) provider;
@@ -87,32 +90,21 @@ public class ElectricNetwork {
 	
 	private Set<ObjectTriplet<Integer, Integer, Integer>> getProvidersInChain(ObjectTriplet<Integer, Integer, Integer> block) {
 		if (probeStatus.get(block) != null && probeStatus.get(block))
-			return null;
+			return new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
 		probeStatus.put(block, true);
 		
-		// Check if the block is a electricity provider
-		Set<ObjectTriplet<Integer, Integer, Integer>> providers = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
-		if (getProviderFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) != null)
-			providers.add(block);
-		else
-			return null;
-		
-		if (getElectricBlockFromProvider(getProviderFromLocation(block.getValue1(), block.getValue2(), block.getValue3())) == null)
-			return null;
-		
-		// Check if any connected blocks are providers
-		for (ObjectTriplet<Integer, Integer, Integer> nextBlock : getElectricBlockFromProvider(getProviderFromLocation(block.getValue1(), block.getValue2(), block.getValue3())).connectedDevices.values()) {
-			// Exit recursion when provider found
-			if (getProviderFromLocation(nextBlock.getValue1(), nextBlock.getValue2(), nextBlock.getValue3()) != null) {
-				providers.add(new ObjectTriplet<Integer, Integer, Integer>(nextBlock.getValue1(), nextBlock.getValue2(), nextBlock.getValue3()));
-				break;
-			} else {
-				Collection<ObjectTriplet<Integer, Integer, Integer>> result = getProvidersInChain(nextBlock);
-				if (result != null)
-					providers.addAll(result);
-			}
+		if (getElectricBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) == null) {
+			return new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
 		}
-		probeStatus.put(block, false);
-		return providers;
+		
+		Set<ObjectTriplet<Integer, Integer, Integer>> connections = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
+		ElectricBlock electricBlock = getElectricBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3());
+		for (ObjectTriplet<Integer, Integer, Integer> connection : electricBlock.connectedDevices.values()) {
+			if (!(getElectricBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3()) instanceof ElectricityTransporter))
+				connections.add(connection);
+			connections.addAll(getProvidersInChain(connection));
+		}
+		
+		return connections;
 	}
 }

@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import net.minecraft.src.ModLoader;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
+import net.minecraft.src.World;
 
 public abstract class NetworkBlock extends IOPortCapableMinecraft {
 	
@@ -25,6 +26,7 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 	protected Map<Integer, ObjectTriplet<Integer, Integer, Integer>> connectedDevices = new HashMap<Integer, ObjectTriplet<Integer, Integer, Integer>>();
 	protected ComputerNetwork network;
 	protected int controlAddress = 0, dataAddress = 0;
+	private boolean dirty = true, hasBeenChecked = false;
 
 	public abstract boolean canConnectNetwork(NetworkBlock block);
 	
@@ -36,23 +38,23 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 		super.writeToNBT(nbttagcompound);
 		nbttagcompound.setInteger("controlAddress", controlAddress);
 		nbttagcompound.setInteger("dataAddress", dataAddress);
-		NBTTagList connectionList = new NBTTagList("connections");
-		for (Entry<Integer, ObjectTriplet<Integer, Integer, Integer>> entry : connectedDevices.entrySet()) {
-			NBTTagCompound connectionData = new NBTTagCompound("computerData");
-			connectionData.setInteger("x", entry.getValue().getValue1());
-			connectionData.setInteger("y", entry.getValue().getValue2());
-			connectionData.setInteger("z", entry.getValue().getValue3());
-			connectionData.setInteger("orientation", entry.getKey());
-			ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-			try {
-				this.saveState(new DataOutputStream(bytesOut));
-				connectionData.setByteArray("deviceState", bytesOut.toByteArray());
-			} catch (IOException e) {
-				ModLoader.getLogger().severe("ElectroCraft: ERROR! Unable to save device state!");
-			}
-			connectionList.appendTag(connectionData);
-		}
-		nbttagcompound.setTag("connections", connectionList);
+//		NBTTagList connectionList = new NBTTagList("connections");
+//		for (Entry<Integer, ObjectTriplet<Integer, Integer, Integer>> entry : connectedDevices.entrySet()) {
+//			NBTTagCompound connectionData = new NBTTagCompound("computerData");
+//			connectionData.setInteger("x", entry.getValue().getValue1());
+//			connectionData.setInteger("y", entry.getValue().getValue2());
+//			connectionData.setInteger("z", entry.getValue().getValue3());
+//			connectionData.setInteger("orientation", entry.getKey());
+//			ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+//			try {
+//				this.saveState(new DataOutputStream(bytesOut));
+//				connectionData.setByteArray("deviceState", bytesOut.toByteArray());
+//			} catch (IOException e) {
+//				ModLoader.getLogger().severe("ElectroCraft: ERROR! Unable to save device state!");
+//			}
+//			connectionList.appendTag(connectionData);
+//		}
+//		nbttagcompound.setTag("connections", connectionList);
 		if (network != null) {
 			network.writeToNBT(nbttagcompound);
 		}
@@ -62,37 +64,23 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 		super.readFromNBT(nbttagcompound);
 		controlAddress = nbttagcompound.getInteger("controlAddress");
 		dataAddress = nbttagcompound.getInteger("dataAddress");
-		NBTTagList connections = nbttagcompound.getTagList("connections");
-		for (int i = 0; i < connections.tagCount(); i++) {
-			if (connections.tagAt(i) instanceof NBTTagCompound) {
-				NBTTagCompound connectionData = (NBTTagCompound) connections.tagAt(i);
-				int x = connectionData.getInteger("x");
-				int y = connectionData.getInteger("y");
-				int z = connectionData.getInteger("z");
-				int orientation = connectionData.getInteger("orientation");
-				try {
-					this.loadState(new DataInputStream(new ByteArrayInputStream(connectionData.getByteArray("deviceState"))));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				connectedDevices.put(orientation, new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
-			} else {
-				// Corrupted data rebuild network
-				updateComputerNetwork();
-				update(this);
-				break;
-			}
-		}
-		
-		// Load the network
-		if (network == null) {
-			network = new ComputerNetwork();
-		}
-		network.readFromNBT(nbttagcompound);
-		if (network.devices == null || network.devices.size() <= 0) {
-			updateComputerNetwork();
-			update(this);
-		}
+//		NBTTagList connections = nbttagcompound.getTagList("connections");
+//		for (int i = 0; i < connections.tagCount(); i++) {
+//			if (connections.tagAt(i) instanceof NBTTagCompound) {
+//				NBTTagCompound connectionData = (NBTTagCompound) connections.tagAt(i);
+//				int x = connectionData.getInteger("x");
+//				int y = connectionData.getInteger("y");
+//				int z = connectionData.getInteger("z");
+//				int orientation = connectionData.getInteger("orientation");
+//				try {
+//					this.loadState(new DataInputStream(new ByteArrayInputStream(connectionData.getByteArray("deviceState"))));
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//				connectedDevices.put(orientation, new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
+//			}
+//		}
+		dirty = true;
 	}
 	
 	public void setNetworkProbedStatus(boolean status) {
@@ -109,6 +97,18 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 	
 	public void update(NetworkBlock block) {
 		super.update(block);
+		computeNetworkConnections();
+		updateComputerNetwork();
+		network.reRegisterAllDevices();
+	}
+	
+	@Override
+	public void updateEntity() {
+		super.updateEntity();
+		if (dirty) {
+			update(this);
+			dirty = false;
+		}
 	}
 	
 	public void updateComputerNetwork() {
@@ -117,6 +117,7 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 			network = new ComputerNetwork();
 		computeNetworkConnections();
 		network.updateProviderChain(this);
+		this.network = checkConnectedBlocksForComputerNetworks();
 	}
 	
 	public void setControlAddress(int controlAddress) {
@@ -146,15 +147,32 @@ public abstract class NetworkBlock extends IOPortCapableMinecraft {
 			NetworkBlock networkBlock = getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3());
 			if (networkBlock == null) {
 				connectedDevices.remove(block);
-				return null;
+				continue;
 			}
 			if (networkBlock.network != null) {
 				if (network != null) {
+					if (networkBlock.network == this.network) {
+						continue;
+					}
 					network.mergeNetwork(networkBlock.network);
 					networkBlock.network = network;
 					networkBlock.needsUpdate = true;
 				} else {
 					network = networkBlock.network;
+				}
+			} else {
+				hasBeenChecked = true;
+				networkBlock.checkConnectedBlocksForNetworks();
+				hasBeenChecked = false;
+				
+				if (networkBlock.network != null) {
+					if (network != null) {
+						network.mergeNetwork(networkBlock.network);
+						networkBlock.network = network;
+						networkBlock.needsUpdate = true;
+					} else {
+						network = networkBlock.network;
+					}
 				}
 			}
 		}
