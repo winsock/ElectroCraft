@@ -153,4 +153,15 @@ public final class DefaultVGACard extends VGACard {
         }
         return byteBuffer;
 	}
+	
+	public byte[] getBytes() {
+		byte[] data = new byte[rawImageData.length * 3];
+		for (int i = 0, j = 0; i < rawImageData.length; i++) {
+            int val = rawImageData[i];
+            data[j++] = (byte) (val >> 16);
+            data[j++] = (byte) (val >> 8);
+            data[j++] = (byte) (val);
+        }
+		return data;
+	}
 }

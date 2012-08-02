@@ -506,7 +506,11 @@ class IDEChannel extends AbstractHardwareComponent implements IOPortCapable {
                     case IDEState.WIN_FLUSH_CACHE:
                     case IDEState.WIN_FLUSH_CACHE_EXT:
                         if (currentDevice.drive != null) {
-                            LOGGING.log(Level.INFO, "Should flush {0}", currentDevice.drive);
+                            try {
+								currentDevice.drive.flush();
+							} catch (IOException e) {
+	                            LOGGING.log(Level.INFO, "Error Flusing: {0}", currentDevice.drive);
+							}
                         }
                         currentDevice.status = IDEState.READY_STAT;
                         currentDevice.setIRQ();

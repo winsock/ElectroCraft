@@ -26,6 +26,8 @@
 
 package info.cerios.electrocraft.core.jpc.support;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+
 /**
  * A <code>RawBlockDevice</code> instance representing a cdrom device.
  * Instances of this class will report cdrom-like geometries and behaviours.  In
@@ -140,4 +142,9 @@ public class CDROMBlockDevice extends RawBlockDevice
     {
         return "CDROM: " + super.toString();
     }
+
+	@Override
+	public void flush() {
+		FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft: Tried to flush a CD-ROM device!");
+	}
 }

@@ -71,6 +71,11 @@ public interface SeekableIODevice
     public long length();
 
     /**
+     * Flushes the data
+     */
+    public void flush() throws IOException;
+    
+    /**
      * Returns <code>true</code> if the device cannot be written to.
      * @return <code>true</code> if read-only
      */

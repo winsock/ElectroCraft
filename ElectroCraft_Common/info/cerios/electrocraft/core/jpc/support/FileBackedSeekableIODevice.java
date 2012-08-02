@@ -93,7 +93,6 @@ public class FileBackedSeekableIODevice implements SeekableIODevice
     public int write(byte[] data, int offset, int length) throws IOException
     {
         image.write(data, offset, length);
-        image.getFD().sync();
         return length;
     }
 
@@ -125,4 +124,9 @@ public class FileBackedSeekableIODevice implements SeekableIODevice
     {
         return fileName;
     }
+
+	@Override
+	public void flush() throws IOException {
+        image.getFD().sync();
+	}
 }

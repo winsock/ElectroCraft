@@ -26,6 +26,7 @@
 
 package info.cerios.electrocraft.core.jpc.support;
 
+import java.io.IOException;
 import java.util.logging.*;
 
 /**
@@ -133,4 +134,9 @@ public class HDBlockDevice extends RawBlockDevice
     {
         return "HD: " + super.toString();
     }
+
+	@Override
+	public void flush() throws IOException {
+		this.data.flush();
+	}
 }

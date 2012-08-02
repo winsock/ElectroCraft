@@ -30,6 +30,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+
 public class RemoteSeekableIODevice implements SeekableIODevice
 {
     public static final int DEFAULT_SECTOR_SIZE = 4*1024;
@@ -249,5 +251,10 @@ public class RemoteSeekableIODevice implements SeekableIODevice
             written += w;
         }
     }
+
+	@Override
+	public void flush() throws IOException {
+		FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft: Tried to flush a remote device!");
+	}
 }
 

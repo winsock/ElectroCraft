@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+
+import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.ModLoader;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
@@ -18,6 +21,7 @@ import info.cerios.electrocraft.core.computer.IComputerCallback;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.electricity.ElectricBlock;
 import info.cerios.electrocraft.core.electricity.ElectricityReceiver;
+import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 
 public class TileEntityComputer extends NetworkBlock implements ElectricityReceiver {
@@ -25,6 +29,7 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 	private IComputer computer;
 	private boolean hasRegistered = false;
 	private Set<ObjectTriplet<Integer, Integer, Integer>> ioPorts = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
+	private EntityPlayer activePlayer;
 	
 	public TileEntityComputer() {
 		this.controlAddress = 223;
@@ -57,6 +62,14 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 	
 	public IComputer getComputer() {
 		return computer;
+	}
+	
+	public void setActivePlayer(EntityPlayer player) {
+		this.activePlayer = player;
+	}
+	
+	public EntityPlayer getActivePlayer() {
+		return this.activePlayer;
 	}
 	
 	@Override
@@ -127,14 +140,13 @@ public class TileEntityComputer extends NetworkBlock implements ElectricityRecei
 	public void ioPortWriteByte(int address, int data) {
 		if (address == dataAddress) {
 			if (data == 1) {
-				// Close out of the computer monitor screen
-				// TODO Send close GUI packet
+				AbstractElectroCraftMod.getInstance().getSidedMethods().closeGui(activePlayer);
 			} else if (data == 2) {
 				AbstractElectroCraftMod.getInstance().getComputerHandler().stopComputer(computer);
 				reRegisterIOPorts();
 			} else if (data == 3) {
 				reRegisterIOPorts();
-				AbstractElectroCraftMod.getInstance().getComputerHandler().resetComputer(computer);
+				AbstractElectroCraftMod.getInstance().getComputerHandler().resetComputer(this);
 			}
 		}
 	}

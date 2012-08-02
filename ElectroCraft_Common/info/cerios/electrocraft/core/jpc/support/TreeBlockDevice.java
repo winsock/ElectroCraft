@@ -1509,5 +1509,9 @@ public class TreeBlockDevice implements BlockDevice
         System.arraycopy(unicodeName, offset + 22, entry, 28, 4);
 
         return entry;
-    }    
+    }
+
+	@Override
+	public void flush() throws IOException {
+	}    
 }

@@ -8,10 +8,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+
 import net.minecraft.src.ModLoader;
+import net.minecraft.src.Packet250CustomPayload;
 
 /**
  * A packet that contains uniform data that can be serialized
@@ -19,44 +23,50 @@ import net.minecraft.src.ModLoader;
  *
  * @param <T extends Serializable> The type of data
  */
-public class ElectroPacket<T extends Serializable> {
+public abstract class ElectroPacket {
 	
-	public Map<String, T> dataMap = new HashMap<String, T>();
-	
-	public byte[] getData() throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutput out = new ObjectOutputStream(bos);   
-		for (String key : dataMap.keySet()) {
-			out.writeChars(key);
-			out.writeObject(dataMap.get(key));
+	public enum Type {
+		SHIFT(ShiftPacket.class),
+		GUI(GuiPacket.class),
+		ADDRESS(NetworkAddressPacket.class),
+		INPUT(ComputerInputPacket.class);
+		
+		private Class<? extends ElectroPacket> packetClass; 
+		
+		private Type(Class<? extends ElectroPacket> packetClass) {
+			this.packetClass = packetClass;
 		}
-		out.close();
-		bos.close();
-		return bos.toByteArray();
+	};
+	
+	protected Type type;
+		
+	protected abstract byte[] getData() throws IOException;
+	
+	protected abstract void readData(byte[] data) throws IOException;
+	
+	public Packet250CustomPayload getMCPacket() throws IOException {
+		Packet250CustomPayload mcPacket = new Packet250CustomPayload();
+		mcPacket.channel = "electrocraft";
+		byte[] data = getData();
+		mcPacket.length = data.length;
+		mcPacket.data = data;
+		return mcPacket;
 	}
 	
-	public void readData(byte[] data) throws IOException, ClassNotFoundException {
-		ByteArrayInputStream bis = new ByteArrayInputStream(data);
-		ObjectInput in = new ObjectInputStream(bis);
-		String currentKey;
-		while((currentKey = in.readLine()) != null) {
-			Object object = in.readObject();
-			try {
-				dataMap.put(currentKey, (T)object);
-			} catch (ClassCastException e) {
-				ModLoader.getLogger().severe("ElectroCraft: Unable to read data from packet!");
-			}
-		}
+	public static ElectroPacket readMCPacket(Packet250CustomPayload packet) throws IOException {
+		ElectroPacket ecPacket = getAndCreatePacketFromId(packet.data[0]);
+		ecPacket.readData(packet.data);
+		return ecPacket;
 	}
 	
-	public T getType(String id, T defaultValue) {
-		if (defaultValue.getClass().isAssignableFrom(dataMap.get(id).getClass())) {
-			return (T)dataMap.get(id);
-		}
-		return defaultValue;
+	public Type getType() {
+		return type;
 	}
 	
-	public void addData(String id, T object) {
-		dataMap.put(id, object);
+	private static ElectroPacket getAndCreatePacketFromId(byte id) {
+		try {
+			return Type.values()[id].packetClass.newInstance();
+		} catch (Exception e) { FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to parse packet id!"); }
+		return null;
 	}
 }

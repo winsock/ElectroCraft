@@ -185,4 +185,9 @@ public class CachingSeekableIODevice implements SeekableIODevice
             return "caching:null";
         return "caching: " + parent.toString();
     }
+
+	@Override
+	public void flush() throws IOException {
+		parent.flush();
+	}
 }

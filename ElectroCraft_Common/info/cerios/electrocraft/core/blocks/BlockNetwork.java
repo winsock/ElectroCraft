@@ -41,7 +41,7 @@ public abstract class BlockNetwork extends ElectroBlock {
 		if (AbstractElectroCraftMod.getInstance().isShiftHeld()) {
 			if (par1World.getBlockId(par2, par3, par4) == this.blockID) {
 				if (par1World.getBlockTileEntity(par2, par3, par4) instanceof NetworkBlock) {
-					AbstractElectroCraftMod.getInstance().getComputerHandler().displayNetworkGuiScreen((NetworkBlock) par1World.getBlockTileEntity(par2, par3, par4));
+					AbstractElectroCraftMod.getInstance().getComputerHandler().displayNetworkGuiScreen((NetworkBlock) par1World.getBlockTileEntity(par2, par3, par4), par5EntityPlayer);
 					return true;
 				}
 			}

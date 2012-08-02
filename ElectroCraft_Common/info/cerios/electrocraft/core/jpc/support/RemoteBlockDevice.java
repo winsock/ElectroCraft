@@ -247,6 +247,11 @@ public class RemoteBlockDevice implements BlockDevice
         return null;
     }
 
+	@Override
+	public void flush() throws IOException {
+		out.flush();
+	}
+
 //     public static void main(String[] args) throws Exception
 //     {
 //         PipedOutputStream out1 = new PipedOutputStream();

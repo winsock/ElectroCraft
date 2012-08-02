@@ -83,6 +83,11 @@ public interface BlockDevice
     public boolean isInserted();
     
     /**
+     * Flushed the underlying block device to its store
+     */
+    public void flush() throws IOException;
+    
+    /**
      * Returns <code>true</code> if this device is 'locked'.  For a CD-ROM
      * device, locked means that a call to <code>eject</code> will fail to eject
      * the device.

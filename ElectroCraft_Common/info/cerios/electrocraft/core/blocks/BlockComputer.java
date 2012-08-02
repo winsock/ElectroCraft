@@ -36,11 +36,12 @@ public class BlockComputer extends BlockNetwork implements IComputerCallback {
 		
 		if (par1World.getBlockTileEntity(par2, par3, par4) instanceof TileEntityComputer) {
 			TileEntityComputer computerTileEntity = (TileEntityComputer)par1World.getBlockTileEntity(par2, par3, par4);
+			computerTileEntity.setActivePlayer(par5EntityPlayer);
 			if (computerTileEntity != null) {
 				if (computerTileEntity.getComputer() == null)
 					AbstractElectroCraftMod.getInstance().getComputerHandler().createAndStartCompuer(computerTileEntity, this);
 				else
-					this.onTaskComplete(computerTileEntity.getComputer());
+					this.onTaskComplete(computerTileEntity);
 		        return true;
 			}
 		}
@@ -48,13 +49,14 @@ public class BlockComputer extends BlockNetwork implements IComputerCallback {
     }
 
 	@Override
-	public void onTaskComplete(Object object) {
-		if (object instanceof IComputer) {
-			if (!AbstractElectroCraftMod.getInstance().getComputerHandler().isComputerRunning((IComputer) object)) {
-				AbstractElectroCraftMod.getInstance().getComputerHandler().startComputer((IComputer) object, this);
+	public void onTaskComplete(Object... objects) {
+		if (objects[0] instanceof TileEntityComputer) {
+			TileEntityComputer tileComputer = (TileEntityComputer) objects[0];
+			if (!AbstractElectroCraftMod.getInstance().getComputerHandler().isComputerRunning(tileComputer.getComputer())) {
+				AbstractElectroCraftMod.getInstance().getComputerHandler().startComputer(tileComputer, this);
 			}
 			
-			AbstractElectroCraftMod.getInstance().getComputerHandler().displayComputerGUI((IComputer)object);
+			AbstractElectroCraftMod.getInstance().getComputerHandler().displayComputerGUI(tileComputer, tileComputer.getActivePlayer());
 		}
 	}
 }

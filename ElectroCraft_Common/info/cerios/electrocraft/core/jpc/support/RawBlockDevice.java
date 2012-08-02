@@ -37,7 +37,7 @@ public abstract class RawBlockDevice implements BlockDevice
 {
     private static final Logger LOGGING = Logger.getLogger(RawBlockDevice.class.getName());
     
-    private SeekableIODevice data;
+    protected SeekableIODevice data;
     private long totalSectors;
 
     /**

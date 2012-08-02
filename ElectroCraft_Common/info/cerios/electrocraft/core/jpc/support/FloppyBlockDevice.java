@@ -26,6 +26,8 @@
 
 package info.cerios.electrocraft.core.jpc.support;
 
+import java.io.IOException;
+
 /**
  * A <code>RawBlockDevice</code> subclass for floppy disk drives.
  * @author Chris Dennis
@@ -82,4 +84,9 @@ public class FloppyBlockDevice extends RawBlockDevice
     {
         return "Floppy: " + super.toString();
     }
+
+	@Override
+	public void flush() throws IOException {
+		this.data.flush();
+	}
 }

@@ -214,4 +214,8 @@ public class ArrayBackedSeekableIODevice implements SeekableIODevice
     {
         return resource;
     }
+
+	@Override
+	public void flush() throws IOException {
+	}
 }
