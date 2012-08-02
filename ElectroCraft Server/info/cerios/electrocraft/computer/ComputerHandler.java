@@ -36,14 +36,16 @@ import info.cerios.electrocraft.core.jpc.support.DriveSet.BootType;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
+import info.cerios.electrocraft.core.utils.ObjectTriplet;
 import info.cerios.electrocraft.core.utils.Utils;
 
 public class ComputerHandler implements IComputerHandler {
 	private Map<IComputer, ObjectPair<Thread, ComputerThread>> computers = new HashMap<IComputer, ObjectPair<Thread, ComputerThread>>();
+    private Map<ObjectTriplet<Integer, Integer, Integer>, IComputer> tileEntitycomputerMap = new HashMap<ObjectTriplet<Integer, Integer, Integer>, IComputer>();
 	private Map<ObjectPair<IComputerRunnable, IComputerCallback>, ComputerThread> computerTasks = new HashMap<ObjectPair<IComputerRunnable, IComputerCallback>, ComputerThread>();
 	private Map<IComputerRunnable, IComputerCallback> waitingTasks = new HashMap<IComputerRunnable, IComputerCallback>();
 
-	public void createAndStartCompuer(TileEntityComputer computerBlock, IComputerCallback finishedCallback) {
+	public void createAndStartComputer(TileEntityComputer computerBlock, IComputerCallback finishedCallback) {
 		registerRunnableOnMainThread(new IComputerRunnable() {
 
 			TileEntityComputer computerBlock;
@@ -64,18 +66,20 @@ public class ComputerHandler implements IComputerHandler {
 						electroCraftFolder.mkdirs();
 					
 					File sharedPCFolder = new File(electroCraftFolder.getAbsolutePath() + File.separator + "sharedfolder");
-					File computerHddFile = new File(sharedPCFolder.getAbsolutePath() + File.separator + "computer" + String.valueOf(computerBlock.xCoord) + String.valueOf(computerBlock.yCoord) + String.valueOf(computerBlock.zCoord) + ".img");
+					if (!sharedPCFolder.exists())
+						sharedPCFolder.mkdirs();
+					
+					File computerHddFile = new File(electroCraftFolder.getAbsolutePath() + File.separator + "computer" + String.valueOf(computerBlock.xCoord) + String.valueOf(computerBlock.yCoord) + String.valueOf(computerBlock.zCoord) + ".img");
 					if (!computerHddFile.exists())
 						Utils.copyResource("info/cerios/electrocraft/core/jpc/resources/images/blankhdd", computerHddFile);
 					
 					HDBlockDevice computerHdd = new HDBlockDevice(new FileBackedSeekableIODevice(computerHddFile.getAbsolutePath()));
-					if (!sharedPCFolder.exists())
-						sharedPCFolder.mkdirs();
 					TreeBlockDevice hostFolder = new TreeBlockDevice(sharedPCFolder, false);
-					DriveSet drives = new DriveSet(BootType.FLOPPY, bootDrive, null, null, computerHdd, null, null);
+					
+					DriveSet drives = new DriveSet(BootType.FLOPPY, bootDrive, null, computerHdd, hostFolder, null, null);
 					
 					VirtualClock clock = new VirtualClock();
-					clock.setIPS(25000000); // Slow down the server computers
+					clock.setIPS(10000000); // Slow down the server computers
 					pc = (IComputer) new PC(clock, drives);
 					computerBlock.setComputer(pc);
 					pc.reset();
@@ -86,12 +90,18 @@ public class ComputerHandler implements IComputerHandler {
 					pc.start();
 					computerThread.start();
 					computers.put(pc, new ObjectPair<Thread, ComputerThread>(computerThread, computerThreadObject));
+                    tileEntitycomputerMap.put(new ObjectTriplet<Integer, Integer, Integer>(computerBlock.xCoord, computerBlock.yCoord, computerBlock.zCoord), pc);
 				} catch (IOException e) {
 					ModLoader.getLogger().severe("ElectroCraft: Unable to start JPC Emulator!");
 				}
 				return computerBlock;
 			}}.init(computerBlock), finishedCallback);
 	}
+    
+    public IComputer getComputer(TileEntityComputer computer) {
+        ObjectTriplet<Integer, Integer, Integer> location = new ObjectTriplet<Integer, Integer, Integer>(computer.xCoord, computer.yCoord, computer.zCoord);
+        return tileEntitycomputerMap.get(location);
+    }
 
 	public void registerIOPortToAllComputers(NetworkBlock ioPort) {
 		for (IComputer computer : computers.keySet()) {

@@ -84,7 +84,7 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 				computerClient = new ComputerClient(1337, (SocketAddress)ModLoader.getPrivateValue(NetworkManager.class, (NetworkManager)ModLoader.getPrivateValue(NetClientHandler.class, handler, "netManager"), "remoteSocketAddress"));
 				new Thread(computerClient).start();
 			} catch(RuntimeException e) {
-				computerClient = new ComputerClient(1337, (SocketAddress)ModLoader.getPrivateValue(NetworkManager.class, (NetworkManager)ModLoader.getPrivateValue(NetClientHandler.class, handler, "field_1063_a"), "field_12032_f"));
+				computerClient = new ComputerClient(1337, (SocketAddress)ModLoader.getPrivateValue(NetworkManager.class, (NetworkManager)ModLoader.getPrivateValue(NetClientHandler.class, handler, "g"), "i"));
 				new Thread(computerClient).start();
 			}
 		} catch (UnknownHostException e) {

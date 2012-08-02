@@ -64,7 +64,7 @@ public class ComputerServer implements Runnable {
 				try {
 					players = (ArrayList) ModLoader.getPrivateValue(NetworkListenThread.class, FMLServerHandler.instance().getServer().networkServer, "playerList");
 				} catch(RuntimeException e) {
-					players = (ArrayList) ModLoader.getPrivateValue(NetworkListenThread.class, FMLServerHandler.instance().getServer().networkServer, "field_975_h");
+					players = (ArrayList) ModLoader.getPrivateValue(NetworkListenThread.class, FMLServerHandler.instance().getServer().networkServer, "h");
 				}
 				for (int i = 0; i < players.size(); i++) {
 					NetServerHandler player = (NetServerHandler) players.get(i);
