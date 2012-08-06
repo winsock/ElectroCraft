@@ -1,7 +1,6 @@
 package info.cerios.electrocraft.computer;
 
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.DefaultVGACard;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 

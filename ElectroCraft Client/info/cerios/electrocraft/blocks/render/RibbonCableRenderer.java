@@ -4,7 +4,6 @@ import org.lwjgl.opengl.GL11;
 
 import info.cerios.electrocraft.core.blocks.IBlockRenderer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
-import info.cerios.electrocraft.core.electricity.ElectricBlock;
 import net.minecraft.src.Block;
 import net.minecraft.src.ModLoader;
 import net.minecraft.src.RenderBlocks;

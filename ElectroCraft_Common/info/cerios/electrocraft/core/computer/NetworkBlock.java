@@ -1,8 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
-import info.cerios.electrocraft.core.electricity.ElectricBlock;
-import info.cerios.electrocraft.core.jpc.emulator.HardwareComponent;
-import info.cerios.electrocraft.core.jpc.emulator.motherboard.IOPortCapable;
+import info.cerios.electrocraft.core.blocks.tileentities.ElectroTileEntity;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 import info.cerios.electrocraft.core.utils.Orientations;
 
@@ -22,7 +20,7 @@ import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
 import net.minecraft.src.World;
 
-public abstract class NetworkBlock extends ElectricBlock implements IOPortCapable, HardwareComponent {
+public abstract class NetworkBlock extends ElectroTileEntity {
 	
 	protected boolean hasBeenNetworkProbed = false;
 	protected Map<Integer, ObjectTriplet<Integer, Integer, Integer>> connectedDevices = new HashMap<Integer, ObjectTriplet<Integer, Integer, Integer>>();
@@ -94,10 +92,8 @@ public abstract class NetworkBlock extends ElectricBlock implements IOPortCapabl
 	}
 	
 	public void update(NetworkBlock block) {
-		super.update(block);
 		computeNetworkConnections();
 		updateComputerNetwork();
-		network.reRegisterAllDevices();
 	}
 	
 	@Override
@@ -120,12 +116,10 @@ public abstract class NetworkBlock extends ElectricBlock implements IOPortCapabl
 	
 	public void setControlAddress(int controlAddress) {
 		this.controlAddress = controlAddress;
-		this.network.registerIOPort(this);
 	}
 	
 	public void setDataAddress(int dataAddress) {
 		this.dataAddress = dataAddress;
-		this.network.registerIOPort(this);
 	}
 	
 	public int getControlAddress() {
@@ -157,20 +151,20 @@ public abstract class NetworkBlock extends ElectricBlock implements IOPortCapabl
 					}
 					network.mergeNetwork(networkBlock.network);
 					networkBlock.network = network;
-					networkBlock.needsUpdate = true;
+					networkBlock.dirty = true;
 				} else {
 					network = networkBlock.network;
 				}
 			} else {
 				hasBeenChecked = true;
-				networkBlock.checkConnectedBlocksForNetworks();
+				networkBlock.checkConnectedBlocksForComputerNetworks();
 				hasBeenChecked = false;
 				
 				if (networkBlock.network != null) {
 					if (network != null) {
 						network.mergeNetwork(networkBlock.network);
 						networkBlock.network = network;
-						networkBlock.needsUpdate = true;
+						networkBlock.dirty = true;
 					} else {
 						network = networkBlock.network;
 					}
@@ -215,23 +209,5 @@ public abstract class NetworkBlock extends ElectricBlock implements IOPortCapabl
 
 	public ComputerNetwork getComputerNetwork() {
 		return network;
-	}
-	
-	@Override
-	public int[] ioPortsRequested() {
-		return new int[] {controlAddress, dataAddress};
-	}
-	
-	@Override
-	public void acceptComponent(HardwareComponent component) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-
-	@Override
-	public void updateComponent(HardwareComponent component) {
-		// TODO Auto-generated method stub
-		
 	}
 }

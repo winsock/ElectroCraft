@@ -16,9 +16,9 @@ import cpw.mods.fml.common.FMLCommonHandler;
 
 import info.cerios.electrocraft.mod_ElectroCraft;
 import info.cerios.electrocraft.core.AbstractElectroCraftMod;
-import info.cerios.electrocraft.core.computer.IComputer;
 import info.cerios.electrocraft.core.computer.IComputerCallback;
-import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.DefaultVGACard;
+import info.cerios.electrocraft.core.computer.XECInterface;
+import info.cerios.electrocraft.core.computer.XECVGACard;
 import info.cerios.electrocraft.core.network.ComputerInputPacket;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
 import info.cerios.electrocraft.core.utils.Utils;
@@ -32,40 +32,41 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
 	public static final int CLOSE_BUTTON = 0;
 
-	private IComputer computer;
-	private volatile DefaultVGACard vgaCard;
+	private XECInterface computer;
+	private XECVGACard videoCard;
 	private int displayTextureId;
-	private info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard keyboard;
 	private boolean repeatEventsOldState = Keyboard.areRepeatEventsEnabled();
 	private volatile boolean isVisible = true;
 	private boolean isSmpComputerScreen = false;
 	private int lastWidth, lastHeight;
 	private int ticksSinceLastScreenRequest = 0;
-
-	public GuiComputerScreen(IComputer object) {
+	private ByteBuffer displayBuffer;
+	
+	public GuiComputerScreen(XECInterface object) {
 		this.computer = object;
-		this.vgaCard = (DefaultVGACard)object.getComponent(DefaultVGACard.class);
-		this.keyboard = (info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard) object.getComponent(info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard.class);
+		this.videoCard = computer.getVideoCard();
 		Keyboard.enableRepeatEvents(true);
 	}
 
 	public GuiComputerScreen() {
 		isSmpComputerScreen = true;
-		mod_ElectroCraft.instance.getComputerClient().registerCallback(ComputerProtocol.DISPLAY, this);
 		Keyboard.enableRepeatEvents(true);
 	}
 
 	public void initGui() {
 		controlList.add(new GuiButton(CLOSE_BUTTON, width - 5 - 4 - 17, 5 + 4, 17, 17, "X"));
-
+		
 		if (!isSmpComputerScreen) {
 			// OpenGL Stuff
 			if (GL11.glIsTexture(displayTextureId))
 				GL11.glDeleteTextures(displayTextureId);
 
+			displayBuffer = ByteBuffer.allocateDirect(videoCard.getScreenWidth() * videoCard.getScreenHeight() * 3);
+			displayBuffer.put(videoCard.getScreenData());
+			displayBuffer.rewind();
 			displayTextureId = GL11.glGenTextures();
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, vgaCard.getDisplaySize().width, vgaCard.getDisplaySize().height, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, vgaCard.getByteBuffer());
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, videoCard.getScreenWidth(), videoCard.getScreenHeight(), 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
 			GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR); 
 			GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
@@ -74,9 +75,6 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
 	@Override
 	public void drawScreen(int par1, int par2, float par3) {
-		if ((!AbstractElectroCraftMod.getInstance().getComputerHandler().isComputerRunning(computer)) && !isSmpComputerScreen)
-			return;
-
 		Tessellator tess = Tessellator.instance;
 
 		// Draw the background
@@ -115,23 +113,14 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 	@Override
 	public void updateScreen() {
 		if (!isSmpComputerScreen){
-			if (!AbstractElectroCraftMod.getInstance().getComputerHandler().isComputerRunning(computer)) {
-				mc.displayGuiScreen(null);
-				return;
-			}
-			vgaCard.prepareUpdate();
-			vgaCard.updateDisplay();
-
+			displayBuffer.clear();
+			displayBuffer.put(videoCard.getScreenData());
+			displayBuffer.rewind();
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, vgaCard.getDisplaySize().width, vgaCard.getDisplaySize().height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, vgaCard.getByteBuffer());
+			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, videoCard.getScreenWidth(), videoCard.getScreenHeight(), GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 		} else {
 			if (ticksSinceLastScreenRequest >= 1) {
-				try {
-					mod_ElectroCraft.instance.getComputerClient().sendPacket(ComputerProtocol.DISPLAY);
-				} catch (IOException e) {
-					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft: Error sending update display packet!");
-				}
 				ticksSinceLastScreenRequest = 0;
 			} else {
 				ticksSinceLastScreenRequest++;
@@ -157,15 +146,9 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 			handleMouseInput();
 		}
 
-		if ((!isSmpComputerScreen) && keyboard.initialised()) {
-			keyboard.putMouseEvent(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel(), Mouse.getEventButton());
-
+		if ((!isSmpComputerScreen)) {
 			while (Keyboard.next()) {
-				if (Keyboard.getEventKeyState()) {
-					keyboard.keyPressed((byte)Keyboard.getEventKey());
-				} else {
-					keyboard.keyReleased((byte)Keyboard.getEventKey());
-				}
+
 			}
 		} else if (isSmpComputerScreen) {
 			while (Keyboard.next()) {

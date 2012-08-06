@@ -2,7 +2,6 @@ package info.cerios.electrocraft.core.blocks;
 
 import info.cerios.electrocraft.core.AbstractElectroCraftMod;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.computer.IComputer;
 import info.cerios.electrocraft.core.computer.IComputerCallback;
 import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import net.minecraft.src.EntityPlayer;
@@ -39,7 +38,7 @@ public class BlockComputer extends BlockNetwork implements IComputerCallback {
 			computerTileEntity.setActivePlayer(par5EntityPlayer);
 			if (computerTileEntity != null) {
 				if (computerTileEntity.getComputer() == null)
-					AbstractElectroCraftMod.getInstance().getComputerHandler().createAndStartCompuer(computerTileEntity, this);
+					AbstractElectroCraftMod.getInstance().getComputerHandler().createAndStartComputer(computerTileEntity, this);
 				else
 					this.onTaskComplete(computerTileEntity);
 		        return true;

@@ -66,36 +66,6 @@ public class ComputerNetwork {
 		}
 		return tempSet;
 	}
-	
-	public void registerIOPort(NetworkBlock ioPort) {
-		for (ObjectTriplet<Integer, Integer, Integer> computer : devices) {
-			TileEntityComputer computerTileEntity = getTileEntityComputerFromLocation(computer.getValue1(), computer.getValue2(), computer.getValue3());
-			if (computerTileEntity == null)
-				continue;
-			computerTileEntity.registerIOPort(ioPort);
-		}
-	}
-	
-	public void removeIOPort(NetworkBlock ioPort) {
-		for (ObjectTriplet<Integer, Integer, Integer> computer : devices) {
-			TileEntityComputer computerTileEntity = getTileEntityComputerFromLocation(computer.getValue1(), computer.getValue2(), computer.getValue3());
-			if (computerTileEntity == null)
-				continue;
-			computerTileEntity.removeIOPort(ioPort);
-		}
-	}
-	
-	public void reRegisterAllDevices() {
-		Set<TileEntityComputer> computers = getComputers();
-		for (TileEntityComputer computer : computers) {
-			for (ObjectTriplet<Integer, Integer, Integer> device : devices) {
-				NetworkBlock deviceBlock = getNetworkBlockFromLocation(device.getValue1(), device.getValue2(), device.getValue3());
-				if (deviceBlock == null)
-					continue;
-				computer.registerIOPort(deviceBlock);
-			}
-		}
-	}
 
 	public TileEntityComputer getTileEntityComputerFromLocation(int x, int y, int z) {
 		if (AbstractElectroCraftMod.getInstance().getSidedMethods().getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {

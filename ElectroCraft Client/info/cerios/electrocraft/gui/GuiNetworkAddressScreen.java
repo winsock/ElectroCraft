@@ -3,7 +3,6 @@ package info.cerios.electrocraft.gui;
 import java.io.IOException;
 
 import info.cerios.electrocraft.core.computer.NetworkBlock;
-import info.cerios.electrocraft.core.jpc.emulator.motherboard.IOPortHandler;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 
 import org.lwjgl.opengl.GL11;
@@ -34,16 +33,16 @@ public class GuiNetworkAddressScreen extends GuiScreen {
 	
 	@Override
 	public void initGui() {
-		controlLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 30, 50, 15);
-		if (!isSmp)
-			controlLineTextField.setText(Integer.toString(device.ioPortsRequested()[0]));
-		else
-			controlLineTextField.setText(Integer.toString(packetInProgress.getControlAddress()));
-		dataLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 60, 50, 15);
-		if (!isSmp)
-			dataLineTextField.setText(Integer.toString(device.ioPortsRequested()[1]));
-		else
-			dataLineTextField.setText(Integer.toString(packetInProgress.getDataAddress()));
+//		controlLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 30, 50, 15);
+//		if (!isSmp)
+//			controlLineTextField.setText(Integer.toString(device.ioPortsRequested()[0]));
+//		else
+//			controlLineTextField.setText(Integer.toString(packetInProgress.getControlAddress()));
+//		dataLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 60, 50, 15);
+//		if (!isSmp)
+//			dataLineTextField.setText(Integer.toString(device.ioPortsRequested()[1]));
+//		else
+//			dataLineTextField.setText(Integer.toString(packetInProgress.getDataAddress()));
 	}
 	
 	@Override
@@ -74,19 +73,15 @@ public class GuiNetworkAddressScreen extends GuiScreen {
 		try {
 			int controlAddress = Integer.parseInt(controlLineTextField.getText());
 			int dataAddress = Integer.parseInt(dataLineTextField.getText());
-			if (controlAddress > 223 && controlAddress < IOPortHandler.MAX_IOPORTS) {
-				if (!isSmp) {
-					device.setControlAddress(controlAddress);
-				} else {
-					packetInProgress.setControlAddress(controlAddress);
-				}
+			if (!isSmp) {
+				device.setControlAddress(controlAddress);
+			} else {
+				packetInProgress.setControlAddress(controlAddress);
 			}
-			if (dataAddress > 223 && dataAddress < IOPortHandler.MAX_IOPORTS) {
-				if (!isSmp) {
-					device.setDataAddress(dataAddress);
-				} else {
-					packetInProgress.setDataAddress(dataAddress);
-				}
+			if (!isSmp) {
+				device.setDataAddress(dataAddress);
+			} else {
+				packetInProgress.setDataAddress(dataAddress);
 			}
 			if (isSmp) {
 				try {

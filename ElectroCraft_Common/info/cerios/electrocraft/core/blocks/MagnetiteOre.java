@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core.blocks;
 
-import info.cerios.electrocraft.items.ElectroItems;
+import info.cerios.electrocraft.core.items.ElectroItems;
 
 import java.util.Random;
 

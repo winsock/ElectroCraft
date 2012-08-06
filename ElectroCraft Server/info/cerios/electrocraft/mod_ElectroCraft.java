@@ -10,7 +10,6 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.server.FMLServerHandler;
 
 import info.cerios.electrocraft.computer.ComputerHandler;
-import info.cerios.electrocraft.computer.ComputerServer;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.IElectroCraftMod;
 import info.cerios.electrocraft.core.IMinecraftMethods;
@@ -18,14 +17,16 @@ import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.IComputerHandler;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
-import info.cerios.electrocraft.core.jpc.emulator.peripheral.Keyboard;
+import info.cerios.electrocraft.core.computer.XECInterface;
+import info.cerios.electrocraft.core.computer.XECInterface.AssembledData;
+import info.cerios.electrocraft.core.items.ElectroItems;
+import info.cerios.electrocraft.core.items.ItemHandler;
 import info.cerios.electrocraft.core.network.ComputerInputPacket;
 import info.cerios.electrocraft.core.network.ElectroPacket;
 import info.cerios.electrocraft.core.network.ElectroPacket.Type;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
+import info.cerios.electrocraft.core.network.ServerPortPacket;
 import info.cerios.electrocraft.core.network.ShiftPacket;
-import info.cerios.electrocraft.items.ElectroItems;
-import info.cerios.electrocraft.items.ItemHandler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.src.BaseMod;
 import net.minecraft.src.Block;
@@ -51,8 +52,8 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 	private ComputerHandler computerHandler;
 	private IMinecraftMethods minecraftMethods;
 	private boolean shiftStatus = false;
-	private ComputerServer computerServer;
-	
+	private XECInterface xECComputer;
+
 	public mod_ElectroCraft() {
 		instance = this;
 	}
@@ -106,16 +107,33 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 		// Register packer channel
 		ModLoader.registerPacketChannel(this, "electrocraft");
 		
+		// Create our xEC computer
+		xECComputer = new XECInterface();
+		xECComputer.createCPU();
+		String testAssembly = "; A Simple program that changes the display buffer randomly\n" +
+				".code\n" +
+				"rand:\n" +
+				"mov eax, 0 ; move the lower limit of the random function to eax\n" +
+				"randi eax, 2000000 ; call the random function with the range of 0-255 and store the result in eax\n" +
+				"mov ecx, [0x8000] ; Get the value at 0x8000(The start of the VGA IO Memory) The value there is the size of the display buffer\n" +
+				"add ecx, 0x8004 ; Add the lower limit of the diplay buffer\n" +
+				"mov ebx, 0x8004 ; move the lower limit of the display buffer\n" +
+				"randi ebx, ecx ; get a random address between 0x8004 and the value of the size of the display buffer\n" +
+				"mov [ebx], eax ; set the pixel at the random address\n" +
+				"call sleep ; Sleep the program to prevent eating up CPU cycles\n" +
+				"jmp rand ; And jump back to the begining and repeat\n" +
+				"sleep:\n" +
+				"mov cx, 100 ; Loop 100 times\n" +
+				"sleeploop:\n"+
+				"nop ; No instruction\n" +
+				"loop sleeploop ; Loop while cx > 0\n" +
+				"ret ; return to the caller\n";
+		AssembledData data = xECComputer.assemble(testAssembly);
+		long baseAddress = xECComputer.loadIntoMemory(data.data, data.length);
+		xECComputer.start(baseAddress);
+
 		// Create the computer handler
 		this.computerHandler = new ComputerHandler();
-		
-		// Start the computer server
-		try {
-			this.computerServer = new ComputerServer(1337);
-			new Thread(computerServer).start();
-		} catch (IOException e) {
-			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to start computer server on port: 1337!");
-		}
 	}
 	
 	@Override
@@ -166,13 +184,7 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 				}
 			} else if (packet.getType() == Type.INPUT) {
 				ComputerInputPacket inputPacket = (ComputerInputPacket)packet;
-				Keyboard keyboard = (Keyboard)computerServer.getClient((EntityPlayerMP) source).getComputer().getComputer().getComponent(Keyboard.class);
-				keyboard.putMouseEvent(inputPacket.getDeltaX(), inputPacket.getDeltaY(), inputPacket.getWheelDelta(), inputPacket.getEventMouseButton());
-				if (inputPacket.wasKeyDown()) {
-					keyboard.keyPressed((byte) inputPacket.getEventKey());
-				} else {
-					keyboard.keyReleased((byte) inputPacket.getEventKey());
-				}
+				
 			}
 		} catch (IOException e) {
 			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to parse packet send on our channel!");
@@ -184,10 +196,10 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 		return computerHandler;
 	}
 	
-	public ComputerServer getServer() {
-		return computerServer;
+	public XECInterface getComputer() {
+		return xECComputer;
 	}
-
+	
 	@Override
 	public boolean isShiftHeld() {
 		return shiftStatus;
@@ -196,6 +208,12 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 	@Override
     public void onClientLogin(EntityPlayer player) {
 		FMLCommonHandler.instance().activateChannel(player, "electrocraft");
+		ServerPortPacket portPacket = new ServerPortPacket();
+		try {
+			((EntityPlayerMP)player).playerNetServerHandler.sendPacket(portPacket.getMCPacket());
+		} catch (IOException e) {
+			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send computer servers port!");
+		}
 	}
 
 	@Override

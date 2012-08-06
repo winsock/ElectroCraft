@@ -2,11 +2,8 @@ package info.cerios.electrocraft.core.blocks;
 
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityElectroWire;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRedstoneAdapter;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityStaticGenerator;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityWire;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -25,27 +22,11 @@ public enum ElectroBlocks {
 			new CopperOre(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("copperOre", 3974).getInt(3974)).setBlockName("copperOre"),
 			null, null,
 			3),
-	WIRE(false,
-			"wire", "Wire",
-			new Wire(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("wire", 3975).getInt(3975)).setBlockName("wire"),
-			info.cerios.electrocraft.core.items.Wire.class, TileEntityWire.class,
-			// 4 Different Blocks with texture id's as follows
-			1, 2, 5, 13), // 1 = Tin, 2 = Copper, 3 = Gold, 4 = Redstone
 	MAGNETITE_ORE(true,
 			"magnetiteOre", "Magnetite Ore",
 			new MagnetiteOre(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("magnetiteOre", 3976).getInt(3976)).setBlockName("magnetiteOre"),
 			null, null,
 			4),
-	ELECTRO_WIRE(false,
-			"electroWire", "Electro Wire",
-			new ElectroWire(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("electroWire", 3977).getInt(3977)).setBlockName("electroWire"),
-			null, TileEntityElectroWire.class,
-			6, 7, 8, 9),
-	STATIC_GENERATOR(true,
-			"staticGenerator", "Static Generator",
-			new StaticGenerator(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("staticGenerator", 3978).getInt(3978)).setBlockName("staticGenerator"),
-			null, TileEntityStaticGenerator.class,
-			10),
 	COMPUTER(true,
 			"xcomputer", "Computer",
 			new BlockComputer(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("xcomputer", 3979).getInt(3979)).setBlockName("xcomputer"),

@@ -4,7 +4,6 @@ import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.blocks.IBlockRenderer;
 
 public enum BlockRenderers {
-	ELECTRO_WIRE(new ElectroWireRenderer(), ElectroBlocks.ELECTRO_WIRE),
 	RIBBON_CABLE(new RibbonCableRenderer(), ElectroBlocks.RIBBON_CABLE);
 	
 	private IBlockRenderer renderer;

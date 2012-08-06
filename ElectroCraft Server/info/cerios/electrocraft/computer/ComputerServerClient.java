@@ -1,7 +1,8 @@
 package info.cerios.electrocraft.computer;
 
+import info.cerios.electrocraft.mod_ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.jpc.emulator.pci.peripheral.DefaultVGACard;
+import info.cerios.electrocraft.core.computer.XECVGACard;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
 import info.cerios.electrocraft.core.utils.Utils;
 
@@ -61,16 +62,13 @@ public class ComputerServerClient implements Runnable {
 				int type = dis.readInt();
 				
 				switch(ComputerProtocol.values()[type]) {
-				case DISPLAY:
-					DefaultVGACard videoCard = (DefaultVGACard) computer.getComputer().getComponent(DefaultVGACard.class);
-					videoCard.prepareUpdate();
-					videoCard.updateDisplay();
-					
+				case DISPLAY:				
+					XECVGACard videoCard = mod_ElectroCraft.instance.getComputer().getVideoCard();
 					out.write(ComputerProtocol.DISPLAY.ordinal());
-					dos.writeInt(videoCard.getDisplaySize().width);
-					dos.writeInt(videoCard.getDisplaySize().height);
+					dos.writeInt(videoCard.getScreenWidth());
+					dos.writeInt(videoCard.getScreenHeight());
 					
-					byte[] vgadata = videoCard.getBytes();
+					byte[] vgadata = videoCard.getScreenData();
 
 					if (lastVGAData == null) {
 						lastVGAData = vgadata;

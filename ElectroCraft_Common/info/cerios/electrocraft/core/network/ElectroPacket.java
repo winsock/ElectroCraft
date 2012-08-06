@@ -29,7 +29,8 @@ public abstract class ElectroPacket {
 		SHIFT(ShiftPacket.class),
 		GUI(GuiPacket.class),
 		ADDRESS(NetworkAddressPacket.class),
-		INPUT(ComputerInputPacket.class);
+		INPUT(ComputerInputPacket.class),
+		PORT(ServerPortPacket.class);
 		
 		private Class<? extends ElectroPacket> packetClass; 
 		

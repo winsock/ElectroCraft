@@ -10,7 +10,6 @@ import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
 
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRedstoneAdapter;
-import info.cerios.electrocraft.core.electricity.ElectricBlock;
 
 public class BlockRedstoneAdapter extends BlockNetwork {
 	public BlockRedstoneAdapter(int id) {

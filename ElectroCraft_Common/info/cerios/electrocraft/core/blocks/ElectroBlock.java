@@ -1,7 +1,6 @@
 package info.cerios.electrocraft.core.blocks;
 
 import info.cerios.electrocraft.core.computer.NetworkBlock;
-import info.cerios.electrocraft.core.electricity.ElectricBlock;
 import net.minecraft.src.BlockContainer;
 import net.minecraft.src.Material;
 import net.minecraft.src.TileEntity;
@@ -16,22 +15,6 @@ public abstract class ElectroBlock extends BlockContainer implements ITexturePro
 	
 	protected ElectroBlock(int id, Material material) {
 		super(id, material);
-	}
-	
-	@Override
-	public void onBlockAdded(World world, int x, int y, int z) {
-        super.onBlockAdded(world, x, y, z);
-        if (world.getBlockTileEntity(x, y, z) instanceof ElectricBlock) {
-    		((ElectricBlock)world.getBlockTileEntity(x, y, z)).updateNetwork();
-        }
-	}
-	
-	@Override
-	public void onBlockRemoval(World world, int x, int y, int z) {
-        super.onBlockRemoval(world, x, y, z);
-        if (world.getBlockTileEntity(x, y, z) instanceof ElectricBlock) {
-    		((ElectricBlock)world.getBlockTileEntity(x, y, z)).updateNetwork();
-        }
 	}
 	
 	@Override

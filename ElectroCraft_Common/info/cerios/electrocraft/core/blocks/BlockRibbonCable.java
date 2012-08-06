@@ -15,7 +15,6 @@ import net.minecraft.src.World;
 import info.cerios.electrocraft.core.AbstractElectroCraftMod;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
-import info.cerios.electrocraft.core.electricity.ElectricBlock;
 
 public class BlockRibbonCable extends BlockNetwork {
 

@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core.blocks;
 
-import info.cerios.electrocraft.items.ItemHandler;
+import info.cerios.electrocraft.core.items.ItemHandler;
 import net.minecraft.src.ItemStack;
 import net.minecraft.src.ModLoader;
 import net.minecraft.src.forge.IOreHandler;

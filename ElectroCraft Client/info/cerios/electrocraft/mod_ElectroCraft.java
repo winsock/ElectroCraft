@@ -13,7 +13,6 @@ import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 
 import info.cerios.electrocraft.blocks.render.BlockRenderers;
-import info.cerios.electrocraft.computer.ComputerClient;
 import info.cerios.electrocraft.computer.ComputerHandler;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.IElectroCraftMod;
@@ -21,16 +20,19 @@ import info.cerios.electrocraft.core.IMinecraftMethods;
 import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.IComputerHandler;
+import info.cerios.electrocraft.core.computer.XECInterface;
+import info.cerios.electrocraft.core.computer.XECInterface.AssembledData;
+import info.cerios.electrocraft.core.items.ElectroItems;
+import info.cerios.electrocraft.core.items.ItemHandler;
 import info.cerios.electrocraft.core.network.ElectroPacket;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.ElectroPacket.Type;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
+import info.cerios.electrocraft.core.network.ServerPortPacket;
 import info.cerios.electrocraft.core.network.ShiftPacket;
 import info.cerios.electrocraft.gui.GuiComputerScreen;
 import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
-import info.cerios.electrocraft.items.ElectroItems;
-import info.cerios.electrocraft.items.ItemHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.src.BaseMod;
 import net.minecraft.src.Block;
@@ -60,7 +62,7 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 	private ComputerHandler computerHandler;
 	private IMinecraftMethods minecraftMethods;
 	private boolean lastShiftState = false;
-	private ComputerClient computerClient;
+	private XECInterface xECComputer;
 
 	public mod_ElectroCraft() {
 		instance = this;
@@ -76,23 +78,6 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 		return "ElectroCraft In-Dev 0.1";
 		
 	}
-	
-	@Override
-	public void serverConnect(NetClientHandler handler) {
-		try {
-			try {
-				computerClient = new ComputerClient(1337, (SocketAddress)ModLoader.getPrivateValue(NetworkManager.class, (NetworkManager)ModLoader.getPrivateValue(NetClientHandler.class, handler, "netManager"), "remoteSocketAddress"));
-				new Thread(computerClient).start();
-			} catch(RuntimeException e) {
-				computerClient = new ComputerClient(1337, (SocketAddress)ModLoader.getPrivateValue(NetworkManager.class, (NetworkManager)ModLoader.getPrivateValue(NetClientHandler.class, handler, "g"), "i"));
-				new Thread(computerClient).start();
-			}
-		} catch (UnknownHostException e) {
-			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft ComputerClient: Unable to find remote host!");
-		} catch (IOException e) {
-			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft ComputerClient: Unable to connect to remote host!");
-		}
-    }
 
 	@Override
 	public void load() {
@@ -126,6 +111,31 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 		
 		ModLoader.registerPacketChannel(this, "electrocraft");
 				
+		// Create our xEC computer
+		xECComputer = new XECInterface();
+		xECComputer.createCPU();
+		String testAssembly = "; A Simple program that changes the display buffer randomly\n" +
+						".code\n" +
+						"rand:\n" +
+						"mov eax, 0 ; move the lower limit of the random function to eax\n" +
+						"randi eax, 2000000 ; call the random function with the range of 0-255 and store the result in eax\n" +
+						"mov ecx, [0x8000] ; Get the value at 0x8000(The start of the VGA IO Memory) The value there is the size of the display buffer\n" +
+						"add ecx, 0x8004 ; Add the lower limit of the diplay buffer\n" +
+						"mov ebx, 0x8004 ; move the lower limit of the display buffer\n" +
+						"randi ebx, ecx ; get a random address between 0x8004 and the value of the size of the display buffer\n" +
+						"mov [ebx], eax ; set the pixel at the random address\n" +
+						"call sleep ; Sleep the program to prevent eating up CPU cycles\n" +
+						"jmp rand ; And jump back to the begining and repeat\n" +
+						"sleep:\n" +
+						"mov cx, 100 ; Loop 100 times\n" +
+						"sleeploop:\n"+
+						"nop ; No instruction\n" +
+						"loop sleeploop ; Loop while cx > 0\n" +
+						"ret ; return to the caller\n";
+		AssembledData data = xECComputer.assemble(testAssembly);
+		long baseAddress = xECComputer.loadIntoMemory(data.data, data.length);
+		xECComputer.start(baseAddress);
+		
 		// Create the computer handler
 		this.computerHandler = new ComputerHandler();
 	}
@@ -166,6 +176,8 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 			} else if (ecPacket.getType() == Type.ADDRESS) {
 				NetworkAddressPacket networkPacket = (NetworkAddressPacket)ecPacket;
 				FMLClientHandler.instance().getClient().displayGuiScreen(new GuiNetworkAddressScreen(networkPacket));
+			} else if (ecPacket.getType() == Type.PORT) {
+				ServerPortPacket portPacket = (ServerPortPacket)ecPacket;
 			}
 		} catch (IOException e) {
 			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to read packet sent on our channel!");
@@ -208,6 +220,10 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 		return computerHandler;
 	}
 	
+	public XECInterface getComputer() {
+		return xECComputer;
+	}
+	
 	@Override
 	public boolean isShiftHeld() {
 		return Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
@@ -216,9 +232,5 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 	@Override
 	public IMinecraftMethods getSidedMethods() {
 		return minecraftMethods;
-	}
-	
-	public ComputerClient getComputerClient() {
-		return computerClient;
 	}
 }
