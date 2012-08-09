@@ -10,6 +10,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.server.FMLServerHandler;
 
 import info.cerios.electrocraft.computer.ComputerHandler;
+import info.cerios.electrocraft.computer.ComputerServer;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.IElectroCraftMod;
 import info.cerios.electrocraft.core.IMinecraftMethods;
@@ -53,6 +54,7 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 	private IMinecraftMethods minecraftMethods;
 	private boolean shiftStatus = false;
 	private XECInterface xECComputer;
+	private ComputerServer server;
 
 	public mod_ElectroCraft() {
 		instance = this;
@@ -75,7 +77,7 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 	
 	@Override
 	public String getVersion() {
-		return "ElectroCraft In-Dev 0.1";
+		return "ElectroCraft In-Dev 0.2";
 	}
 
 	@Override
@@ -114,24 +116,32 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
 				".code\n" +
 				"rand:\n" +
 				"mov eax, 0 ; move the lower limit of the random function to eax\n" +
-				"randi eax, 2000000 ; call the random function with the range of 0-255 and store the result in eax\n" +
-				"mov ecx, [0x8000] ; Get the value at 0x8000(The start of the VGA IO Memory) The value there is the size of the display buffer\n" +
-				"add ecx, 0x8004 ; Add the lower limit of the diplay buffer\n" +
-				"mov ebx, 0x8004 ; move the lower limit of the display buffer\n" +
-				"randi ebx, ecx ; get a random address between 0x8004 and the value of the size of the display buffer\n" +
-				"mov [ebx], eax ; set the pixel at the random address\n" +
-				"call sleep ; Sleep the program to prevent eating up CPU cycles\n" +
-				"jmp rand ; And jump back to the begining and repeat\n" +
-				"sleep:\n" +
-				"mov cx, 100 ; Loop 100 times\n" +
-				"sleeploop:\n"+
-				"nop ; No instruction\n" +
-				"loop sleeploop ; Loop while cx > 0\n" +
-				"ret ; return to the caller\n";
+				"randi eax, 16 ; call the random function with the range of 0-255 and store the result in eax\n" +
+		        "mov ecx, [0x8000] ; Get the value at 0x8000 The value there is the size of the display buffer\n" +
+		        "mov edx, [0x8004] ; Get the display buffer address\n" +
+		        "add ecx, edx ; Add the lower limit of the diplay buffer\n" +
+		        "randi edx, ecx ; get a random address between 0x8004 and the value of the size of the display buffer\n" +
+		        "mov [edx], eax ; set the pixel at the random address\n" +
+		        "call sleep ; Sleep the program to prevent eating up CPU cycles\n" +
+		        "jmp rand ; And jump back to the begining and repeat\n" +
+		        "sleep:\n" +
+		        "mov cx, 100 ; Loop 100 times\n" +
+		        "sleeploop:\n"+
+		        "nop ; No instruction\n" +
+		        "loop sleeploop ; Loop while cx > 0\n" +
+		        "ret ; return to the caller\n";
+
 		AssembledData data = xECComputer.assemble(testAssembly);
-		long baseAddress = xECComputer.loadIntoMemory(data.data, data.length);
+		long baseAddress = xECComputer.loadIntoMemory(data.data, data.length, data.codeStart);
 		xECComputer.start(baseAddress);
 
+		try {
+			server = new ComputerServer(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("serverport", "general", 1337).getInt(1337));
+			new Thread(server).start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		// Create the computer handler
 		this.computerHandler = new ComputerHandler();
 	}
@@ -209,6 +219,7 @@ public class mod_ElectroCraft extends NetworkMod implements IElectroCraftMod {
     public void onClientLogin(EntityPlayer player) {
 		FMLCommonHandler.instance().activateChannel(player, "electrocraft");
 		ServerPortPacket portPacket = new ServerPortPacket();
+		portPacket.setPort(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("serverport", "general", 1337).getInt(1337));
 		try {
 			((EntityPlayerMP)player).playerNetServerHandler.sendPacket(portPacket.getMCPacket());
 		} catch (IOException e) {

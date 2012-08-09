@@ -29,6 +29,7 @@ public class ComputerServerClient implements Runnable {
 	private OutputStream out;
 	private DataOutputStream dos;
 	private byte[] lastVGAData;
+	private XECVGACard videoCard;
 	
 	TileEntityComputer computer;
 	ComputerServer server;
@@ -36,6 +37,7 @@ public class ComputerServerClient implements Runnable {
 	public ComputerServerClient(ComputerServer server, Socket connection) {
 		socket = connection;
 		this.server = server;
+		videoCard = mod_ElectroCraft.instance.getComputer().getVideoCard();
 		try {
 			out = connection.getOutputStream();
 			in = connection.getInputStream();
@@ -62,50 +64,50 @@ public class ComputerServerClient implements Runnable {
 				int type = dis.readInt();
 				
 				switch(ComputerProtocol.values()[type]) {
-				case DISPLAY:				
-					XECVGACard videoCard = mod_ElectroCraft.instance.getComputer().getVideoCard();
+				case DISPLAY:
+					
 					out.write(ComputerProtocol.DISPLAY.ordinal());
 					dos.writeInt(videoCard.getScreenWidth());
 					dos.writeInt(videoCard.getScreenHeight());
 					
 					byte[] vgadata = videoCard.getScreenData();
-
-					if (lastVGAData == null) {
-						lastVGAData = vgadata;
-						byte[] compressedData = Utils.compressBytes(vgadata);
-						out.write(0);
-						dos.writeInt(vgadata.length);
-						dos.writeInt(compressedData.length);
-						out.write(compressedData);
-					} else {						
-						ChangedBytes current = null;
-						List<ChangedBytes> changedBytes = new ArrayList<ChangedBytes>();
-
-						int lastOffset = 0;
-						int totalLength = 0;
-						while (current == null ? true : current.length > 0) {
-							if (current == null ) {
-								current = getNextBlock(0, vgadata, lastVGAData);
-							} else {
-								current = getNextBlock(lastOffset + current.length, vgadata, lastVGAData);
-							}
-							lastOffset = current.offset;
-							totalLength += current.length;
-							changedBytes.add(current);
-						}
-						
-						out.write(1);
-						dos.writeInt(totalLength);
-						
-						for (ChangedBytes changedByte : changedBytes) {
-							if (changedByte.length > 0) {
-								byte[] compressedData = Utils.compressBytes(changedByte.b);
-								dos.writeInt(compressedData.length);
-								dos.writeInt(changedByte.offset);
-								out.write(compressedData);
-							}
-						}
-					}
+					lastVGAData = vgadata;
+					out.write(0);
+					dos.writeInt(vgadata.length);
+					byte[] compressedData = Utils.compressBytes(vgadata);
+					dos.writeInt(compressedData.length);
+					out.write(compressedData);
+//					if (lastVGAData == null) {
+//						
+//					} else {						
+//						ChangedBytes current = null;
+//						List<ChangedBytes> changedBytes = new ArrayList<ChangedBytes>();
+//
+//						int lastOffset = 0;
+//						int totalLength = 0;
+//						while (current == null ? true : current.length > 0) {
+//							if (current == null ) {
+//								current = getNextBlock(0, vgadata, lastVGAData);
+//							} else {
+//								current = getNextBlock(lastOffset + current.length, vgadata, lastVGAData);
+//							}
+//							lastOffset = current.offset;
+//							totalLength += current.length;
+//							changedBytes.add(current);
+//						}
+//						
+//						out.write(1);
+//						dos.writeInt(totalLength);
+//						
+//						for (ChangedBytes changedByte : changedBytes) {
+//							if (changedByte.length > 0) {
+//								byte[] compressedData = Utils.compressBytes(changedByte.b);
+//								dos.writeInt(compressedData.length);
+//								dos.writeInt(changedByte.offset);
+//								out.write(compressedData);
+//							}
+//						}
+//					}
 					lastVGAData = vgadata;
 					break;
 				case DOWNLOAD_IMAGE:
@@ -117,13 +119,13 @@ public class ComputerServerClient implements Runnable {
 					// TODO Do something with this data!
 					break;
 				case TERMINATE:
-					throw new Exception();
+					throw new IOException();
 				default:
 					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Got Unknown Packet!");
 					break;
 				}
 				out.flush();
-			} catch (Exception e) {
+			} catch (IOException e) {
 				FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
 				return;
 			}

@@ -43,12 +43,15 @@ public class XECInterface {
 	public static class AssembledData {
 		public byte[] data;
 		public int length;
+		public int codeStart;
 	}
 	
 	public native void createCPU();
 	public native XECVGACard getVideoCard();
+	public native XECTerminal getTerminal();
+	public native XECKeyboard getKeyboard();
 	public native AssembledData assemble(String data);
-    public native long loadIntoMemory(byte[] data, int length);
+    public native long loadIntoMemory(byte[] data, int length, int codeStart);
     public native void manualTick();
     public native void start(long baseAddress);
     public native void stop();

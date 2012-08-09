@@ -29,6 +29,8 @@ import info.cerios.electrocraft.core.utils.Utils;
 
 public class ComputerHandler implements IComputerHandler {
 
+	private Map<IComputerRunnable, IComputerCallback> callbacks = new HashMap<IComputerRunnable, IComputerCallback>();
+	
 	@Override
 	public void registerIOPortToAllComputers(NetworkBlock ioPort) {
 		// TODO Auto-generated method stub
@@ -38,8 +40,7 @@ public class ComputerHandler implements IComputerHandler {
 	@Override
 	public void registerRunnableOnMainThread(IComputerRunnable runnable,
 			IComputerCallback callback) {
-		// TODO Auto-generated method stub
-		
+		callbacks.put(runnable, callback);
 	}
 
 	@Override
@@ -51,13 +52,13 @@ public class ComputerHandler implements IComputerHandler {
 
 	@Override
 	public void update() {
-		// TODO Auto-generated method stub
-		
+		for (IComputerRunnable runnable : callbacks.keySet()) {
+			callbacks.get(runnable).onTaskComplete(runnable.run());
+		}
 	}
 
 	@Override
 	public void startComputer(TileEntityComputer pc, IComputerCallback callback) {
-		// TODO Auto-generated method stub
 		
 	}
 
@@ -76,7 +77,7 @@ public class ComputerHandler implements IComputerHandler {
 	@Override
 	public boolean isComputerRunning(XECInterface pc) {
 		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 	
 	@Override
@@ -95,24 +96,24 @@ public class ComputerHandler implements IComputerHandler {
 
 	@Override
 	public void displayNetworkGuiScreen(NetworkBlock blockTileEntity, EntityPlayer player) {
-		NetworkAddressPacket addressPacket = new NetworkAddressPacket();
-		addressPacket.setControlAddress(blockTileEntity.getControlAddress());
-		addressPacket.setDataAddress(blockTileEntity.getDataAddress());
-		addressPacket.setLocation(blockTileEntity.worldObj.getWorldInfo().getDimension(), blockTileEntity.xCoord, blockTileEntity.yCoord, blockTileEntity.zCoord);
-		if (player instanceof EntityPlayerMP) {
-			try {
-				((EntityPlayerMP) player).playerNetServerHandler.sendPacket(addressPacket.getMCPacket());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+//		NetworkAddressPacket addressPacket = new NetworkAddressPacket();
+//		addressPacket.setControlAddress(blockTileEntity.getControlAddress());
+//		addressPacket.setDataAddress(blockTileEntity.getDataAddress());
+//		addressPacket.setLocation(blockTileEntity.worldObj.getWorldInfo().getDimension(), blockTileEntity.xCoord, blockTileEntity.yCoord, blockTileEntity.zCoord);
+//		if (player instanceof EntityPlayerMP) {
+//			try {
+//				((EntityPlayerMP) player).playerNetServerHandler.sendPacket(addressPacket.getMCPacket());
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
 	}
 
 	@Override
 	public void createAndStartComputer(TileEntityComputer computerBlock,
 			IComputerCallback finishedCallback) {
-		// TODO Auto-generated method stub
-		
+		computerBlock.setComputer(mod_ElectroCraft.instance.getComputer());
+		finishedCallback.onTaskComplete(computerBlock);
 	}
 }
