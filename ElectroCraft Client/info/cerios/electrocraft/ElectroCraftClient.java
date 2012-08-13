@@ -6,9 +6,15 @@ import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.IScheduledTickHandler;
 import cpw.mods.fml.common.network.IPacketHandler;
+import cpw.mods.fml.common.network.Player;
 import info.cerios.electrocraft.blocks.render.BlockRenderers;
 import info.cerios.electrocraft.computer.ComputerClient;
 import info.cerios.electrocraft.core.IElectroCraftSided;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
+import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.gui.GuiComputerScreen;
+import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
+import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.TileEntity;
 import net.minecraftforge.client.MinecraftForgeClient;
 
@@ -76,5 +82,17 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	@Override
 	public boolean isShiftHeld() {
 		return Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+	}
+
+	@Override
+	public void openComputerGui(TileEntityComputer computer) {
+		if (FMLClientHandler.instance().getClient().isSingleplayer())
+            FMLClientHandler.instance().getClient().displayGuiScreen(new GuiComputerScreen(computer.getComputer()));
+	}
+
+	@Override
+	public void openNetworkGui(NetworkBlock block) {
+		if (FMLClientHandler.instance().getClient().isSingleplayer())
+            FMLClientHandler.instance().getClient().displayGuiScreen(new GuiNetworkAddressScreen(block));
 	}
 }

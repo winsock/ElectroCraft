@@ -30,10 +30,8 @@ public class ClientPacketHandler implements IPacketHandler {
 
 	@Override
 	public void onPacketData(NetworkManager manager, Packet250CustomPayload packet, Player player) {
-		 ElectroPacket ecPacket;
-         System.out.println("PACKET");
 	        try {
-	            ecPacket = ElectroPacket.readMCPacket(packet);
+	        	ElectroPacket ecPacket = ElectroPacket.readMCPacket(packet);
 	            if (ecPacket.getType() == Type.GUI) {
 	                GuiPacket guiPacket = (GuiPacket) ecPacket;
 	                if (guiPacket.closeWindow())
@@ -46,10 +44,8 @@ public class ClientPacketHandler implements IPacketHandler {
 	                FMLClientHandler.instance().getClient().displayGuiScreen(new GuiNetworkAddressScreen(networkPacket));
 	            } else if (ecPacket.getType() == Type.PORT) {
 	                ServerPortPacket portPacket = (ServerPortPacket) ecPacket;
-	                EntityPlayerMP playerMp = (EntityPlayerMP) player;
-	                System.out.println("PORT");
 	                try {
-                        ComputerClient client = new ComputerClient(portPacket.getPort(), playerMp.serverForThisPlayer.theNetworkManager.getSocketAddress());
+                        ComputerClient client = new ComputerClient(portPacket.getPort(), manager.getSocketAddress());
 	                	new Thread(client).start();
 	                    ElectroCraftClient.instance.setComputerClient(client);
 	                } catch (UnknownHostException e) {

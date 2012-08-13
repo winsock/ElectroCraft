@@ -1,19 +1,18 @@
-package info.cerios.electrocraft;
+package info.cerios.electrocraft.core;
 
 import java.io.IOException;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.IScheduledTickHandler;
 import cpw.mods.fml.common.network.IPacketHandler;
-import cpw.mods.fml.server.FMLServerHandler;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.ModLoader;
 import net.minecraft.src.TileEntity;
-import info.cerios.electrocraft.computer.ComputerServer;
-import info.cerios.electrocraft.core.ConfigHandler;
-import info.cerios.electrocraft.core.IElectroCraftSided;
-import info.cerios.electrocraft.core.ServerTickHandler;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
+import info.cerios.electrocraft.core.computer.ComputerServer;
+import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.GuiPacket;
+import info.cerios.electrocraft.core.network.ServerPacketHandler;
 
 public class ElectroCraftServer implements IElectroCraftSided {
 
@@ -44,7 +43,7 @@ public class ElectroCraftServer implements IElectroCraftSided {
 	
 	@Override
 	public TileEntity getBlockTileEntity(int x, int y, int z, int d) {
-		return FMLServerHandler.instance().getServer().worldServerForDimension(d).getBlockTileEntity(x, y, z);
+		return FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(d).getBlockTileEntity(x, y, z);
 	}
 
 	@Override
@@ -90,4 +89,10 @@ public class ElectroCraftServer implements IElectroCraftSided {
 
 	@Override
 	public void loadTextures() {}
+
+	@Override
+	public void openComputerGui(TileEntityComputer computer) {}
+
+	@Override
+	public void openNetworkGui(NetworkBlock block) {}
 }

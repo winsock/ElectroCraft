@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.blocks;
 
+import cpw.mods.fml.common.network.Player;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import net.minecraft.src.EntityPlayer;
@@ -37,7 +38,7 @@ public abstract class BlockNetwork extends ElectroBlock {
         if (ElectroCraft.instance.isShiftHeld()) {
             if (world.getBlockId(x, y, z) == this.blockID) {
                 if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-                    ElectroCraft.instance.getComputerHandler().displayNetworkGuiScreen((NetworkBlock) world.getBlockTileEntity(x, y, z), player);
+                    ElectroCraft.electroCraftSided.openNetworkGui((NetworkBlock) world.getBlockTileEntity(x, y, z));
                     return true;
                 }
             }

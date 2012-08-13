@@ -8,9 +8,9 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.network.NetworkMod;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.TickRegistry;
-import info.cerios.electrocraft.computer.ComputerHandler;
 import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
+import info.cerios.electrocraft.core.computer.ComputerHandler;
 import info.cerios.electrocraft.core.computer.IComputerHandler;
 import info.cerios.electrocraft.core.computer.XECInterface;
 import info.cerios.electrocraft.core.computer.XECInterface.AssembledData;
@@ -32,7 +32,7 @@ import java.net.UnknownHostException;
 import java.util.Random;
 
 @Mod(modid = "electrocraft", name = "ElectroCraft", version = "In-Dev 0.2")
-@NetworkMod(clientSideRequired = true, serverSideRequired = false, connectionHandler = ConnectionHandler.class)
+@NetworkMod(clientSideRequired = true, serverSideRequired = false)
 public class ElectroCraft {
 
 	@Mod.Instance
@@ -88,6 +88,8 @@ public class ElectroCraft {
         
         // Register our mod channel
         NetworkRegistry.instance().registerChannel(electroCraftSided.getPacketHandler(), "electrocraft");
+        // Register the connection handler
+        NetworkRegistry.instance().registerConnectionHandler(new ConnectionHandler());
                 
         String tripleFaultASM = "hlt";
 

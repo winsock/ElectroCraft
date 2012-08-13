@@ -1,4 +1,4 @@
-package info.cerios.electrocraft.computer;
+package info.cerios.electrocraft.core.computer;
 
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
@@ -29,7 +29,6 @@ import net.minecraft.src.Packet1Login;
 import net.minecraft.src.World;
 
 import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.server.FMLServerHandler;
 
 public class ComputerServer implements Runnable {
     
@@ -60,7 +59,7 @@ public class ComputerServer implements Runnable {
 			try {
 				Socket connection = socket.accept();
 				ComputerServerClient client = new ComputerServerClient(this, connection);
-				List players = FMLServerHandler.instance().getServer().getConfigurationManager().playerEntityList;
+				List players = FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager().playerEntityList;
 
 				for (int i = 0; i < players.size(); i++) {
 					EntityPlayerMP player = (EntityPlayerMP) players.get(i);

@@ -1,11 +1,8 @@
-package info.cerios.electrocraft.computer;
+package info.cerios.electrocraft.core.computer;
 
-import cpw.mods.fml.client.FMLClientHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.*;
-import info.cerios.electrocraft.gui.GuiComputerScreen;
-import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
 import net.minecraft.src.EntityPlayer;
 
 import java.util.HashMap;
@@ -69,17 +66,5 @@ public class ComputerHandler implements IComputerHandler {
     public boolean isComputerRunning(XECInterface pc) {
         // TODO Auto-generated method stub
         return false;
-    }
-
-    @Override
-    public void displayComputerGUI(TileEntityComputer pc, EntityPlayer player) {
-        if (FMLClientHandler.instance().getClient().isSingleplayer())
-            FMLClientHandler.instance().getClient().displayGuiScreen(new GuiComputerScreen(pc.getComputer()));
-    }
-
-    @Override
-    public void displayNetworkGuiScreen(NetworkBlock blockTileEntity, EntityPlayer player) {
-        if (FMLClientHandler.instance().getClient().isSingleplayer())
-            FMLClientHandler.instance().getClient().displayGuiScreen(new GuiNetworkAddressScreen(blockTileEntity));
     }
 }

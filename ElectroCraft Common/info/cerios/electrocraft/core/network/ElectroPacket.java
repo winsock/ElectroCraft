@@ -8,7 +8,6 @@ import java.io.IOException;
 /**
  * A packet that contains uniform data that can be serialized
  *
- * @param <T extends Serializable> The type of data
  * @author andrewquerol
  */
 public abstract class ElectroPacket {
@@ -26,9 +25,7 @@ public abstract class ElectroPacket {
             this.packetClass = packetClass;
         }
     }
-
-    ;
-
+    
     protected Type type;
 
     protected abstract byte[] getData() throws IOException;

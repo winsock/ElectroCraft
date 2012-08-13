@@ -48,7 +48,7 @@ public class BlockComputer extends BlockNetwork implements IComputerCallback {
             if (!ElectroCraft.instance.getComputerHandler().isComputerRunning(tileComputer.getComputer())) {
             	ElectroCraft.instance.getComputerHandler().startComputer(tileComputer, this);
             }
-            ElectroCraft.instance.getComputerHandler().displayComputerGUI(tileComputer, tileComputer.getActivePlayer());
+            ElectroCraft.electroCraftSided.openComputerGui(tileComputer);
         }
     }
 

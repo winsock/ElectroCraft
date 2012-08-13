@@ -21,8 +21,4 @@ public interface IComputerHandler {
     public void resetComputer(TileEntityComputer pc);
 
     public boolean isComputerRunning(XECInterface pc);
-
-    public void displayComputerGUI(TileEntityComputer pc, EntityPlayer player);
-
-    public void displayNetworkGuiScreen(NetworkBlock blockTileEntity, EntityPlayer player);
 }

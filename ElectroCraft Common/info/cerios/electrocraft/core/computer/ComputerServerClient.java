@@ -1,8 +1,7 @@
-package info.cerios.electrocraft.computer;
+package info.cerios.electrocraft.core.computer;
 
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.computer.XECVGACard;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
 import info.cerios.electrocraft.core.utils.Utils;
 
@@ -19,7 +18,6 @@ import java.util.List;
 
 import net.minecraft.src.World;
 import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.server.FMLServerHandler;
 
 public class ComputerServerClient implements Runnable {
 
