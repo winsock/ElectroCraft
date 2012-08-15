@@ -14,10 +14,16 @@ public class ConfigHandler {
     private static Configuration currentConfig;
 
     public static Configuration getCurrentConfig() {
+    	if (currentConfig == null) {
+    		loadOrCreateConfigFile("default.cfg");
+    	}
         return currentConfig;
     }
 
     public static void loadOrCreateConfigFile(String file) {
+    	modConfigFolder = new File("." + File.separator + "config" + File.separator + "ElectroCraft");
+        if (!modConfigFolder.exists())
+            modConfigFolder.mkdirs();
         currentConfigFile = new File(modConfigFolder + File.separator + file);
         if (!currentConfigFile.exists()) {
             try {
@@ -28,11 +34,5 @@ public class ConfigHandler {
         }
         currentConfig = new Configuration(currentConfigFile);
         currentConfig.load();
-    }
-
-    static {
-        modConfigFolder = new File("." + File.separator + "config" + File.separator + "ElectroCraft");
-        if (!modConfigFolder.exists())
-            modConfigFolder.mkdirs();
     }
 }

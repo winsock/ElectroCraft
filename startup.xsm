@@ -7,8 +7,8 @@ promptChar db "> ", 0
 shutdownMessage db "Goodbye!", 0
 
 ; Command buffer
-cmdBuffer db ? 255 ; Stores the command in a 255 byte buffer
-cmdArgsBuffer db ? 255 ; A buffer to store the arguments seperated by null charaters
+cmdBuffer db ? 1024 ; Stores the command in a 255 byte buffer
+cmdArgsBuffer db ? 1024 ; A buffer to store the arguments seperated by null charaters
 terminalBufferRow dd ? 1 ; The current row we are in
 terminalBufferCol dd ? 1 ; The current column we are in
 terminalBufferSize dd ? 1 ; Make room for the display buffer size
@@ -115,7 +115,16 @@ pop ecx
 add [terminalBufferRow], 1 ; Increment the rows
 mov terminalBufferCol, 0 ; Reset the position in the columns
 
-strcmp cmdBuffer, cmdHelp
+push 0x20
+sub esp, 4
+push cmdArgsBuffer
+push cmdBuffer
+call explodeString
+add esp, 8 ; Remove the last argument
+pop eax ; Get the third argument
+add esp, 4 ; Remove the rest
+
+strcmp cmdArgsBuffer, cmdHelp
 jne checkLs
 push helpMsg
 call displayNullTerminatedString
@@ -123,58 +132,71 @@ int 4096
 jmp resetCharCounter
 
 checkLs:
-strcmp cmdBuffer, cmdList
+strcmp cmdArgsBuffer, cmdList
 jne checkEcho
 jmp resetCharCounter
 
 checkEcho:
-strcmp cmdBuffer, cmdEcho
+strcmp cmdArgsBuffer, cmdEcho
 jne checkShutdown
+cmp eax, 1
+jl checkShutdown
+push 1
+push cmdArgsBuffer
+call getStringOffset
+add esp, 4
+pop eax
+bkp
+add eax, cmdArgsBuffer
+bkp
+push eax
+call displayNullTerminatedString
+add esp, 4
 jmp resetCharCounter
 
 checkShutdown:
-strcmp cmdBuffer, cmdShutdown
+strcmp cmdArgsBuffer, cmdShutdown
 jne checkEdit
 jmp haltCpu
 
 checkEdit:
-strcmp cmdBuffer, cmdEdit
+strcmp cmdArgsBuffer, cmdEdit
 jne checkRemove
 jmp resetCharCounter
 
 checkRemove:
-strcmp cmdBuffer, cmdRemove
+strcmp cmdArgsBuffer, cmdRemove
 jne checkRemoveDir
 jmp resetCharCounter
 
 checkRemoveDir:
-strcmp cmdBuffer, cmdRemoveDir
+strcmp cmdArgsBuffer, cmdRemoveDir
 jne checkCopy
 jmp resetCharCounter
 
 checkCopy:
-strcmp cmdBuffer, cmdCopy
+strcmp cmdArgsBuffer, cmdCopy
 jne checkChangeDir
 jmp resetCharCounter
 
 checkChangeDir:
-strcmp cmdBuffer, cmdChangeDir
+strcmp cmdArgsBuffer, cmdChangeDir
 jne checkMakeDir
 jmp resetCharCounter
 
 checkMakeDir:
-strcmp cmdBuffer, cmdMakeDir
+strcmp cmdArgsBuffer, cmdMakeDir
 jne checkClear
 jmp resetCharCounter
 
 checkClear:
-strcmp cmdBuffer, cmdClear
+strcmp cmdArgsBuffer, cmdClear
 jne checkTime
 call clearTerminal
 jmp resetCharCounter
 
 checkTime:
-strcmp cmdBuffer, cmdTime
+strcmp cmdArgsBuffer, cmdTime
 jne resetCharCounter
 
 resetCharCounter:
@@ -228,6 +250,97 @@ cmp eax, 0 ; Is it a null char?
 je getChar ; If it is try again
 mov [ebp + 8], eax ; Else move it into the first argument spot(The return value)
 pop eax ; Pop the old value of eax
+mov esp, ebp ; Move the stack pointer to the curent base pointer
+pop ebp ; Restore the last base pointer
+ret ; return
+
+
+;
+; Splits a string by the specified delim in arg 4, arg 1 is the address of the string
+; arg 2 is the address to store the results in, arg 3 is where the number of results is stored
+; [epb + 8] = arg1, [ebp + 12] = arg2, [ebp + 16] = arg3, [ebp + 20] = arg4
+;
+explodeString:
+push ebp ; Push the curent base pointer
+mov ebp, esp ; Move the curent stack pointer into the base pointer
+push ecx ; Store the old value of ecx
+push eax ; Store the old value of eax
+push ebx ; Store the old value of ebx
+
+xor ecx, ecx
+xor eax, eax
+xor ebx, ebx
+mov [ebp + 16], 0
+
+splitLoop:
+mov ebx, [ebp + 12]
+add ebx, ecx
+mov eax, [ebp + 8]
+add eax, ecx
+cmp byte [eax], [ebp + 20]
+jne splitLoopEnd
+
+mov ebx, [ebp + 12]
+add ebx, ecx
+mov [ebx], 0
+add ecx, 1
+add [ebp + 16], 1
+jmp splitLoop
+
+splitLoopEnd:
+mov [ebx], [eax]
+add ecx, 1
+cmp byte [eax], 0
+jne splitLoop
+
+pop ebx ; Restore ebx
+pop eax ; Restore eax
+pop ecx ; Restore ecx
+mov esp, ebp ; Move the stack pointer to the curent base pointer
+pop ebp ; Restore the last base pointer
+ret ; return
+
+
+;
+; Returns the offset needed to access a string in a string array deliminated by null characters
+; [ebp + 8] = String array, [ebp + 12] = requested number / return value
+;
+getStringOffset:
+push ebp ; Push the curent base pointer
+mov ebp, esp ; Move the curent stack pointer into the base pointer
+push eax ; Store eax
+push ebx ; Store ebx
+push ecx ; Store ecx
+push emc ; Store emc
+
+xor eax, eax ; Clear eax
+xor ebx, ebx ; Clear ebx
+xor ecx, ecx ; Clear ecx
+xor emc, emc ; Clear emc
+
+offsetLoop:
+mov eax, [ebp + 8]
+add eax, ecx
+cmp byte [eax], 0
+jne offsetLoopEnd
+cmp emc, 1
+jg stringOffsetEnd
+add ebx, 1
+cmp ebx, [ebp + 12]
+je stringOffsetEnd
+add emc, 1
+offsetLoopEnd:
+add ecx, 1
+mov emc, 0
+jmp offsetLoop
+
+stringOffsetEnd:
+add ecx, 1
+mov [ebp + 12], ecx
+pop emc ; Restore emc
+pop ecx ; Restore ecx
+pop ebx ; Restore ebx
+pop eax ; Restore eax
 mov esp, ebp ; Move the stack pointer to the curent base pointer
 pop ebp ; Restore the last base pointer
 ret ; return
