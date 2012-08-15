@@ -1,11 +1,14 @@
 package info.cerios.electrocraft.gui;
 
+import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.network.PacketDispatcher;
 import info.cerios.electrocraft.ElectroCraftClient;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.*;
 import info.cerios.electrocraft.core.network.ComputerInputPacket;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
+import info.cerios.electrocraft.core.utils.ObjectPair;
 import net.minecraft.src.GuiButton;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.ModLoader;
@@ -16,55 +19,34 @@ import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
     public static final int CLOSE_BUTTON = 0;
-
-    private XECInterface computer;
-    private XECVGACard videoCard;
-    private XECTerminal terminal;
-    private XECKeyboard keyboard;
+    
     private int displayTextureId;
     private boolean repeatEventsOldState = Keyboard.areRepeatEventsEnabled();
     private volatile boolean isVisible = true;
-    private boolean isSmpComputerScreen = false;
     private int lastWidth, lastHeight;
-    private int ticksSinceLastScreenRequest = 0;
     private ByteBuffer displayBuffer;
-
-    public GuiComputerScreen(XECInterface object) {
-        this.computer = object;
-        this.videoCard = computer.getVideoCard();
-        this.terminal = computer.getTerminal();
-        this.keyboard = computer.getKeyboard();
-        Keyboard.enableRepeatEvents(true);
-    }
+    private boolean terminalMode = true;
+    private Map<Integer, String> terminalList = new HashMap<Integer, String>();
+    private int rows = 24;
+    private int columns = 80;
+    private boolean shouldAskForScreenPacket = true;
 
     public GuiComputerScreen() {
-        isSmpComputerScreen = true;
         Keyboard.enableRepeatEvents(true);
         ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.DISPLAY, this);
+        ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.TERMINAL, this);
+        ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.TERMINAL_SIZE, this);
+        ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.MODE, this);
     }
 
     public void initGui() {
         controlList.add(new GuiButton(CLOSE_BUTTON, width - 5 - 4 - 17, 5 + 4, 17, 17, "X"));
-
-        if (!isSmpComputerScreen) {
-            // OpenGL Stuff
-            if (GL11.glIsTexture(displayTextureId))
-                GL11.glDeleteTextures(displayTextureId);
-
-            displayBuffer = ByteBuffer.allocateDirect(videoCard.getScreenWidth() * videoCard.getScreenHeight() * 3);
-            displayBuffer.put(videoCard.getScreenData());
-            displayBuffer.rewind();
-            displayTextureId = GL11.glGenTextures();
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, videoCard.getScreenWidth(), videoCard.getScreenHeight(), 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-        }
     }
 
     @Override
@@ -86,33 +68,44 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
         tess.draw();
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
-        // Display the Video Card contents
-        //GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-        tess.startDrawingQuads();
-        tess.setColorOpaque(0, 0, 0);
-        tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
-        tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
-        tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
-        tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
-        tess.draw();
-        //GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+        if (terminalMode) {
+        	tess.startDrawingQuads();
+            tess.setColorOpaque(0, 0, 0);
+            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
+            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
+            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
+            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
+            tess.draw();
 
-        float pixelsPerChar = (halfScreenWidth * 2) / terminal.getColoumns();
-        float pixelsPerLineHeight = (halfScreenHeight * 2) / terminal.getRows();
-
-        for (int i = 0; i < terminal.getRows(); i++) {
-            float scaleFactorX = 1f;
-            float scaleFactorY = 1f;
-            if (fontRenderer.getStringWidth(terminal.getLine(i)) > (halfScreenWidth * 2)) {
-                scaleFactorX = (float) ((halfScreenWidth * 2) / fontRenderer.getStringWidth(terminal.getLine(i)));
-            }
-            if ((fontRenderer.FONT_HEIGHT * terminal.getColoumns()) > (halfScreenHeight * 2)) {
-                scaleFactorY = (float) ((halfScreenHeight * 2) / (fontRenderer.FONT_HEIGHT * terminal.getRows()));
-            }
-            GL11.glPushMatrix();
-            GL11.glScalef(scaleFactorX, scaleFactorY, 1);
-            this.fontRenderer.drawString(terminal.getLine(i), (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))), 0xFFFFFF);
-            GL11.glPopMatrix();
+        	for (int i = 0; i < terminalList.size(); i++) {
+        		int currentLine = terminalList.keySet().toArray(new Integer[terminalList.size()])[i];
+        		String line = terminalList.get(currentLine);
+        		
+            	float pixelsPerChar = (halfScreenWidth * 2) / columns;
+            	float pixelsPerLineHeight = (halfScreenHeight * 2) / rows;
+        		
+        		float scaleFactorX = 1f;
+        		float scaleFactorY = 1f;
+        		if (fontRenderer.getStringWidth(line) > (halfScreenWidth * 2)) {
+        			scaleFactorX = (float) ((halfScreenWidth * 2) / fontRenderer.getStringWidth(line));
+        		}
+        		if ((fontRenderer.FONT_HEIGHT * columns) > (halfScreenHeight * 2)) {
+        			scaleFactorY = (float) ((halfScreenHeight * 2) / (fontRenderer.FONT_HEIGHT * rows));
+        		}
+        		GL11.glPushMatrix();
+        		GL11.glScalef(scaleFactorX, scaleFactorY, 1);
+        		this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))), 0xFFFFFF);
+        		GL11.glPopMatrix();
+        	}
+        } else {
+        	GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+            tess.startDrawingQuads();
+            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
+            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
+            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
+            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
+            tess.draw();
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
         }
 
         // Draw the screen title
@@ -128,27 +121,21 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
     @Override
     public void updateScreen() {
-        if (!isSmpComputerScreen) {
-        	if (displayBuffer != null) {
-	            displayBuffer.clear();
-	            displayBuffer.put(videoCard.getScreenData());
-	            displayBuffer.rewind();
-	            GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-	            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, videoCard.getScreenWidth(), videoCard.getScreenHeight(), GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
-	            GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-	        }
-        } else {
-            if (ticksSinceLastScreenRequest >= 1) {
-                try {
-                    ElectroCraftClient.instance.getComputerClient().sendPacket(ComputerProtocol.DISPLAY);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                ticksSinceLastScreenRequest = 0;
-            } else {
-                ticksSinceLastScreenRequest++;
-            }
-        }
+    	if (shouldAskForScreenPacket) {
+    		try {
+    			if (!terminalMode) {
+    				ElectroCraftClient.instance.getComputerClient().sendPacket(ComputerProtocol.DISPLAY);
+    				shouldAskForScreenPacket = false;
+    			} else {
+    				for (int i = 0; i < rows; i++) {
+    					ElectroCraftClient.instance.getComputerClient().sendTerminalPacket(i);
+    					shouldAskForScreenPacket = false;
+    				}
+    			}
+    		} catch (IOException e) {
+    			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send screen update packet!");
+    		}
+    	}
     }
 
     @Override
@@ -164,64 +151,73 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
     @Override
     public void handleInput() {
-
-        while (Mouse.next()) {
-            handleMouseInput();
-        }
-
-        if (!isSmpComputerScreen) {
-            while (Keyboard.next()) {
-                if (Keyboard.getEventKeyState()) {
-                    keyboard.onKeyPress((byte) Keyboard.getEventCharacter());
-                }
-            }
-        } else if (isSmpComputerScreen) {
-            while (Keyboard.next()) {
-                int key = Keyboard.getEventKey();
-                boolean down;
-                if (Keyboard.getEventKeyState()) {
-                    down = true;
-                } else {
-                    down = false;
-                }
-
-                ComputerInputPacket inputPacket = new ComputerInputPacket();
-                inputPacket.setEventKey(key);
-                inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
-                inputPacket.setEventMouseButton(Mouse.getEventButton());
-                inputPacket.setWasKeyDown(down);
-                try {
-                    ModLoader.sendPacket(inputPacket.getMCPacket());
-                } catch (IOException e) {
-                    FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft: Unable to send computer input data!");
-                }
-
-            }
+        while (Keyboard.next()) {
+        	boolean down;
+        	if (Keyboard.getEventKeyState()) {
+        		down = true;
+        	} else {
+        		down = false;
+        	}
+        	ComputerInputPacket inputPacket = new ComputerInputPacket();
+        	inputPacket.setEventKey(Keyboard.getEventCharacter());
+        	inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
+        	inputPacket.setEventMouseButton(Mouse.getEventButton());
+        	inputPacket.setWasKeyDown(down);
+        	try {
+        		FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(inputPacket.getMCPacket());
+        	} catch (IOException e) {
+        		FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft: Unable to send computer input data!");
+        	}
         }
     }
 
     @Override
-    public void onTaskComplete(Object... objects) {
-        if (objects[0] instanceof Object[]) {
-            int width = (Integer) ((Object[]) objects[0])[1];
-            int height = (Integer) ((Object[]) objects[0])[2];
-            if (!GL11.glIsTexture(displayTextureId) || (width != lastWidth || height != lastHeight)) {
-                if (GL11.glIsTexture(displayTextureId))
-                    GL11.glDeleteTextures(displayTextureId);
-                displayTextureId = GL11.glGenTextures();
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) ((Object[]) objects[0])[0]);
-                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-            } else {
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-                GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) ((Object[]) objects[0])[0]);
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-            }
-
-            lastWidth = width;
-            lastHeight = height;
-        }
+    public Object onTaskComplete(Object... objects) {
+    	if (objects[0] instanceof ComputerProtocol) {
+    		ComputerProtocol type = (ComputerProtocol)objects[0];	
+    		if (type == ComputerProtocol.MODE) {
+    			terminalMode = ((Integer) objects[1]) == 0 ? false : true; 
+    		} else if (type == ComputerProtocol.DISPLAY) {
+    			int width = (Integer) objects[2];
+                int height = (Integer) objects[3];
+                if (!GL11.glIsTexture(displayTextureId) || (width != lastWidth || height != lastHeight)) {
+                    if (GL11.glIsTexture(displayTextureId))
+                        GL11.glDeleteTextures(displayTextureId);
+                    displayTextureId = GL11.glGenTextures();
+                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+                    GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) objects[1]);
+                    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+                    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+                } else {
+                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+                    GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) objects[1]);
+                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+                }
+                lastWidth = width;
+                lastHeight = height;
+    		} else if (type == ComputerProtocol.TERMINAL) {
+    			if (((Integer)objects[1]) == 0) {
+    				Object[] data = (Object[])objects[2];
+    				int rowNumber = (Integer)data[0];
+    				String rowData = (String)data[1];
+    				terminalList.put(rowNumber, rowData);
+    			} else if (((Integer)objects[1]) == 1) {
+    				Object[] data = (Object[])objects[2];
+    				int numberOfRowsChanged = (Integer) data[0];
+    				ObjectPair<Integer, String>[] changedRows = (ObjectPair[])data[1];
+    				
+    				for (int i = 0; i < numberOfRowsChanged; i++) {
+    					terminalList.put(changedRows[i].getValue1(), changedRows[i].getValue2());
+    				}
+    			}
+    		} else if (type == ComputerProtocol.TERMINAL_SIZE) {
+    			rows = (Integer)objects[1];
+    			columns = (Integer)objects[2];
+    		}
+    		
+    		shouldAskForScreenPacket = true;
+    	}
+        return null;
     }
 }

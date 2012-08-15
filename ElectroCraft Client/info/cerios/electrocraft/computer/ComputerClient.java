@@ -3,9 +3,9 @@ package info.cerios.electrocraft.computer;
 import cpw.mods.fml.common.FMLCommonHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.IComputerCallback;
-import info.cerios.electrocraft.core.computer.IComputerNetworkSided;
 import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
+import info.cerios.electrocraft.core.utils.ObjectPair;
 import info.cerios.electrocraft.core.utils.Utils;
 
 import java.io.*;
@@ -14,22 +14,24 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
-public class ComputerClient implements Runnable, IComputerNetworkSided {
+public class ComputerClient implements Runnable {
 
     private Socket socket;
     private InputStream in;
     private DataInputStream dis;
     private OutputStream out;
     private DataOutputStream dos;
-    ByteBuffer displayBuffer;
+    private ByteBuffer displayBuffer;
     private volatile boolean running = true;
 
-    private Map<IComputerCallback, ComputerProtocol> callbackMap = new HashMap<IComputerCallback, ComputerProtocol>();
+    private Map<ComputerProtocol, List<IComputerCallback>> callbackMap = new HashMap<ComputerProtocol, List<IComputerCallback>>();
 
     public ComputerClient(int port, SocketAddress address) throws UnknownHostException, IOException {
         SocketAddress serverAddress = new InetSocketAddress(((InetSocketAddress) address).getAddress(), port);
@@ -42,13 +44,28 @@ public class ComputerClient implements Runnable, IComputerNetworkSided {
     }
 
     public void registerCallback(ComputerProtocol message, IComputerCallback callback) {
-        callbackMap.put(callback, message);
+    	List<IComputerCallback> computerList;
+    	if (callbackMap.containsKey(message)) {
+    		computerList = callbackMap.get(message);
+    	} else {
+    		computerList = new ArrayList<IComputerCallback>();
+    	}
+    	
+    	computerList.add(callback);
+    	callbackMap.put(message, computerList);
     }
 
     public void sendPacket(ComputerProtocol packet) throws IOException {
-        dos.write(packet.ordinal());
+        out.write(packet.ordinal());
         out.flush();
     }
+    
+
+	public void sendTerminalPacket(int row) throws IOException {
+		out.write(ComputerProtocol.TERMINAL.ordinal());
+		dos.writeInt(row);
+		out.flush();
+	}
 
     @Override
     public void run() {
@@ -61,13 +78,13 @@ public class ComputerClient implements Runnable, IComputerNetworkSided {
                     throw new IOException();
                 }
 
-                Object[] callbackData = {dis};
+                Object[] callbackData = {ComputerProtocol.values()[type], dis};
 
                 if (type == ComputerProtocol.DISPLAY.ordinal()) {
                     int width = dis.readInt();
                     int height = dis.readInt();
 
-                    int transmissionType = dis.read();
+                    int transmissionType = in.read();
                     int length = dis.readInt();
 
                     if (length <= 0)
@@ -126,26 +143,40 @@ public class ComputerClient implements Runnable, IComputerNetworkSided {
                         displayBuffer.rewind();
                     }
 
-                    callbackData = new Object[]{displayBuffer, width, height};
+                    callbackData = new Object[]{ComputerProtocol.values()[type], displayBuffer, width, height};
+                } else if (type == ComputerProtocol.TERMINAL.ordinal()) {
+                    int transmissionType = in.read();
+                    Object returnData = null;
+                    
+                    if (transmissionType == 0) {
+                    	int row = dis.readInt();
+                    	String rowData = dis.readUTF();
+                    	returnData = new Object[] {row, rowData};
+                    } else if (transmissionType == 1) {
+                    	boolean shiftRowsUp = in.read() == 0 ? false : true;
+                    	int numberOfChangedRows = dis.readInt();
+                    	
+                    	ObjectPair<Integer, String>[] changedRows = new ObjectPair[numberOfChangedRows];
+                    	for (int i = 0; i < numberOfChangedRows; i++) {
+                    		int rowNumber = dis.readInt();
+                    		changedRows[i] = new ObjectPair<Integer, String>(rowNumber, dis.readUTF());
+                    	}
+                    	
+                    	returnData = new Object[] {numberOfChangedRows, changedRows};
+                    }
+                    
+                    callbackData = new Object[]{ComputerProtocol.values()[type], transmissionType, returnData};
+                } else if (type == ComputerProtocol.MODE.ordinal()) {
+                    callbackData = new Object[]{ComputerProtocol.values()[type], in.read()};
+                } else if (type == ComputerProtocol.TERMINAL_SIZE.ordinal()) {
+                    callbackData = new Object[]{ComputerProtocol.values()[type], dis.readInt(), dis.readInt()};
                 }
 
-                Set<IComputerCallback> callbacks = Utils.getKeysByValue(callbackMap, ComputerProtocol.values()[type]);
-                for (IComputerCallback callback : callbacks) {
-
-                    ElectroCraft.instance.getComputerHandler().registerRunnableOnMainThread(new IComputerRunnable() {
-
-                        Object[] data;
-
-                        public IComputerRunnable init(Object[] data) {
-                            this.data = data;
-                            return this;
-                        }
-
-                        @Override
-                        public Object run() {
-                            return data;
-                        }
-                    }.init(callbackData), callback);
+                List<IComputerCallback> callbacks = callbackMap.get(ComputerProtocol.values()[type]);
+                if (callbacks != null) {
+	                for (IComputerCallback callback : callbacks) {
+	                    callback.onTaskComplete(callbackData);
+	                }
                 }
 
                 out.flush();
@@ -155,14 +186,4 @@ public class ComputerClient implements Runnable, IComputerNetworkSided {
             }
         }
     }
-
-	@Override
-	public void start() {
-		running = true;
-	}
-
-	@Override
-	public void stop() {
-		running = false;
-	}
 }

@@ -1,9 +1,14 @@
 package info.cerios.electrocraft;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.UnknownHostException;
+
 import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.client.registry.RenderingRegistry;
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.IScheduledTickHandler;
 import cpw.mods.fml.common.network.IPacketHandler;
 import cpw.mods.fml.common.network.Player;
@@ -12,6 +17,7 @@ import info.cerios.electrocraft.computer.ComputerClient;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import info.cerios.electrocraft.gui.GuiComputerScreen;
 import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
 import net.minecraft.src.EntityPlayer;
@@ -22,14 +28,9 @@ public class ElectroCraftClient implements IElectroCraftSided {
 
 	public static ElectroCraftClient instance;
 	private ComputerClient computerClient;
-	private ClientPacketHandler packetHandler;
 	
 	public ElectroCraftClient() {
 		instance = this;
-	}
-	
-	public void setComputerClient(ComputerClient computerClient) {
-		this.computerClient = computerClient;
 	}
 	
 	public ComputerClient getComputerClient() {
@@ -37,14 +38,7 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	}
 
 	@Override
-	public void init() {
-		packetHandler = new ClientPacketHandler();
-	}
-
-	@Override
-	public IPacketHandler getPacketHandler() {
-		return packetHandler;
-	}
+	public void init() { }
 	
     @Override
     public TileEntity getBlockTileEntity(int x, int y, int z, int d) {
@@ -85,14 +79,24 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	}
 
 	@Override
-	public void openComputerGui(TileEntityComputer computer) {
-		if (FMLClientHandler.instance().getClient().isSingleplayer())
-            FMLClientHandler.instance().getClient().displayGuiScreen(new GuiComputerScreen(computer.getComputer()));
+	public void openComputerGui() {
+		FMLClientHandler.instance().getClient().displayGuiScreen(new GuiComputerScreen());
 	}
 
 	@Override
-	public void openNetworkGui(NetworkBlock block) {
-		if (FMLClientHandler.instance().getClient().isSingleplayer())
-            FMLClientHandler.instance().getClient().displayGuiScreen(new GuiNetworkAddressScreen(block));
+	public void openNetworkGui(NetworkAddressPacket packet) {
+		FMLClientHandler.instance().getClient().displayGuiScreen(new GuiNetworkAddressScreen(packet));
+	}
+
+	@Override
+	public void startComputerClient(int port, SocketAddress address) {
+		try {
+			computerClient = new ComputerClient(port, address);
+			new Thread(computerClient).start();
+		} catch (UnknownHostException e) {
+			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft Client: Unable to connect to server: Host unknown!");
+		} catch (IOException e) {
+			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft Client: Unable to connect to server!");
+		}
 	}
 }
