@@ -2,8 +2,6 @@ package info.cerios.electrocraft.core.network;
 
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.computer.XECTerminal;
-import info.cerios.electrocraft.core.computer.XECVGACard;
 import info.cerios.electrocraft.core.utils.Utils;
 
 import java.io.DataInputStream;
@@ -28,11 +26,9 @@ public class ComputerServerClient implements Runnable {
 	private OutputStream out;
 	private DataOutputStream dos;
 	private byte[] lastVGAData;
-	private XECVGACard videoCard;
-	private XECTerminal terminal;
 	
-	TileEntityComputer computer;
-	ComputerServer server;
+	private TileEntityComputer computer;
+	private ComputerServer server;
 	
 	public ComputerServerClient(ComputerServer server, Socket connection) {
 		socket = connection;
@@ -49,8 +45,6 @@ public class ComputerServerClient implements Runnable {
 	
 	public void setComputer(TileEntityComputer pc) {
 		this.computer = pc;
-		videoCard = computer.getComputer().getVideoCard();
-		terminal = computer.getComputer().getTerminal();
 		lastVGAData = null;
 	}
 	
@@ -66,7 +60,7 @@ public class ComputerServerClient implements Runnable {
 			dos.writeInt(changedRows.length);
 			for (int i = 0; i < changedRows.length; i++) {
 				dos.writeInt(changedRows[i]);
-				dos.writeUTF(terminal.getLine(changedRows[i]));
+				dos.writeUTF(computer.getComputer().getTerminal().getLine(changedRows[i]));
 			}
 		} catch (IOException e) {
 			try {
@@ -79,8 +73,8 @@ public class ComputerServerClient implements Runnable {
 	public void sendTerminalSize() {
 		try {
 			out.write(ComputerProtocol.TERMINAL_SIZE.ordinal());
-			dos.writeInt(terminal.getRows());
-			dos.writeInt(terminal.getColoumns());
+			dos.writeInt(computer.getComputer().getTerminal().getRows());
+			dos.writeInt(computer.getComputer().getTerminal().getColumns());
 		} catch (IOException e) {
 			try {
 				socket.close();
@@ -111,10 +105,10 @@ public class ComputerServerClient implements Runnable {
 				case DISPLAY:
 					
 					out.write(ComputerProtocol.DISPLAY.ordinal());
-					dos.writeInt(videoCard.getScreenWidth());
-					dos.writeInt(videoCard.getScreenHeight());
+					dos.writeInt(computer.getComputer().getVideoCard().getWidth());
+					dos.writeInt(computer.getComputer().getVideoCard().getHeight());
 					
-					byte[] vgadata = videoCard.getScreenData();
+					byte[] vgadata = computer.getComputer().getVideoCard().getData();
 					lastVGAData = vgadata;
 					out.write(0);
 					dos.writeInt(vgadata.length);
@@ -159,7 +153,8 @@ public class ComputerServerClient implements Runnable {
 					out.write(ComputerProtocol.TERMINAL.ordinal());
 					out.write(0); // Terminal packet type 0
 					dos.writeInt(row); // Resend the row number
-					dos.writeUTF(terminal.getLine(row));
+					if (computer.getComputer().getTerminal().getRows() > row)
+						dos.writeUTF(computer.getComputer().getTerminal().getLine(row));
 					break;
 				case DOWNLOAD_IMAGE:
 					break;

@@ -42,7 +42,9 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	
     @Override
     public TileEntity getBlockTileEntity(int x, int y, int z, int d) {
-        return FMLClientHandler.instance().getClient().theWorld.getBlockTileEntity(x, y, z);
+    	if (FMLClientHandler.instance().getClient().theWorld != null)
+    		return FMLClientHandler.instance().getClient().theWorld.getBlockTileEntity(x, y, z);
+    	return null;
     }
 
     @Override
@@ -53,13 +55,13 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	@Override
 	public void registerRenderers() {
 		for (BlockRenderers renderer : BlockRenderers.values()) {
-			RenderingRegistry.instance().registerBlockHandler(renderer.getRenderer());
+			RenderingRegistry.registerBlockHandler(renderer.getRenderer());
 		}
 	}
 
 	@Override
 	public int getFreeRenderId() {
-		return RenderingRegistry.instance().getNextAvailableRenderId();
+		return RenderingRegistry.getNextAvailableRenderId();
 	}
 
 	@Override

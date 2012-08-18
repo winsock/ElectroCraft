@@ -151,6 +151,9 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
     @Override
     public void handleInput() {
+    	while (Mouse.next()) {
+    		this.handleMouseInput();
+    	}
         while (Keyboard.next()) {
         	boolean down;
         	if (Keyboard.getEventKeyState()) {

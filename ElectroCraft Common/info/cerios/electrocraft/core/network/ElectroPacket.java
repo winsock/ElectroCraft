@@ -13,7 +13,7 @@ import java.io.IOException;
 public abstract class ElectroPacket {
 
     public enum Type {
-        SHIFT(ShiftPacket.class),
+        MODIFIER(ModifierPacket.class),
         GUI(GuiPacket.class),
         ADDRESS(NetworkAddressPacket.class),
         INPUT(ComputerInputPacket.class),

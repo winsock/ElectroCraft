@@ -13,6 +13,8 @@ import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 
 public class ElectroCraftSidedServer implements IElectroCraftSided {
 
+	private boolean isShiftDown = false;
+	
 	@Override
 	public void init() { }
 
@@ -41,7 +43,13 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 	public int getFreeRenderId() { return 0; }
 
 	@Override
-	public boolean isShiftHeld() { return false; }
+	public boolean isShiftHeld() {
+		return isShiftDown;
+	}
+	
+	public void setShiftState(boolean state) {
+		this.isShiftDown = state;
+	}
 
 	@Override
 	public void startComputerClient(int port, SocketAddress address) { }

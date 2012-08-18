@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.network;
 
+import info.cerios.electrocraft.ElectroCraftSidedServer;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.ElectroPacket.Type;
@@ -29,9 +30,23 @@ public class UniversialPacketHandler implements IPacketHandler {
 			// Must be a server sided packet
 			try {
 				ElectroPacket ecPacket = ElectroPacket.readMCPacket(packet);
-				if (ecPacket.getType() == Type.SHIFT) {
-					ShiftPacket shiftPacket = (ShiftPacket)ecPacket;
-
+				if (ecPacket.getType() == Type.MODIFIER) {
+					ModifierPacket modifierPacket = (ModifierPacket)ecPacket;
+					
+					// Set the server shift state
+					if (ElectroCraft.electroCraftSided instanceof ElectroCraftSidedServer)
+						((ElectroCraftSidedServer)ElectroCraft.electroCraftSided).setShiftState(modifierPacket.isShiftDown());
+					
+					// Send the modifier packet to the computer if it is a valid computer
+					if (ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player) != null) {
+						if (ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).getComputer() != null) {
+							if (ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).getComputer().getComputer() != null) {
+								if (ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).getComputer().getComputer().isRunning()) {
+									ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).getComputer().getComputer().getKeyboard().proccessModifierPacket(modifierPacket);
+								}
+							}
+						}
+					}
 				} else if (ecPacket.getType() == Type.ADDRESS) {
 					NetworkAddressPacket addressPacket = (NetworkAddressPacket)ecPacket;
 					World world = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(addressPacket.getWorldId());
@@ -43,7 +58,7 @@ public class UniversialPacketHandler implements IPacketHandler {
 				} else if (ecPacket.getType() == Type.INPUT) {
 					ComputerInputPacket inputPacket = (ComputerInputPacket)ecPacket;
 					if (inputPacket.wasKeyDown()) {
-						ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).getComputer().getComputer().getKeyboard().onKeyPress((byte) inputPacket.getEventKey());
+						ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).getComputer().getComputer().getKeyboard().onKeyPress(inputPacket);
 					}
 				}
 			} catch (IOException e) {

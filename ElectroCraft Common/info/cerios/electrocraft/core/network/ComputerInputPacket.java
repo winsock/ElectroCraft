@@ -45,7 +45,7 @@ public class ComputerInputPacket extends ElectroPacket {
         this.dY = deltaY;
         this.wD = wheelDelta;
     }
-
+    
     public void setWasKeyDown(boolean downState) {
         down = downState;
     }

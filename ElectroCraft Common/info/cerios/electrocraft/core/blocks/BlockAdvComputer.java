@@ -17,15 +17,15 @@ import net.minecraft.src.Material;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
 
-public class BlockComputer extends BlockNetwork {
+public class BlockAdvComputer extends BlockNetwork {
 
-    public BlockComputer(int id) {
+    public BlockAdvComputer(int id) {
         super(id, 40, Material.iron);
     }
 
     @Override
     public int getBlockTextureFromSide(int side) {
-        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[side];
+        return ElectroBlocks.ADV_COMPUTER.getDefaultTextureIndices()[side];
     }
 
     @Override
@@ -41,7 +41,7 @@ public class BlockComputer extends BlockNetwork {
         		if (computerTileEntity != null) {
         			computerTileEntity.setActivePlayer(player);
         			if (computerTileEntity.getComputer() == null)
-        				computerTileEntity.createXECCPU();
+        				computerTileEntity.createComputer();
         			if (!computerTileEntity.getComputer().isRunning())
         				computerTileEntity.startComputer();
         			GuiPacket guiPacket = new GuiPacket();

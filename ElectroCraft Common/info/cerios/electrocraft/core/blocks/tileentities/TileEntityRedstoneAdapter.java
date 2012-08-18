@@ -1,7 +1,6 @@
 package info.cerios.electrocraft.core.blocks.tileentities;
 
 import info.cerios.electrocraft.core.computer.NetworkBlock;
-import info.cerios.electrocraft.core.computer.XECCPU.InteruptData;
 import net.minecraft.src.NBTTagCompound;
 
 public class TileEntityRedstoneAdapter extends NetworkBlock {
@@ -37,9 +36,9 @@ public class TileEntityRedstoneAdapter extends NetworkBlock {
 
 	@Override
 	public Object onTaskComplete(Object... objects) {
-		if (objects[0] instanceof InteruptData) {
-			InteruptData data = (InteruptData)objects[0];
-		}
+//		if (objects[0] instanceof InteruptData) {
+//			InteruptData data = (InteruptData)objects[0];
+//		}
 		return 0;
 	}
 }

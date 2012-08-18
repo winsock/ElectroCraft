@@ -1,7 +1,7 @@
 package info.cerios.electrocraft;
 
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.network.ShiftPacket;
+import info.cerios.electrocraft.core.network.ModifierPacket;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -19,22 +19,21 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 public class ClientTickHandler implements IScheduledTickHandler {
 	
     private boolean lastShiftState = false;
+    private boolean lastCtrlState = false;
 
 	@Override
 	public void tickStart(EnumSet<TickType> type, Object... tickData) {
-		// Don't want this event running on server side
-		if (!((World)tickData[0]).isRemote)
-			return;
 		try {
 			// Shift Packet
-            if (lastShiftState != (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT))) {
+            if ((lastShiftState != (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT))) || (lastCtrlState != (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)))) {
                 lastShiftState = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
-                ShiftPacket shiftPacket = new ShiftPacket();
-                shiftPacket.setShiftState(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT));
-                FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(shiftPacket.getMCPacket());
+                lastCtrlState = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL);
+                ModifierPacket modifierPacket = new ModifierPacket();
+                modifierPacket.setModifiers(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT), Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL));
+                FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(modifierPacket.getMCPacket());
             }
         } catch (IOException e) {
-            FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send packet!");
+            FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send modifier packet!");
         }
 	}
 
@@ -44,7 +43,7 @@ public class ClientTickHandler implements IScheduledTickHandler {
 
 	@Override
 	public EnumSet<TickType> ticks() {
-		return EnumSet.of(TickType.WORLD);
+		return EnumSet.of(TickType.PLAYER);
 	}
 
 	@Override

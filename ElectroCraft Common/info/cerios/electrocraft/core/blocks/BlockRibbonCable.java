@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
 import net.minecraft.src.*;
-import net.minecraftforge.common.Orientation;
+import net.minecraftforge.common.ForgeDirection;
 
 public class BlockRibbonCable extends BlockNetwork {
 
@@ -35,7 +35,7 @@ public class BlockRibbonCable extends BlockNetwork {
 
     @Override
     public boolean canPlaceBlockAt(World par1World, int par2, int par3, int par4) {
-        return par1World.isBlockSolidOnSide(par2, par3 - 1, par4, Orientation.UP) || par1World.getBlockId(par2, par3 - 1, par4) == Block.glowStone.blockID;
+        return par1World.isBlockSolidOnSide(par2, par3 - 1, par4, ForgeDirection.UP) || par1World.getBlockId(par2, par3 - 1, par4) == Block.glowStone.blockID;
     }
 
     @Override

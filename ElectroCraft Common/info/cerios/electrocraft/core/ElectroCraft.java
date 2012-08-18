@@ -12,8 +12,6 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.common.registry.TickRegistry;
 import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
-import info.cerios.electrocraft.core.computer.XECInterface;
-import info.cerios.electrocraft.core.computer.XECInterface.AssembledData;
 import info.cerios.electrocraft.core.items.ElectroItems;
 import info.cerios.electrocraft.core.items.ItemHandler;
 import info.cerios.electrocraft.core.network.*;
@@ -40,7 +38,6 @@ public class ElectroCraft {
     @SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
     public static IElectroCraftSided electroCraftSided;
     
-    private XECInterface xecInterface;
     private ComputerServer server;
 
     public ElectroCraft() {
@@ -82,9 +79,6 @@ public class ElectroCraft {
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
         	TickRegistry.registerScheduledTickHandler(electroCraftSided.getTickHandler(), Side.CLIENT);
         }
-        
-        // Create the computer handler
-        this.xecInterface = new XECInterface();
     }
     
     @Mod.ServerStarting
@@ -110,13 +104,9 @@ public class ElectroCraft {
 
     private void registerBaseRecipes() {
     	GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ElectroItems.ELECTRO_DUST.getItem(), 4), Item.redstone, "magnetiteDust", "magnetiteDust", "magnetiteDust"));
-    	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.COMPUTER.getBlock()), "III", "ICI", "IEI", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'I', Item.ingotIron, 'C', Item.compass);
+    	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.ADV_COMPUTER.getBlock()), "III", "ICI", "IEI", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'I', Item.ingotIron, 'C', Item.compass);
     	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.REDSTONE_ADAPTER.getBlock()), "III", "ICI", "IRI", 'R', Item.redstone, 'I', Item.ingotIron, 'C', Block.thinGlass);
     	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.RIBBON_CABLE.getBlock(), 16), "WWW", "III", "WWW", 'W', Block.cloth, 'I', Item.ingotIron);
-    }
-
-    public XECInterface getComputerInterface() {
-        return xecInterface;
     }
     
     public boolean isShiftHeld() {

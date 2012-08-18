@@ -30,16 +30,16 @@ public class GuiNetworkAddressScreen extends GuiScreen {
 
     @Override
     public void initGui() {
-//		controlLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 30, 50, 15);
-//		if (!isSmp)
-//			controlLineTextField.setText(Integer.toString(device.ioPortsRequested()[0]));
-//		else
-//			controlLineTextField.setText(Integer.toString(packetInProgress.getControlAddress()));
-//		dataLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 60, 50, 15);
-//		if (!isSmp)
-//			dataLineTextField.setText(Integer.toString(device.ioPortsRequested()[1]));
-//		else
-//			dataLineTextField.setText(Integer.toString(packetInProgress.getDataAddress()));
+		controlLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 30, 50, 15);
+		if (!isSmp)
+			controlLineTextField.setText(Integer.toString(device.getControlAddress()));
+		else
+			controlLineTextField.setText(Integer.toString(packetInProgress.getControlAddress()));
+		dataLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 60, 50, 15);
+		if (!isSmp)
+			dataLineTextField.setText(Integer.toString(device.getDataAddress()));
+		else
+			dataLineTextField.setText(Integer.toString(packetInProgress.getDataAddress()));
     }
 
     @Override
