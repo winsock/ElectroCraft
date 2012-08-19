@@ -29,7 +29,7 @@ public class TileEntityComputer extends NetworkBlock {
      * Where X = the x position of the block, Y = the y position of the block, Z = the z position of the block
      * EpochTime = Milliseconds since the Unix Epoch
      */
-    private String baseDirectory = "./electrocraft/computers/" + String.valueOf(this.xCoord) + String.valueOf(this.yCoord) + String.valueOf(this.zCoord) + String.valueOf(Calendar.getInstance().getTime().getTime());
+    private String baseDirectory = "";
 
     public TileEntityComputer() {
         this.controlAddress = 4096;
@@ -53,6 +53,8 @@ public class TileEntityComputer extends NetworkBlock {
     
     public void createComputer() {
     	if (activePlayer instanceof EntityPlayerMP) {
+    		if (this.baseDirectory.isEmpty())
+    	        this.baseDirectory = "./electrocraft/computers/" + String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
     		computer = new Computer(ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer), "", baseDirectory, true, 320, 240, 40, 60);
         } else {
     		computer = new Computer(null, "", baseDirectory, true, 320, 240, 40, 60);

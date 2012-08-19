@@ -38,6 +38,9 @@ public class Computer implements Runnable {
 		this.client = client;
 		this.bootScript = script;
 		this.baseDirectory = new File(baseDirectory);
+		if (!this.baseDirectory.exists()) {
+			this.baseDirectory.mkdirs();
+		}
 	}
 	
 	@ExposedToLua(value = false)
