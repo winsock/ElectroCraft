@@ -1,6 +1,5 @@
 package info.cerios.electrocraft.core.computer;
 
-import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
 import info.cerios.electrocraft.core.utils.Utils;
 
@@ -23,6 +22,7 @@ public class LuaJSecurity extends SecurityManager {
 	}
 	
 	public boolean shouldCheckPermissions() {
+		assert threadLocal.get() != null;
 		return threadLocal.get() != null;
 	}
 	

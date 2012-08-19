@@ -97,7 +97,7 @@ public class ElectroCraft {
 		// Create our new security manager
 		securityManager = new LuaJSecurity("electrocraft");
 		// Register the security manager
-		System.setSecurityManager(securityManager);
+		//System.setSecurityManager(securityManager);
 		
 		// Create out computer socket connection manager
 		computerSocketManager = new ComputerSocketManager();
