@@ -12,6 +12,7 @@ public class Terminal extends Writer {
 	private int currentColumn, currentRow;
 	private int columnOffset = 0;
 	
+	@ExposedToLua(value = false)
 	public Terminal(int rows, int columns) {
 		this.columns = columns;
 		this.rows = rows;
@@ -28,6 +29,7 @@ public class Terminal extends Writer {
 		return output;
 	}
 	
+	@ExposedToLua(value = false)
 	public List<Character> getRow(int row) {
 		if (terminal.size() <= row)
 			return null;
@@ -58,9 +60,17 @@ public class Terminal extends Writer {
 		currentColumn = 0;
 		columnOffset = 0;
 	}
-
+	
+	@ExposedToLua(value = false)
 	public void writeLine(String string) throws IOException {
 		write(string + "\n");
+	}
+	
+	// Used only for Lua
+	public void print(String string) {
+		try {
+			writeLine(string);
+		} catch (IOException e) { }
 	}
 	
 	public void setChar(int row, int col, char chr) {
@@ -111,12 +121,15 @@ public class Terminal extends Writer {
 		}
 	}
 	
+	@ExposedToLua(value = false)
 	@Override
 	public void close() throws IOException { }
 
+	@ExposedToLua(value = false)
 	@Override
 	public void flush() throws IOException { }
 
+	@ExposedToLua(value = false)
 	@Override
 	public void write(char[] arg0, int arg1, int arg2) throws IOException {
 		for (int i = arg1; i < arg2; i++) {

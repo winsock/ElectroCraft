@@ -112,4 +112,27 @@ public class Utils {
         }
         return  buffer.toString();
     }
+    
+    /**
+     * Checks, whether the child directory is a subdirectory of the base directory.
+     * Or a file inside the base directory
+     *
+     * @param base the base directory.
+     * @param child the suspected child directory or file.
+     * @return true, if the child is a subdirectory of the base directory, or a file in the base directory
+     * @throws IOException if an IOError occurred during the test.
+     */
+    public static boolean baseDirectoryContains(File base, File child) throws IOException {
+        base = base.getCanonicalFile();
+        child = child.getCanonicalFile();
+
+        File parentFile = child;
+        while (parentFile != null) {
+            if (base.equals(parentFile)) {
+                return true;
+            }
+            parentFile = parentFile.getParentFile();
+        }
+        return false;
+    }
 }

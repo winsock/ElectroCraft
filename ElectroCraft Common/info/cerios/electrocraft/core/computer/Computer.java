@@ -1,7 +1,10 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.commands.ComputerCommands;
+import info.cerios.electrocraft.core.network.ComputerServerClient;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -17,20 +20,39 @@ public class Computer implements Runnable {
 	private Terminal terminal;
 	private VideoCard videoCard;
 	private Keyboard keyboard;
+	private boolean graphicsMode = false;
+	private ComputerServerClient client;
+	private File baseDirectory;
 	
-	public Computer(String script, boolean isInternal, int width, int height, int rows, int columns) {
+	@ExposedToLua(value = false)
+	public Computer(ComputerServerClient client, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
 		this.isInternal = isInternal;
 		this.soundCard = new SoundCard();
-		this.videoCard = new VideoCard();
-
+		this.videoCard = new VideoCard(width, height);
 		this.terminal = new Terminal(rows, columns);
 		this.keyboard = new Keyboard(terminal);
-
-		bootScript = script;
+		this.client = client;
+		this.bootScript = script;
+		this.baseDirectory = new File(baseDirectory);
+	}
+	
+	@ExposedToLua(value = false)
+	public ComputerServerClient getClient() {
+		return client;
+	}
+	
+	public void setGraphicsMode(boolean graphicsMode) {
+		if (this.graphicsMode != graphicsMode)
+			client.changeModes(!graphicsMode);
+		this.graphicsMode = graphicsMode;
 	}
 	
 	public void setRunning(boolean value) {
 		running = value;
+	}
+	
+	public File getBaseDirectory() {
+		return baseDirectory;
 	}
 	
 	public boolean isRunning() {
@@ -53,8 +75,12 @@ public class Computer implements Runnable {
 		return keyboard;
 	}
 	
+	@ExposedToLua(value = false)
 	@Override
 	public void run() {
+		// Register the main Lua thread with the security manager
+		ElectroCraft.instance.getSecurityManager().registerThread(this);
+		
 		try {
 			terminal.write("Booting Cerios");
 			for (int i = 0; i < 20; i++) {

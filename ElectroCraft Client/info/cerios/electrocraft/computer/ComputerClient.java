@@ -87,11 +87,8 @@ public class ComputerClient implements Runnable {
                     int transmissionType = in.read();
                     int length = dis.readInt();
 
-                    if (length <= 0)
-                        continue;
-
-                    if (displayBuffer == null || displayBuffer.capacity() < width * height * 3) {
-                        ByteBuffer newBuffer = ByteBuffer.allocateDirect(width * height * 3);
+                    if (displayBuffer == null || displayBuffer.capacity() < width * height) {
+                        ByteBuffer newBuffer = ByteBuffer.allocateDirect(width * height);
                         if (displayBuffer != null) {
                             displayBuffer.rewind();
                             newBuffer.put(displayBuffer);

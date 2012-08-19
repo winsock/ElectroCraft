@@ -12,30 +12,48 @@ public class Keyboard extends Reader {
 	
 	private List<Integer> keyBuffer = new ArrayList<Integer>();
 	private Terminal terminal;
-	boolean isShiftDown = false, isCtrlDown = false;
-	
+	private boolean isShiftDown = false, isCtrlDown = false;
+	private boolean disableTerminalOutput = false;
+
+	@ExposedToLua(value = false)
 	public Keyboard(Terminal terminal) {
 		this.terminal = terminal;
 	}
 	
-
+	@ExposedToLua(value = false)
 	public void onKeyPress(ComputerInputPacket inputPacket) {
 		if (inputPacket.getEventKey() > 0)
 			onKeyPress(inputPacket.getEventKey());
 	}
 	
+	@ExposedToLua(value = false)
 	public void proccessModifierPacket(ModifierPacket packet) {
 		isShiftDown = packet.isShiftDown();
 		isCtrlDown = packet.isCtrlDown();
 	}
 	
+	@ExposedToLua(value = false)
 	public void onKeyPress(int key) {
 		keyBuffer.add(key);
-		try {
-			terminal.write((char)key);
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (!disableTerminalOutput) {
+			try {
+				terminal.write((char)key);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+	}
+	
+	public void disableTerminalOutput() {
+		disableTerminalOutput = true;
+	}
+	
+	public void enableTerminalOutput() {
+		disableTerminalOutput = false;
+	}
+	
+	public boolean isTerminalOutputEnabled() {
+		return !disableTerminalOutput;
 	}
 	
 	public boolean isShiftDown() {
@@ -63,9 +81,11 @@ public class Keyboard extends Reader {
 		return key;
 	}
 
+	@ExposedToLua(value = false)
 	@Override
-	public void close() throws IOException { System.out.println("Close Called!"); }
-
+	public void close() throws IOException { }
+	
+	@ExposedToLua(value = false)
 	@Override
 	public int read(char[] arg0, int arg1, int arg2) throws IOException {
 		if (keyBuffer.size() <= 0) {

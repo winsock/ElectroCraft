@@ -29,7 +29,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
     private int displayTextureId;
     private boolean repeatEventsOldState = Keyboard.areRepeatEventsEnabled();
     private volatile boolean isVisible = true;
-    private int lastWidth, lastHeight;
+    private int lastWidth, lastHeight, displayWidth, displayHeight;
     private ByteBuffer displayBuffer;
     private boolean terminalMode = true;
     private Map<Integer, String> terminalList = new HashMap<Integer, String>();
@@ -124,6 +124,25 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
     	if (shouldAskForScreenPacket) {
     		try {
     			if (!terminalMode) {
+    				if (displayBuffer != null) {
+    					if (!GL11.glIsTexture(displayTextureId) || (displayWidth != lastWidth || displayHeight != lastHeight)) {
+    						if (GL11.glIsTexture(displayTextureId))
+    							GL11.glDeleteTextures(displayTextureId);
+    						displayTextureId = GL11.glGenTextures();
+    						GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+    						GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, displayWidth, displayHeight, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
+    						GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+    						GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+    						GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+    						lastWidth = displayWidth;
+    						lastHeight = displayHeight;
+    					} else if (displayBuffer != null) {
+    						GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+    						GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, displayWidth, displayHeight, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
+    						GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+    					}
+    				}
+                    // Ask for another screen packet
     				ElectroCraftClient.instance.getComputerClient().sendPacket(ComputerProtocol.DISPLAY);
     				shouldAskForScreenPacket = false;
     			} else {
@@ -181,24 +200,31 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
     		if (type == ComputerProtocol.MODE) {
     			terminalMode = ((Integer) objects[1]) == 0 ? false : true; 
     		} else if (type == ComputerProtocol.DISPLAY) {
-    			int width = (Integer) objects[2];
-                int height = (Integer) objects[3];
-                if (!GL11.glIsTexture(displayTextureId) || (width != lastWidth || height != lastHeight)) {
-                    if (GL11.glIsTexture(displayTextureId))
-                        GL11.glDeleteTextures(displayTextureId);
-                    displayTextureId = GL11.glGenTextures();
-                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-                    GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) objects[1]);
-                    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-                    GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-                } else {
-                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-                    GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) objects[1]);
-                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-                }
-                lastWidth = width;
-                lastHeight = height;
+    			lastWidth = displayWidth;
+    			lastHeight = displayHeight;
+    			displayWidth = (Integer) objects[2];
+                displayHeight = (Integer) objects[3];
+    			
+    			if (displayBuffer == null || displayBuffer.capacity() < (displayWidth * displayHeight * 3))
+    				displayBuffer = ByteBuffer.allocateDirect(displayWidth * displayHeight * 3);
+    			
+    			if (((ByteBuffer) objects[1]).capacity() * 3 != (displayWidth * displayHeight * 3)) {
+    				FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Error! Got corupted screen packet!");
+    				return null;
+    			}
+    			
+    			((ByteBuffer) objects[1]).rewind();
+				displayBuffer.rewind();
+    			for (int i = 0; i < ((ByteBuffer) objects[1]).capacity(); i++) {
+    				int rgb = ElectroCraft.colorPalette[((ByteBuffer) objects[1]).get() & 0xFF];
+    				byte red = (byte) ((rgb >> 16) & 0xFF);
+    				byte green = (byte) ((rgb >> 8) & 0xFF);
+    				byte blue = (byte) (rgb & 0xFF);
+    				displayBuffer.put(red);
+    				displayBuffer.put(green);
+    				displayBuffer.put(blue);
+    			}
+    			displayBuffer.rewind();
     		} else if (type == ComputerProtocol.TERMINAL) {
     			if (((Integer)objects[1]) == 0) {
     				Object[] data = (Object[])objects[2];

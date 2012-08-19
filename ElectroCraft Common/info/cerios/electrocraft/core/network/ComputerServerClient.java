@@ -2,13 +2,16 @@ package info.cerios.electrocraft.core.network;
 
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
+import info.cerios.electrocraft.core.computer.OpenGLCommands;
 import info.cerios.electrocraft.core.utils.Utils;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,9 +29,9 @@ public class ComputerServerClient implements Runnable {
 	private OutputStream out;
 	private DataOutputStream dos;
 	private byte[] lastVGAData;
-	
 	private TileEntityComputer computer;
 	private ComputerServer server;
+	private Object syncObject = new Object();
 	
 	public ComputerServerClient(ComputerServer server, Socket connection) {
 		socket = connection;
@@ -53,40 +56,62 @@ public class ComputerServerClient implements Runnable {
 	}
 	
 	public void sendTerminalUpdate(boolean shiftRowsUp, int... changedRows) {
-		try {
-			out.write(ComputerProtocol.TERMINAL.ordinal());
-			out.write(1); // Terminal packet type 0
-			out.write(shiftRowsUp ? 1 : 0);
-			dos.writeInt(changedRows.length);
-			for (int i = 0; i < changedRows.length; i++) {
-				dos.writeInt(changedRows[i]);
-				dos.writeUTF(computer.getComputer().getTerminal().getLine(changedRows[i]));
-			}
-		} catch (IOException e) {
+		synchronized (syncObject) {
 			try {
-				socket.close();
-				FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
-			} catch (IOException e1) { }
+				out.write(ComputerProtocol.TERMINAL.ordinal());
+				out.write(1); // Terminal packet type 0
+				out.write(shiftRowsUp ? 1 : 0);
+				dos.writeInt(changedRows.length);
+				for (int i = 0; i < changedRows.length; i++) {
+					dos.writeInt(changedRows[i]);
+					dos.writeUTF(computer.getComputer().getTerminal().getLine(changedRows[i]));
+				}
+			} catch (IOException e) {
+				try {
+					socket.close();
+					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+				} catch (IOException e1) { }
+			}
 		}
 	}
 	
 	public void sendTerminalSize() {
-		try {
-			out.write(ComputerProtocol.TERMINAL_SIZE.ordinal());
-			dos.writeInt(computer.getComputer().getTerminal().getRows());
-			dos.writeInt(computer.getComputer().getTerminal().getColumns());
-		} catch (IOException e) {
+		synchronized (syncObject) {
 			try {
-				socket.close();
-				FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
-			} catch (IOException e1) {}
+				out.write(ComputerProtocol.TERMINAL_SIZE.ordinal());
+				dos.writeInt(computer.getComputer().getTerminal().getRows());
+				dos.writeInt(computer.getComputer().getTerminal().getColumns());
+			} catch (IOException e) {
+				try {
+					socket.close();
+					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+				} catch (IOException e1) {}
+			}
 		}
 	}
 	
 	public void changeModes(boolean terminal) {
+		synchronized (syncObject) {
+			try {
+				out.write(ComputerProtocol.MODE.ordinal());
+				out.write(terminal ? 1 : 0);
+			} catch (IOException e) {
+				try {
+					socket.close();
+					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+				} catch (IOException e1) { }
+			}
+		}
+	}
+	
+	public void sendOpenGLPacket(OpenGLCommands command, Serializable... args) {
 		try {
-			out.write(ComputerProtocol.MODE.ordinal());
-			out.write(terminal ? 1 : 0);
+			out.write(ComputerProtocol.GLPACKET.ordinal());
+			out.write(command.ordinal());
+			dos.writeInt(args.length);
+			ObjectOutputStream oos = new ObjectOutputStream(out);
+			for (int i = 0; i < args.length; i++)
+				oos.writeObject(args[i]);
 		} catch (IOException e) {
 			try {
 				socket.close();
@@ -100,77 +125,78 @@ public class ComputerServerClient implements Runnable {
 		while (server.getRunning() && socket.isConnected()) {
 			try {
 				int type = in.read();
-				
-				switch(ComputerProtocol.values()[type]) {
-				case DISPLAY:
-					
-					out.write(ComputerProtocol.DISPLAY.ordinal());
-					dos.writeInt(computer.getComputer().getVideoCard().getWidth());
-					dos.writeInt(computer.getComputer().getVideoCard().getHeight());
-					
-					byte[] vgadata = computer.getComputer().getVideoCard().getData();
-					lastVGAData = vgadata;
-					out.write(0);
-					dos.writeInt(vgadata.length);
-					byte[] compressedData = Utils.compressBytes(vgadata);
-					dos.writeInt(compressedData.length);
-					out.write(compressedData);
-//					if (lastVGAData == null) {
-//						
-//					} else {						
-//						ChangedBytes current = null;
-//						List<ChangedBytes> changedBytes = new ArrayList<ChangedBytes>();
-//
-//						int lastOffset = 0;
-//						int totalLength = 0;
-//						while (current == null ? true : current.length > 0) {
-//							if (current == null ) {
-//								current = getNextBlock(0, vgadata, lastVGAData);
-//							} else {
-//								current = getNextBlock(lastOffset + current.length, vgadata, lastVGAData);
-//							}
-//							lastOffset = current.offset;
-//							totalLength += current.length;
-//							changedBytes.add(current);
-//						}
-//						
-//						out.write(1);
-//						dos.writeInt(totalLength);
-//						
-//						for (ChangedBytes changedByte : changedBytes) {
-//							if (changedByte.length > 0) {
-//								byte[] compressedData = Utils.compressBytes(changedByte.b);
-//								dos.writeInt(compressedData.length);
-//								dos.writeInt(changedByte.offset);
-//								out.write(compressedData);
-//							}
-//						}
-//					}
-					lastVGAData = vgadata;
-					break;
-				case TERMINAL:
-					int row = dis.readInt();
-					out.write(ComputerProtocol.TERMINAL.ordinal());
-					out.write(0); // Terminal packet type 0
-					dos.writeInt(row); // Resend the row number
-					if (computer.getComputer().getTerminal().getRows() > row)
-						dos.writeUTF(computer.getComputer().getTerminal().getLine(row));
-					break;
-				case DOWNLOAD_IMAGE:
-					break;
-				case UPLOAD_FILE:
-					int size = dis.readInt();
-					byte[] data = new byte[size];
-					dis.read(data, 0, size);
-					// TODO Do something with this data!
-					break;
-				case TERMINATE:
-					throw new IOException();
-				default:
-					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Got Unknown Packet!");
-					break;
+				synchronized (syncObject) {
+					switch(ComputerProtocol.values()[type]) {
+					case DISPLAY:
+
+						out.write(ComputerProtocol.DISPLAY.ordinal());
+						dos.writeInt(computer.getComputer().getVideoCard().getWidth());
+						dos.writeInt(computer.getComputer().getVideoCard().getHeight());
+
+						byte[] vgadata = computer.getComputer().getVideoCard().getData();
+						
+						if (lastVGAData == null) {
+							lastVGAData = vgadata;
+							out.write(0);
+							dos.writeInt(vgadata.length);
+							byte[] compressedData = Utils.compressBytes(vgadata);
+							dos.writeInt(compressedData.length);
+							out.write(compressedData);
+						} else {						
+							ChangedBytes current = null;
+							List<ChangedBytes> changedBytes = new ArrayList<ChangedBytes>();
+
+							int lastOffset = 0;
+							int totalLength = 0;
+							while (current == null ? true : current.length > 0) {
+								if (current == null ) {
+									current = getNextBlock(0, vgadata, lastVGAData);
+								} else {
+									current = getNextBlock(lastOffset + current.length, vgadata, lastVGAData);
+								}
+								lastOffset = current.offset;
+								totalLength += current.length;
+								changedBytes.add(current);
+							}
+
+							out.write(1);
+							dos.writeInt(totalLength);
+
+							for (ChangedBytes changedByte : changedBytes) {
+								if (changedByte.length > 0) {
+									byte[] compressedData = Utils.compressBytes(changedByte.b);
+									dos.writeInt(compressedData.length);
+									dos.writeInt(changedByte.offset);
+									out.write(compressedData);
+								}
+							}
+						}
+						lastVGAData = vgadata;
+						break;
+					case TERMINAL:
+						int row = dis.readInt();
+						out.write(ComputerProtocol.TERMINAL.ordinal());
+						out.write(0); // Terminal packet type 0
+						dos.writeInt(row); // Resend the row number
+						if (computer.getComputer().getTerminal().getRows() > row)
+							dos.writeUTF(computer.getComputer().getTerminal().getLine(row));
+						break;
+					case DOWNLOAD_IMAGE:
+						break;
+					case UPLOAD_FILE:
+						int size = dis.readInt();
+						byte[] data = new byte[size];
+						dis.read(data, 0, size);
+						// TODO Do something with this data!
+						break;
+					case TERMINATE:
+						throw new IOException();
+					default:
+						FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Got Unknown Packet!");
+						break;
+					}
+					out.flush();
 				}
-				out.flush();
 			} catch (IOException e) {
 				FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
 				return;

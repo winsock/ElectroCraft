@@ -3,7 +3,8 @@ package info.cerios.electrocraft.core.computer.commands;
 public enum ComputerCommands {
 	CLEAR("clear", "Clears the screen", 0, new ClearCommand()),
 	HELP("help", "Prints the system help", 0, new HelpCommand()),
-	EDIT("edit", "Creates or edits a file", 1, new EditCommand());
+	EDIT("edit", "Creates or edits a file", 1, new EditCommand()),
+	LUA("lua", "Runs a Lua program", 1, new LuaCommand());
 	
 	private String command, helpText;
 	private int argc;

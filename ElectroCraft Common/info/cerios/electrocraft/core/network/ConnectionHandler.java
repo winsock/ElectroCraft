@@ -51,5 +51,4 @@ public class ConnectionHandler implements IConnectionHandler {
 	@Override
 	public void clientLoggedIn(NetHandler clientHandler, NetworkManager manager, Packet1Login login) {
 	}
-
 }

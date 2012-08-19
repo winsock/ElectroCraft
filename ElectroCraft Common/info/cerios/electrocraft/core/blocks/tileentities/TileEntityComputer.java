@@ -12,6 +12,7 @@ import net.minecraft.src.NBTTagList;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,6 +23,13 @@ public class TileEntityComputer extends NetworkBlock {
     private Computer computer;
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();
     private EntityPlayer activePlayer;
+    /**
+     * The default base directory for a new computer, its format is as follows
+     * XYZEpochTime
+     * Where X = the x position of the block, Y = the y position of the block, Z = the z position of the block
+     * EpochTime = Milliseconds since the Unix Epoch
+     */
+    private String baseDirectory = "./electrocraft/computers/" + String.valueOf(this.xCoord) + String.valueOf(this.yCoord) + String.valueOf(this.zCoord) + String.valueOf(Calendar.getInstance().getTime().getTime());
 
     public TileEntityComputer() {
         this.controlAddress = 4096;
@@ -29,24 +37,27 @@ public class TileEntityComputer extends NetworkBlock {
         ioPorts.add(this);
     }
     
+    public void writeToNBT(NBTTagCompound nbttagcompound) {
+        super.writeToNBT(nbttagcompound);
+        nbttagcompound.setString("baseDirectory", baseDirectory);
+    }
+
+    public void readFromNBT(NBTTagCompound nbttagcompound) {
+        super.readFromNBT(nbttagcompound);
+        this.baseDirectory = nbttagcompound.getString("baseDirectory");
+    }
+    
     public Computer getComputer() {
     	return computer;
     }
     
     public void createComputer() {
-    	File bootScript = new File("./electrocraft/boot.rb");
-    	if (!bootScript.exists()) {
-    		try {
-				Utils.copyResource("info/cerios/electrocraft/core/computer/scripts/boot.rb", bootScript);
-			} catch (IOException e) {
-				FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Error! Could not copy the computer image!");
-			}
-    	}
-		computer = new Computer("./electrocraft/boot.rb", true, 320, 240, 40, 60);
-    	
     	if (activePlayer instanceof EntityPlayerMP) {
+    		computer = new Computer(ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer), "", baseDirectory, true, 320, 240, 40, 60);
 	        ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer).setComputer(this);
 	        ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer).sendTerminalSize();
+        } else {
+    		computer = new Computer(null, "", baseDirectory, true, 320, 240, 40, 60);
         }
     }
     
