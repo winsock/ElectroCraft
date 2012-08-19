@@ -17,6 +17,7 @@ import info.luaj.vm2.parser.LuaParser;
 import info.luaj.vm2.parser.ParseException;
 
 import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.computer.ComputerSocket;
 
 public class LuaCommand implements IComputerCommand {
 	
@@ -91,6 +92,20 @@ public class LuaCommand implements IComputerCommand {
 			@Override
 			public LuaValue call() {
 				return CoerceJavaToLua.coerce(computer.getVideoCard());
+			}
+		}.init(computer));
+		
+		globalTable.set("createNewSocket", new ZeroArgFunction() {
+			Computer computer;
+			
+			public ZeroArgFunction init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public LuaValue call() {
+				return CoerceJavaToLua.coerce(new ComputerSocket());
 			}
 		}.init(computer));
 		

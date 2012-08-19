@@ -51,7 +51,7 @@ public class ComputerSocketManager {
 		return thread.getValue2();
 	}
 	
-	private class ConnectionThread implements Runnable {
+	class ConnectionThread implements Runnable {
 		private Socket socket;
 		private InetSocketAddress address;
 		private Mode mode;

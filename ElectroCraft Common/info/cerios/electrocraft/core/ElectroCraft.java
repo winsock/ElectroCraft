@@ -127,6 +127,10 @@ public class ElectroCraft {
     public LuaJSecurity getSecurityManager() {
     	return securityManager;
     }
+    
+    public ComputerSocketManager getComputerSocketManager() {
+    	return computerSocketManager;
+    }
 
     private void registerBaseRecipes() {
     	GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ElectroItems.ELECTRO_DUST.getItem(), 4), Item.redstone, "magnetiteDust", "magnetiteDust", "magnetiteDust"));

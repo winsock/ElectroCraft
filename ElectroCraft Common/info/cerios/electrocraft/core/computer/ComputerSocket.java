@@ -1,8 +1,12 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.core.computer.ComputerSocketManager.Mode;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +16,7 @@ public class ComputerSocket {
 	
 	private ByteArrayOutputStream qeuedData;
 	private boolean isBound = false;
+	private Mode mode;
 	
 	public ComputerSocket() {
 		qeuedData = new ByteArrayOutputStream();
@@ -24,6 +29,9 @@ public class ComputerSocket {
 	
 	public boolean connect(int port, String hostname) {
 		if (!isBound) {
+			mode = Mode.SEND;
+			InetSocketAddress address = new InetSocketAddress(hostname, port);
+			ElectroCraft.instance.getComputerSocketManager().registerEndpoint(this, address, mode);
 			return true;
 		} else {
 			return false;
@@ -32,6 +40,9 @@ public class ComputerSocket {
 	
 	public boolean bind(int port) {
 		if (!isBound) {
+			mode = Mode.RECV;
+			InetSocketAddress address = new InetSocketAddress("0.0.0.0", port);
+			ElectroCraft.instance.getComputerSocketManager().registerEndpoint(this, address, mode);
 			return true;
 		} else {
 			return false;
@@ -42,9 +53,16 @@ public class ComputerSocket {
 		return isBound;
 	}
 	
-	public void write(byte[] data) {
-		if (isBound)
-			
+	public boolean write(byte[] data) {
+		if (isBound) {
+			try {
+				ElectroCraft.instance.getComputerSocketManager().getConnectionThread(this, mode).sendData(data);
+				return true;
+			} catch (IOException e) {
+				return false;
+			}
+		}
+		return false;
 	}
 	
 	public byte[] read() {
