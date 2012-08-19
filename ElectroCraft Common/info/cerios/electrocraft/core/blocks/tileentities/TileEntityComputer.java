@@ -54,8 +54,6 @@ public class TileEntityComputer extends NetworkBlock {
     public void createComputer() {
     	if (activePlayer instanceof EntityPlayerMP) {
     		computer = new Computer(ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer), "", baseDirectory, true, 320, 240, 40, 60);
-	        ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer).setComputer(this);
-	        ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer).sendTerminalSize();
         } else {
     		computer = new Computer(null, "", baseDirectory, true, 320, 240, 40, 60);
         }

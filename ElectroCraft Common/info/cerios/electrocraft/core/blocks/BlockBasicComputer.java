@@ -44,6 +44,8 @@ public class BlockBasicComputer extends BlockNetwork {
         				computerTileEntity.createComputer();
         			if (!computerTileEntity.getComputer().isRunning())
         				computerTileEntity.startComputer();
+        			ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).setComputer(computerTileEntity);
+        	        ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).sendTerminalSize();
         			GuiPacket guiPacket = new GuiPacket();
         			guiPacket.setCloseWindow(false);
         			guiPacket.setGui(Gui.COMPUTER_SCREEN);
