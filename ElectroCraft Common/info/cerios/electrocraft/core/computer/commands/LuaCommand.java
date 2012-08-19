@@ -25,7 +25,6 @@ public class LuaCommand implements IComputerCommand {
 	
 	public LuaCommand() {
 		globalTable = JsePlatform.standardGlobals();
-		globalTable.set("collectgarbage", LuaValue.NIL);
 		globalTable.set("sleep", new OneArgFunction() {
 			@Override
 			public LuaValue call(LuaValue arg) {

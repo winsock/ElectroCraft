@@ -23,6 +23,10 @@ public class Computer implements Runnable {
 	private boolean graphicsMode = false;
 	private ComputerServerClient client;
 	private File baseDirectory;
+	/**
+	 * The current directory of the computer realitve to the baseDirectory
+	 */
+	private String currentDirectory = ".";
 	
 	@ExposedToLua(value = false)
 	public Computer(ComputerServerClient client, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
@@ -53,6 +57,10 @@ public class Computer implements Runnable {
 	
 	public File getBaseDirectory() {
 		return baseDirectory;
+	}
+	
+	public String getCurrentDirectory() {
+		return currentDirectory;
 	}
 	
 	public boolean isRunning() {
