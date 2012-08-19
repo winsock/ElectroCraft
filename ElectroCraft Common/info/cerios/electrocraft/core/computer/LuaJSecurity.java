@@ -14,6 +14,7 @@ public class LuaJSecurity extends SecurityManager {
 	private final InheritableThreadLocal<Computer> threadLocal = new InheritableThreadLocal<Computer>();
 	
 	public LuaJSecurity(String key) {
+		super();
 		this.key = key;
 	}
 	
@@ -22,20 +23,18 @@ public class LuaJSecurity extends SecurityManager {
 	}
 	
 	public boolean shouldCheckPermissions() {
-		assert threadLocal.get() != null;
-		return threadLocal.get() != null;
+		return false;
 	}
 	
 	@Override
     public void checkPermission(Permission perm) {
-		super.checkPermission(perm);
 		if (!shouldCheckPermissions())
 			return;
+		super.checkPermission(perm);
 	}
 	
 	@Override
 	public void checkExec(String cmd) {
-		super.checkExec(cmd);
 		if (!shouldCheckPermissions())
 			return;
 		throw new SecurityException("Error! Lua not allowed to create subprocesses!");
@@ -43,7 +42,6 @@ public class LuaJSecurity extends SecurityManager {
 	
 	@Override
 	public void checkLink(String lib) {
-		super.checkLink(lib);
 		if (!shouldCheckPermissions())
 			return;
 		throw new SecurityException("Error! Lua not allowed to open native libraries!");
@@ -51,14 +49,12 @@ public class LuaJSecurity extends SecurityManager {
 	
 	@Override
 	public void checkRead(FileDescriptor fd) {
-		super.checkRead(fd);
 		if (!shouldCheckPermissions())
 			return;
 		throw new SecurityException("Error! Lua not allowed to open raw file descriptors!");
 	}
 	
 	public void checkRead(String file, Object context) {
-		super.checkRead(file, context);
 		if (!shouldCheckPermissions())
 			return;
 		try {
@@ -72,7 +68,6 @@ public class LuaJSecurity extends SecurityManager {
 	
 	@Override
 	public void checkRead(String file) {
-		super.checkRead(file);
 		if (!shouldCheckPermissions())
 			return;
 		try {
@@ -86,7 +81,6 @@ public class LuaJSecurity extends SecurityManager {
 	
 	@Override
 	public void checkPropertiesAccess() {
-		super.checkPropertiesAccess();
 		if (!shouldCheckPermissions())
 			return;
 		throw new SecurityException("Error! Lua not allowed to access or change system properties!");
@@ -94,7 +88,6 @@ public class LuaJSecurity extends SecurityManager {
 	
 	@Override
 	public void checkExit(int status) {
-		super.checkExit(status);
 		if (!shouldCheckPermissions())
 			return;
 		throw new SecurityException("Error! Lua not allowed to exit the JVM!");
@@ -102,7 +95,6 @@ public class LuaJSecurity extends SecurityManager {
 	
 	@Override
 	public void checkPackageAccess(String pkg) {
-		super.checkPackageAccess(pkg);
 		if (!shouldCheckPermissions())
 			return;
 		
@@ -133,10 +125,5 @@ public class LuaJSecurity extends SecurityManager {
 		if (pkg.startsWith("java.awt")) {
 			throw new SecurityException("Error! Lua not allowed to access java.awt.* packages!");
 		}
-	}
-	
-	@Override
-	public void checkMemberAccess(Class clazz, int which) {
-		
 	}
 }
