@@ -6,6 +6,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
@@ -13,6 +14,7 @@ import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.Material;
 import net.minecraft.src.World;
+import net.minecraftforge.common.ForgeDirection;
 
 public abstract class BlockNetwork extends ElectroBlock {
 
@@ -34,11 +36,19 @@ public abstract class BlockNetwork extends ElectroBlock {
 
     @Override
     public void breakBlock(World world, int x, int y, int z, int par5, int par6) {
+    	super.breakBlock(world, x, y, z, par5, par6);
     	if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
             ((NetworkBlock) world.getBlockTileEntity(x, y, z)).update((NetworkBlock) world.getBlockTileEntity(x, y, z));
         }
-    	super.breakBlock(world, x, y, z, par5, par6);
     }
+    
+    @Override
+    public void onNeighborBlockChange(World world, int x, int y, int z, int nBlockId) {
+		super.onNeighborBlockChange(world, x, y, z, nBlockId);
+		if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
+            ((NetworkBlock) world.getBlockTileEntity(x, y, z)).update((NetworkBlock) world.getBlockTileEntity(x, y, z));
+        }
+	}
 
     @Override
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int par6, float par7, float par8, float par9) {

@@ -12,6 +12,7 @@ import net.minecraft.src.RenderBlocks;
 import net.minecraft.src.Tessellator;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.TileEntitySpecialRenderer;
+import net.minecraftforge.common.ForgeDirection;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
 public class SerialCableRenderer extends TileEntitySpecialRenderer {
@@ -30,32 +31,32 @@ public class SerialCableRenderer extends TileEntitySpecialRenderer {
         GL11.glTranslatef((float) d + 0.5F, (float) d1 + 1.5F, (float) d2 + 0.5F);
         GL11.glScalef(1.0F, -1F, -1F);
 
-        if (tileEntity.isBlockConnected(0))
+        if (tileEntity.isConnectedInDirection(ForgeDirection.DOWN))
         {
             model.renderBottom();
         }
 
-        if (tileEntity.isBlockConnected(1))
+        if (tileEntity.isConnectedInDirection(ForgeDirection.UP))
         {
             model.renderTop();
         }
 
-        if (tileEntity.isBlockConnected(2))
+        if (tileEntity.isConnectedInDirection(ForgeDirection.NORTH))
         {
         	model.renderBack();
         }
 
-        if (tileEntity.isBlockConnected(3))
+        if (tileEntity.isConnectedInDirection(ForgeDirection.SOUTH))
         {
         	model.renderFront();
         }
 
-        if (tileEntity.isBlockConnected(4))
+        if (tileEntity.isConnectedInDirection(ForgeDirection.WEST))
         {
         	model.renderLeft();
         }
 
-        if (tileEntity.isBlockConnected(5))
+        if (tileEntity.isConnectedInDirection(ForgeDirection.EAST))
         {
         	model.renderRight();
         }
