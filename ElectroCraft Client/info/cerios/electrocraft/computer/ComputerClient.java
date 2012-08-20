@@ -69,7 +69,7 @@ public class ComputerClient implements Runnable {
 
     @Override
     public void run() {
-        FMLCommonHandler.instance().getFMLLogger().info("ElectroCraft ComputerClient: Connected to server!");
+        ElectroCraft.instance.getLogger().info("ComputerClient: Connected to server!");
         while (running && socket.isConnected()) {
             int type;
             try {
@@ -110,7 +110,7 @@ public class ComputerClient implements Runnable {
                             displayBuffer.clear();
                             displayBuffer.put(Utils.extractBytes(data));
                         } catch (DataFormatException e) {
-                            FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft ComputerClient: Unable to read display full update packet!");
+                            ElectroCraft.instance.getLogger().severe("ComputerClient: Unable to read display full update packet!");
                             continue;
                         }
                         displayBuffer.rewind();
@@ -133,7 +133,7 @@ public class ComputerClient implements Runnable {
                                 }
                                 currentLength += extractedData.length;
                             } catch (DataFormatException e) {
-                                FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft ComputerClient: Unable to read display partial update packet!");
+                                ElectroCraft.instance.getLogger().severe("ComputerClient: Unable to read display partial update packet!");
                                 continue;
                             }
                         }
@@ -178,7 +178,7 @@ public class ComputerClient implements Runnable {
 
                 out.flush();
             } catch (IOException e) {
-                FMLCommonHandler.instance().getFMLLogger().info("ElectroCraft ComputerClient: Disconnected from server!");
+                ElectroCraft.instance.getLogger().info("ComputerClient: Disconnected from server!");
                 return;
             }
         }

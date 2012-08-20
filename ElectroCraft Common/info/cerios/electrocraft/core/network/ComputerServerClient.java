@@ -69,7 +69,7 @@ public class ComputerServerClient implements Runnable {
 			} catch (IOException e) {
 				try {
 					socket.close();
-					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+					ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
 				} catch (IOException e1) { }
 			}
 		}
@@ -84,7 +84,7 @@ public class ComputerServerClient implements Runnable {
 			} catch (IOException e) {
 				try {
 					socket.close();
-					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+					ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
 				} catch (IOException e1) {}
 			}
 		}
@@ -98,7 +98,7 @@ public class ComputerServerClient implements Runnable {
 			} catch (IOException e) {
 				try {
 					socket.close();
-					FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+					ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
 				} catch (IOException e1) { }
 			}
 		}
@@ -115,7 +115,7 @@ public class ComputerServerClient implements Runnable {
 		} catch (IOException e) {
 			try {
 				socket.close();
-				FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+				ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
 			} catch (IOException e1) { }
 		}
 	}
@@ -192,13 +192,13 @@ public class ComputerServerClient implements Runnable {
 					case TERMINATE:
 						throw new IOException();
 					default:
-						FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Got Unknown Packet!");
+						ElectroCraft.instance.getLogger().fine("ComputerServer: Got Unknown Packet!");
 						break;
 					}
 					out.flush();
 				}
 			} catch (IOException e) {
-				FMLCommonHandler.instance().getFMLLogger().fine("ElectroCraft ComputerServer: Client Disconnected!");
+				ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
 				return;
 			}
 		}

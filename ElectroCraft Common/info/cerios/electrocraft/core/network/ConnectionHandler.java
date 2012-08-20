@@ -27,7 +27,7 @@ public class ConnectionHandler implements IConnectionHandler {
 		try {
 			manager.addToSendQueue(portPacket.getMCPacket());
 		} catch (IOException e) {
-			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send computer servers port!");
+			ElectroCraft.instance.getLogger().severe("Unable to send computer servers port!");
 		}
 	}
 

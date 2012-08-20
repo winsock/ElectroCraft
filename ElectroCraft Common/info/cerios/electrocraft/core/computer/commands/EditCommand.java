@@ -15,6 +15,7 @@ import java.util.Map;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
+import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
 
 public class EditCommand implements IComputerCommand {
@@ -83,7 +84,7 @@ public class EditCommand implements IComputerCommand {
 			try {
 				computer.getTerminal().writeLine("Error! Could not open file for writting!");
 			} catch (IOException e1) {
-				FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft Computer: Edit Command, Fatal Error! Could not open or read file and cannot print error message to user!");
+				ElectroCraft.instance.getLogger().severe("Computer: Edit Command, Fatal Error! Could not open or read file and cannot print error message to user!");
 				computer.setRunning(false);
 			}
 		}

@@ -33,7 +33,7 @@ public class ClientTickHandler implements IScheduledTickHandler {
                 FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(modifierPacket.getMCPacket());
             }
         } catch (IOException e) {
-            FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send modifier packet!");
+            ElectroCraft.instance.getLogger().severe("Unable to send modifier packet!");
         }
 	}
 

@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.network;
 
+import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 
@@ -37,7 +38,7 @@ public class ComputerServer implements Runnable {
 	
     public ComputerServer(int port) throws IOException {
         socket = new ServerSocket(port);
-		FMLCommonHandler.instance().getFMLLogger().info("ElectroCraft ComputerServer: Running on port " + String.valueOf(port) + "!");
+		ElectroCraft.instance.getLogger().info("ComputerServer: Running on port " + String.valueOf(port) + "!");
     }
     
     public void setRunning(boolean running) {
@@ -67,7 +68,7 @@ public class ComputerServer implements Runnable {
 				for (int i = 0; i < players.size(); i++) {
 					EntityPlayerMP player = (EntityPlayerMP) players.get(i);
 					if (((InetSocketAddress)player.serverForThisPlayer.theNetworkManager.getSocketAddress()).getHostName().equalsIgnoreCase(connection.getInetAddress().getHostName())) {
-						FMLCommonHandler.instance().getFMLLogger().info("ElectroCraft ComputerServer: Client Connected!");
+						ElectroCraft.instance.getLogger().info("ComputerServer: Client Connected!");
 						clients.put(player, client);
 						new Thread(client).start();
 					}

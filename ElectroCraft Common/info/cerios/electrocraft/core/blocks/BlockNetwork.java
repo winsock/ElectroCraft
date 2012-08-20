@@ -52,7 +52,7 @@ public abstract class BlockNetwork extends ElectroBlock {
     					try {
     						PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
     					} catch (IOException e) {
-    						FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send \"Open Address GUI Packet\"!");
+    						ElectroCraft.instance.getLogger().severe("Unable to send \"Open Address GUI Packet\"!");
     					}                    return true;
     				}
     			}

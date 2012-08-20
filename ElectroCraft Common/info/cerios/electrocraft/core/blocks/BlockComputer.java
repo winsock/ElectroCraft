@@ -123,7 +123,7 @@ public class BlockComputer extends BlockNetwork {
         			try {
         				PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
         			} catch (IOException e) {
-        				FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to send \"Open Computer GUI Packet\"!");
+        				ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
         			}
         			return true;
         		}

@@ -62,7 +62,7 @@ public class UniversialPacketHandler implements IPacketHandler {
 					}
 				}
 			} catch (IOException e) {
-				FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to parse packet send on our channel!");
+				ElectroCraft.instance.getLogger().severe("Unable to parse packet send on our channel!");
 			}
 		} else {
 			// Must be a client sided packet
@@ -83,7 +83,7 @@ public class UniversialPacketHandler implements IPacketHandler {
                     ElectroCraft.electroCraftSided.startComputerClient(portPacket.getPort(), manager.getSocketAddress());
 	            }
 	        } catch (IOException e) {
-	            FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to read packet sent on our channel!");
+	            ElectroCraft.instance.getLogger().severe("Unable to read packet sent on our channel!");
 	        }
 		}
 	}

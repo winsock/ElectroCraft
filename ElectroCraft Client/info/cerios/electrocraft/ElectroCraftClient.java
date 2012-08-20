@@ -15,6 +15,7 @@ import cpw.mods.fml.common.network.IPacketHandler;
 import cpw.mods.fml.common.network.Player;
 import info.cerios.electrocraft.blocks.render.BlockRenderers;
 import info.cerios.electrocraft.computer.ComputerClient;
+import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
@@ -101,9 +102,9 @@ public class ElectroCraftClient implements IElectroCraftSided {
 			computerClient = new ComputerClient(port, address);
 			new Thread(computerClient).start();
 		} catch (UnknownHostException e) {
-			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft Client: Unable to connect to server: Host unknown!");
+			ElectroCraft.instance.getLogger().severe("Client: Unable to connect to server: Host unknown!");
 		} catch (IOException e) {
-			FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft Client: Unable to connect to server!");
+			ElectroCraft.instance.getLogger().severe("Client: Unable to connect to server!");
 		}
 	}
 }

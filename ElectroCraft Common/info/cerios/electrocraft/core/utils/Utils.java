@@ -2,6 +2,8 @@ package info.cerios.electrocraft.core.utils;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
+import info.cerios.electrocraft.core.ElectroCraft;
+
 import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -108,7 +110,7 @@ public class Utils {
             }
             reader.close();
         } catch (IOException e) {
-            FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Error! Unable to open specified ASM file: " + file);
+            ElectroCraft.instance.getLogger().severe("Error! Unable to open specified ASM file: " + file);
         }
         return  buffer.toString();
     }

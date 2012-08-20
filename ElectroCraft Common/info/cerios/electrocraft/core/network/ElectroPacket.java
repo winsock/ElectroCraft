@@ -3,6 +3,8 @@ package info.cerios.electrocraft.core.network;
 import cpw.mods.fml.common.FMLCommonHandler;
 import net.minecraft.src.Packet250CustomPayload;
 
+import info.cerios.electrocraft.core.ElectroCraft;
+
 import java.io.IOException;
 
 /**
@@ -56,7 +58,7 @@ public abstract class ElectroPacket {
         try {
             return Type.values()[id].packetClass.newInstance();
         } catch (Exception e) {
-            FMLCommonHandler.instance().getFMLLogger().severe("ElectroCraft: Unable to parse packet id!");
+            ElectroCraft.instance.getLogger().severe("Unable to parse packet id!");
         }
         return null;
     }
