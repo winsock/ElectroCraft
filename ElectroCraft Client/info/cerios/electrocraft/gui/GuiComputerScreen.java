@@ -82,7 +82,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
         		String line = terminalList.get(currentLine);
         		
             	float pixelsPerChar = (halfScreenWidth * 2) / columns;
-            	float pixelsPerLineHeight = (halfScreenHeight * 2) / rows;
+            	float pixelsPerLineHeight = ((halfScreenHeight * 2) / rows) + 3;
         		
         		float scaleFactorX = 1f;
         		float scaleFactorY = 1f;
@@ -94,7 +94,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
         		}
         		GL11.glPushMatrix();
         		GL11.glScalef(scaleFactorX, scaleFactorY, 1);
-        		this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))), 0xFFFFFF);
+        		this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 2, 0xFFFFFF);
         		GL11.glPopMatrix();
         	}
         } else {
