@@ -7,6 +7,7 @@ import java.net.UnknownHostException;
 import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.IScheduledTickHandler;
@@ -55,7 +56,11 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	@Override
 	public void registerRenderers() {
 		for (BlockRenderers renderer : BlockRenderers.values()) {
-			RenderingRegistry.registerBlockHandler(renderer.getRenderer());
+			if (renderer.getRenderer() != null)
+				RenderingRegistry.registerBlockHandler(renderer.getRenderer());
+			if (renderer.getSpecialRenderer() != null)
+				if (renderer.getTileClass() != null)
+					ClientRegistry.bindTileEntitySpecialRenderer(renderer.getTileClass(), renderer.getSpecialRenderer());
 		}
 	}
 

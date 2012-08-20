@@ -14,6 +14,7 @@ import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import net.minecraft.src.EntityLiving;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
+import net.minecraft.src.IBlockAccess;
 import net.minecraft.src.Material;
 import net.minecraft.src.MathHelper;
 import net.minecraft.src.TileEntity;
@@ -21,14 +22,66 @@ import net.minecraft.src.World;
 import net.minecraftforge.common.ForgeDirection;
 
 public class BlockComputer extends BlockNetwork {
-
+	
     public BlockComputer(int id) {
-        super(id, 40, Material.wood);
+        super(id, 33, Material.wood);
     }
 
     @Override
-    public int getBlockTextureFromSide(int side) {
-        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[side];
+    public int getBlockTextureFromSideAndMetadata(int side, int metadata) {
+    	if (metadata > 5)
+    		metadata = 5;
+    	if (side > 5)
+    		side = 5;
+    	
+    	if (side == 0) {
+        	return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+    	}
+    	
+        switch(metadata) {
+        case 4:
+        	switch (side) {
+            case 2:
+        		return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+            case 3:
+            case 4:
+            case 5:
+            default:
+            	return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+        	}
+        case 2:
+        	switch (side) {
+            case 3:
+        		return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+            case 2:
+            case 4:
+            case 5:
+            default:
+            	return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+        	}
+        case 3:
+        	switch (side) {
+            case 4:
+        		return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+            case 2:
+            case 3:
+            case 5:
+            default:
+            	return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+        	}
+        case 1:
+        	switch (side) {
+            case 5:
+        		return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+            case 2:
+            case 3:
+            case 4:
+            default:
+            	return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+        	}
+        default:
+        	return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+        }
     }
     
     @Override
@@ -37,7 +90,11 @@ public class BlockComputer extends BlockNetwork {
     	
     	if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
     		TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
-    		int direction = MathHelper.floor_double((double)((entityliving.rotationYaw * 4F) / 360F) + 0.5D) & 3;
+    		int direction = MathHelper.floor_double((double)(entityliving.rotationYaw * 4.0F / 360.0F + 0.5D)) & 0x3;
+    		if (direction == 0) {
+    			direction = 4;
+    		}
+    		world.setBlockMetadataWithNotify(x, y, z, direction);
     		computerTileEntity.setDirection(ForgeDirection.values()[direction]);
     	}
     }

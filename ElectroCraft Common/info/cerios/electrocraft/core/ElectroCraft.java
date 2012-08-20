@@ -64,6 +64,9 @@ public class ElectroCraft {
         // Initialize any sided methods
         electroCraftSided.init();
         
+        // Register our renderers
+        electroCraftSided.registerRenderers();
+        
         // Register our world generator
         GameRegistry.registerWorldGenerator(new WorldGenerator());
         

@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.blocks.render;
 
+import info.cerios.electrocraft.core.blocks.BlockRibbonCable;
+import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import net.minecraft.src.*;
 
@@ -218,6 +220,6 @@ public class RibbonCableRenderer implements ISimpleBlockRenderingHandler {
 
 	@Override
 	public int getRenderId() {
-		return 0;
+		return ((BlockRibbonCable)ElectroBlocks.RIBBON_CABLE.getBlock()).renderId;
 	}
 }

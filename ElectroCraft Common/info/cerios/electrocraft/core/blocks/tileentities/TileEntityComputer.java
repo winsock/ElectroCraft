@@ -19,7 +19,7 @@ import java.util.Set;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class TileEntityComputer extends NetworkBlock {
+public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock {
 
     private Computer computer;
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();
@@ -114,7 +114,13 @@ public class TileEntityComputer extends NetworkBlock {
 		return 0;
 	}
 	
+	@Override
 	public void setDirection(ForgeDirection direction) {
 		this.direction = direction;
+	}
+
+	@Override
+	public ForgeDirection getDirection() {
+		return this.direction;
 	}
 }
