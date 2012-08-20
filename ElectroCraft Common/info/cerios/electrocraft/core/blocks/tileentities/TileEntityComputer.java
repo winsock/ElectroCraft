@@ -9,6 +9,7 @@ import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
+import net.minecraftforge.common.ForgeDirection;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +24,8 @@ public class TileEntityComputer extends NetworkBlock {
     private Computer computer;
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();
     private EntityPlayer activePlayer;
+    private ForgeDirection direction = ForgeDirection.NORTH;
+    
     /**
      * The default base directory for a new computer, its format is as follows
      * XYZEpochTime
@@ -40,11 +43,13 @@ public class TileEntityComputer extends NetworkBlock {
     public void writeToNBT(NBTTagCompound nbttagcompound) {
         super.writeToNBT(nbttagcompound);
         nbttagcompound.setString("baseDirectory", baseDirectory);
+        nbttagcompound.setInteger("direction", direction.ordinal());
     }
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
         this.baseDirectory = nbttagcompound.getString("baseDirectory");
+        this.direction = ForgeDirection.values()[nbttagcompound.getInteger("direction")];
     }
     
     public Computer getComputer() {
@@ -107,5 +112,9 @@ public class TileEntityComputer extends NetworkBlock {
 //			InteruptData data = (InteruptData)objects[0];
 //		}
 		return 0;
+	}
+	
+	public void setDirection(ForgeDirection direction) {
+		this.direction = direction;
 	}
 }

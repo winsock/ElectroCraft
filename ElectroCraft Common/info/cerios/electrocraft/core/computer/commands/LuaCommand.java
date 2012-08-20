@@ -109,7 +109,7 @@ public class LuaCommand implements IComputerCommand {
 		}.init(computer));
 		
 		try {
-			globalTable.get("dofile").call(LuaValue.valueOf(argv[0]));
+			globalTable.get("dofile").call(LuaValue.valueOf(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0]));
 		} catch (LuaError e) {
 			computer.getTerminal().print("Error running lua script!");
 			try {

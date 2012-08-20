@@ -11,21 +11,35 @@ import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
+import net.minecraft.src.EntityLiving;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.Material;
+import net.minecraft.src.MathHelper;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
+import net.minecraftforge.common.ForgeDirection;
 
-public class BlockAdvComputer extends BlockNetwork {
+public class BlockComputer extends BlockNetwork {
 
-    public BlockAdvComputer(int id) {
-        super(id, 40, Material.iron);
+    public BlockComputer(int id) {
+        super(id, 40, Material.wood);
     }
 
     @Override
     public int getBlockTextureFromSide(int side) {
-        return ElectroBlocks.ADV_COMPUTER.getDefaultTextureIndices()[side];
+        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[side];
+    }
+    
+    @Override
+    public void onBlockPlacedBy(World world, int x, int y, int z, EntityLiving entityliving) {
+    	super.onBlockPlacedBy(world, x, y, z, entityliving);
+    	
+    	if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
+    		TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
+    		int direction = MathHelper.floor_double((double)((entityliving.rotationYaw * 4F) / 360F) + 0.5D) & 3;
+    		computerTileEntity.setDirection(ForgeDirection.values()[direction]);
+    	}
     }
 
     @Override
