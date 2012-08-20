@@ -2,7 +2,7 @@ package info.cerios.electrocraft.core.computer;
 
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
@@ -107,11 +107,11 @@ public class ComputerNetwork {
 
         Set<ObjectTriplet<Integer, Integer, Integer>> connections = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
         NetworkBlock netBlock = getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3(), d);
-        if (!(netBlock instanceof TileEntityRibbonCable)) {
+        if (!(netBlock instanceof TileEntitySerialCable)) {
             connections.add(block);
         }
         for (ObjectTriplet<Integer, Integer, Integer> connection : netBlock.connectedDevices.values()) {
-            if (!(getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3(), d) instanceof TileEntityRibbonCable))
+            if (!(getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3(), d) instanceof TileEntitySerialCable))
                 connections.add(connection);
             connections.addAll(getDevicesInChain(connection, d));
         }

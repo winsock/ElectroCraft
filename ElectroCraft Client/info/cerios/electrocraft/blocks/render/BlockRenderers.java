@@ -5,10 +5,10 @@ import net.minecraft.src.TileEntitySpecialRenderer;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 
 public enum BlockRenderers {
-    RIBBON_CABLE(new RibbonCableRenderer(), null, ElectroBlocks.RIBBON_CABLE, TileEntityRibbonCable.class);
+    SERIAL_CABLE(null, new SerialCableRenderer(), ElectroBlocks.SERIAL_CABLE, TileEntitySerialCable.class);
 
     private ISimpleBlockRenderingHandler renderer;
     private TileEntitySpecialRenderer specialRenderer;

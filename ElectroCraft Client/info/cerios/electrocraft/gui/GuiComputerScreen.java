@@ -183,15 +183,17 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 			} else {
 				down = false;
 			}
-			ComputerInputPacket inputPacket = new ComputerInputPacket();
-			inputPacket.setEventKey(Keyboard.getEventCharacter());
-			inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
-			inputPacket.setEventMouseButton(Mouse.getEventButton());
-			inputPacket.setWasKeyDown(down);
-			try {
-				FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(inputPacket.getMCPacket());
-			} catch (IOException e) {
-				ElectroCraft.instance.getLogger().fine("Unable to send computer input data!");
+			synchronized (syncObject) {
+				ComputerInputPacket inputPacket = new ComputerInputPacket();
+				inputPacket.setEventKey(Keyboard.getEventCharacter());
+				inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
+				inputPacket.setEventMouseButton(Mouse.getEventButton());
+				inputPacket.setWasKeyDown(down);
+				try {
+					FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(inputPacket.getMCPacket());
+				} catch (IOException e) {
+					ElectroCraft.instance.getLogger().fine("Unable to send computer input data!");
+				}
 			}
 		}
 	}

@@ -67,7 +67,7 @@ public class EditCommand implements IComputerCommand {
 					if (inputKey == '\n') {
 							currentLine++;
 					} else if (inputKey == '\b') {
-						if (fileLineMap.get(currentLine).length() > 0) {
+						if (fileLineMap.get(currentLine) != null && fileLineMap.get(currentLine).length() > 0) {
 							fileLineMap.put(currentLine, fileLineMap.get(currentLine).substring(0, fileLineMap.get(currentLine).length() - 1));
 							computer.getTerminal().deleteChar(true);
 						}

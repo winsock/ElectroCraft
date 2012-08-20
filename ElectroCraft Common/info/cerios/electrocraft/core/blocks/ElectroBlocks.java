@@ -3,7 +3,7 @@ package info.cerios.electrocraft.core.blocks;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRedstoneAdapter;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRibbonCable;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 import net.minecraft.src.Block;
 import net.minecraft.src.CreativeTabs;
 import net.minecraft.src.ItemBlock;
@@ -32,12 +32,11 @@ public enum ElectroBlocks {
             new BlockRedstoneAdapter(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("redstoneAdapter", 3980).getInt(3980)).setBlockName("redstoneAdapter").setCreativeTab(CreativeTabs.tabRedstone),
             null, TileEntityRedstoneAdapter.class,
             149, 148, 147, 147, 147, 147),
-    RIBBON_CABLE(false,
-            "ribbonCable", "Ribbon Cable",
-            new BlockRibbonCable(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("ribbonCable", 3981).getInt(3981)).setBlockName("ribbonCable").setCreativeTab(CreativeTabs.tabRedstone),
-            null, TileEntityRibbonCable.class,
-            74, 74, 75, 91, 90);
-
+    SERIAL_CABLE(false,
+    		"serialcable", "Serial Cable",
+    		new BlockSerialCable(ConfigHandler.getCurrentConfig().getOrCreateBlockIdProperty("serialCable", 3981).getInt(3981)).setBlockName("serialCable").setCreativeTab(CreativeTabs.tabRedstone),
+    		null, TileEntitySerialCable.class, 0);
+    
     private boolean isOreDicBlock;
     private String name, humanName;
     private Class<? extends ItemBlock> blockItem;

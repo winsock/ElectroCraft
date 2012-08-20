@@ -61,7 +61,7 @@ public class UniversialPacketHandler implements IPacketHandler {
 						ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).getComputer().getComputer().getKeyboard().onKeyPress(inputPacket);
 					}
 				}
-			} catch (IOException e) {
+			} catch (Exception e) {
 				ElectroCraft.instance.getLogger().severe("Unable to parse packet send on our channel!");
 			}
 		} else {
@@ -82,7 +82,7 @@ public class UniversialPacketHandler implements IPacketHandler {
 	                ServerPortPacket portPacket = (ServerPortPacket) ecPacket;
                     ElectroCraft.electroCraftSided.startComputerClient(portPacket.getPort(), manager.getSocketAddress());
 	            }
-	        } catch (IOException e) {
+	        } catch (Exception e) {
 	            ElectroCraft.instance.getLogger().severe("Unable to read packet sent on our channel!");
 	        }
 		}

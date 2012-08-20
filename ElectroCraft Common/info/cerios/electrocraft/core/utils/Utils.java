@@ -16,6 +16,9 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import net.minecraft.src.IBlockAccess;
+import net.minecraftforge.common.ForgeDirection;
+
 public class Utils {
     public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
         for (Entry<T, E> entry : map.entrySet()) {
@@ -113,6 +116,24 @@ public class Utils {
             ElectroCraft.instance.getLogger().severe("Error! Unable to open specified ASM file: " + file);
         }
         return  buffer.toString();
+    }
+    
+    public static ForgeDirection isBlockOnOpaqueBlock(IBlockAccess access, int x, int y, int z) {
+    	if (access.isBlockOpaqueCube(x + 1, y, z)) {
+    		return ForgeDirection.EAST;
+    	} else if (access.isBlockOpaqueCube(x - 1, y, z)) {
+    		return ForgeDirection.WEST;
+    	} else if (access.isBlockOpaqueCube(x, y + 1, z)) {
+    		return ForgeDirection.UP;
+    	} else if (access.isBlockOpaqueCube(x, y - 1, z)) {
+    		return ForgeDirection.DOWN;
+    	} else if (access.isBlockOpaqueCube(x, y, z + 1)) {
+    		return ForgeDirection.SOUTH;
+    	} else if (access.isBlockOpaqueCube(x, y, z - 1)) {
+    		return ForgeDirection.NORTH;
+    	} else {
+    		return ForgeDirection.UNKNOWN;
+    	}
     }
     
     /**
