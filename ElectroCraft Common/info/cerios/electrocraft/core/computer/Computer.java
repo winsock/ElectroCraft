@@ -1,7 +1,10 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.commands.ComputerCommands;
+import info.cerios.electrocraft.core.computer.luajavaapi.ComputerFile;
+import info.cerios.electrocraft.core.computer.luajavaapi.ComputerSocket;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
 import com.naef.jnlua.DefaultJavaReflector;
 import com.naef.jnlua.JavaFunction;
@@ -34,6 +37,7 @@ public class Computer implements Runnable {
 	 * The current directory of the computer realitve to the baseDirectory
 	 */
 	private String currentDirectory = "";
+	private int openFileHandles = 0;
 	private LuaState luaState;
 	
 	@ExposedToLua(value = false)
@@ -60,13 +64,36 @@ public class Computer implements Runnable {
 	}
 	
 	@ExposedToLua(value = false)
+	public void incrementOpenFileHandles() {
+		this.openFileHandles++;
+	}
+	
+	@ExposedToLua(value = false)
+	public void deincrementOpenFileHandles() {
+		this.openFileHandles--;
+	}
+	
+	@ExposedToLua(value = false)
 	public LuaState getLuaState() {
 		return luaState;
 	}
 	
 	@ExposedToLua(value = false)
+	public void serverShutdown() {
+	}
+	
+	@ExposedToLua(value = false)
 	private void loadLuaDefaults() {
-		luaState.openLibs();
+		// Load the allowed libraries
+		luaState.openLib(Library.BASE);
+		luaState.openLib(Library.DEBUG);
+		luaState.openLib(Library.JAVA);
+		luaState.openLib(Library.MATH);
+		luaState.openLib(Library.PACKAGE);
+		luaState.openLib(Library.PLUTO);
+		luaState.openLib(Library.STRING);
+		luaState.openLib(Library.TABLE);
+
 		luaState.register(new NamedJavaFunction() {
 			Computer computer;
 			
@@ -161,6 +188,56 @@ public class Computer implements Runnable {
 				return "getVideoCard";
 			}
 		}.init(this));
+		
+		luaState.register(new NamedJavaFunction() {
+			Computer computer;
+			
+			public NamedJavaFunction init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.pushJavaObject(new ComputerSocket());
+				return 1;
+			}
+
+			@Override
+			public String getName() {
+				return "createNewSocket";
+			}
+		}.init(this));
+		
+		luaState.register(new NamedJavaFunction() {
+			Computer computer;
+			
+			public NamedJavaFunction init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.pushJavaObject(new ComputerFile(luaState.checkString(0), computer));
+				return 1;
+			}
+
+			@Override
+			public String getName() {
+				return "createNewFileHandle";
+			}
+		}.init(this));
+	}
+	
+	@ExposedToLua
+	public int getNumberOfOpenFileHandles() {
+		return this.openFileHandles;
+	}
+	
+	@ExposedToLua
+	public int getMaxFileHandles() {
+		return ConfigHandler.getCurrentConfig().getOrCreateIntProperty("maxFileHandlesPerUser", "computer", 20).getInt(20);
 	}
 	
 	@ExposedToLua
