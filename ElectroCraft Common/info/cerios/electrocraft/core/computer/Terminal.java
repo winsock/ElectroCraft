@@ -29,20 +29,19 @@ public class Terminal extends Writer {
 	@ExposedToLua
 	public String getLine(int row) {
 		String output = "";
-		for (int i = columnOffset; i < columns + columnOffset; i++) {
-			if (getRow(row) != null)
+		if (getRow(row) != null) {
+			for (int i = columnOffset; i < columns + columnOffset; i++) {
 				if (getRow(row).size() > i)
 					if (getRow(row).get(i) != null)
 						if (!Character.isIdentifierIgnorable(getRow(row).get(i)))
 							output += getRow(row).get(i);
+			}
 		}
 		return output;
 	}
 
 	@ExposedToLua(value = false)
 	public Map<Integer ,Character> getRow(int row) {
-		if (terminal.size() <= row)
-			return null;
 		if (terminal.size() == 0)
 			return null;
 		return terminal.get(row);
@@ -102,13 +101,9 @@ public class Terminal extends Writer {
 				if (getRow(row) != null)
 					getRow(row).put(col + columnOffset, chr);
 				else {
-					try {
 					Map<Integer, Character> list = new TreeMap<Integer, Character>();
 					list.put(col + columnOffset, chr);
 					terminal.put(row, list);
-					} catch (Exception e) {
-						System.out.println("test");
-					}
 				}
 			}
 		}
