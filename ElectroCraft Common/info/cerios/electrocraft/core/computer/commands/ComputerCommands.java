@@ -4,7 +4,8 @@ public enum ComputerCommands {
 	CLEAR("clear", "Clears the screen", 0, new ClearCommand()),
 	HELP("help", "Prints the system help", 0, new HelpCommand()),
 	EDIT("edit", "Creates or edits a file", 1, new EditCommand()),
-	LUA("lua", "Runs a Lua program", 1, new LuaCommand());
+	LUA("lua", "Runs a Lua program", 1, new LuaCommand()),
+	LIST("ls", "Lists files and directories in the current folder", 0, new ListCommand());
 	
 	private String command, helpText;
 	private int argc;
