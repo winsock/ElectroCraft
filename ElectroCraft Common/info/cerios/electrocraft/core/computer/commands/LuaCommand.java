@@ -8,14 +8,6 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import info.luaj.vm2.LuaTable;
-import info.luaj.vm2.LuaValue;
-import info.luaj.vm2.lib.OneArgFunction;
-import info.luaj.vm2.lib.ZeroArgFunction;
-import info.luaj.vm2.lib.jse.CoerceJavaToLua;
-import info.luaj.vm2.lib.jse.JsePlatform;
-import info.luaj.vm2.parser.LuaParser;
-import info.luaj.vm2.parser.ParseException;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.LuaSyntaxException;
