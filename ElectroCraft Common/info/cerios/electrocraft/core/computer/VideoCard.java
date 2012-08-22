@@ -13,10 +13,12 @@ public class VideoCard {
 		this.data = new byte[width * height];
 	}
 	
+	@ExposedToLua
 	public int getWidth() {
 		return width;
 	}
 	
+	@ExposedToLua
 	public int getHeight() {
 		return height;
 	}
@@ -26,11 +28,13 @@ public class VideoCard {
 		return data;
 	}
 	
+	@ExposedToLua
 	public void setPixel(int x, int y, byte color) {
 		if (x < width && y < height)
 			data[(y * width) + x] = color;
 	}
 	
+	@ExposedToLua
 	public void drawLine(int x, int y, int x2, int y2, byte color) {
 		if (x > width || y > height)
 			return;

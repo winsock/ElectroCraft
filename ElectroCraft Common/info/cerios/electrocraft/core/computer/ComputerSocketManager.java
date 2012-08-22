@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.core.computer.luajavaapi.ComputerSocket;
 import info.cerios.electrocraft.core.utils.ObjectPair;
 import info.cerios.electrocraft.core.utils.Utils;
 
@@ -20,7 +21,7 @@ public class ComputerSocketManager {
 	private Map<ComputerSocket, ObjectPair<InetSocketAddress, Mode>> registeredEndpoints = new HashMap<ComputerSocket, ObjectPair<InetSocketAddress, Mode>>();
 	private Map<ObjectPair<InetSocketAddress, Mode>, Socket> boundSockets = new HashMap<ObjectPair<InetSocketAddress, Mode>, Socket>();
 	private Map<ObjectPair<Thread, ConnectionThread>, ObjectPair<ComputerSocket,Mode>> threads = new HashMap<ObjectPair<Thread, ConnectionThread>, ObjectPair<ComputerSocket,Mode>>();
-	private boolean running = false;
+	private static boolean running = false;
 	
 	public enum Mode {
 		RECV,
@@ -51,7 +52,7 @@ public class ComputerSocketManager {
 		return thread.getValue2();
 	}
 	
-	class ConnectionThread implements Runnable {
+	public static class ConnectionThread implements Runnable {
 		private Socket socket;
 		private InetSocketAddress address;
 		private Mode mode;

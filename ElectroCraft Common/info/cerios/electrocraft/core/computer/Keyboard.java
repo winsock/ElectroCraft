@@ -8,6 +8,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
+@ExposedToLua
 public class Keyboard extends Reader {
 	
 	private List<Integer> keyBuffer = new ArrayList<Integer>();
@@ -44,32 +45,39 @@ public class Keyboard extends Reader {
 		}
 	}
 	
+	@ExposedToLua
 	public void disableTerminalOutput() {
 		disableTerminalOutput = true;
 	}
 	
+	@ExposedToLua
 	public void enableTerminalOutput() {
 		disableTerminalOutput = false;
 	}
 	
+	@ExposedToLua
 	public boolean isTerminalOutputEnabled() {
 		return !disableTerminalOutput;
 	}
 	
+	@ExposedToLua
 	public boolean isShiftDown() {
 		return isShiftDown;
 	}
 	
+	@ExposedToLua
 	public boolean isCtrlDown() {
 		return isCtrlDown;
 	}
 	
+	@ExposedToLua
 	public char popKey() {
 		if (keyBuffer.size() > 0)
 			return (char)(int)keyBuffer.remove(0);
 		return '\0';
 	}
 	
+	@ExposedToLua
 	public char waitForKey() {
 		char key = '\0';
 		while ((key = popKey()) == '\0') {

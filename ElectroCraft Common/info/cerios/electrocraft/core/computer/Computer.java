@@ -3,6 +3,17 @@ package info.cerios.electrocraft.core.computer;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.commands.ComputerCommands;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
+import info.luaj.vm2.LuaValue;
+import info.luaj.vm2.lib.OneArgFunction;
+import info.luaj.vm2.lib.ZeroArgFunction;
+import info.luaj.vm2.lib.jse.CoerceJavaToLua;
+import info.luaj.vm2.lib.jse.JsePlatform;
+import com.naef.jnlua.DefaultJavaReflector;
+import com.naef.jnlua.JavaFunction;
+import com.naef.jnlua.LuaState;
+import com.naef.jnlua.NamedJavaFunction;
+import com.naef.jnlua.JavaReflector.Metamethod;
+import com.naef.jnlua.LuaState.Library;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +22,7 @@ import java.util.Arrays;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
+@ExposedToLua
 public class Computer implements Runnable {
 	
 	private boolean isInternal = true;
@@ -26,7 +38,8 @@ public class Computer implements Runnable {
 	/**
 	 * The current directory of the computer realitve to the baseDirectory
 	 */
-	private String currentDirectory = ".";
+	private String currentDirectory = "";
+	private LuaState luaState;
 	
 	@ExposedToLua(value = false)
 	public Computer(ComputerServerClient client, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
@@ -41,6 +54,9 @@ public class Computer implements Runnable {
 		if (!this.baseDirectory.exists()) {
 			this.baseDirectory.mkdirs();
 		}
+		// Lua Stuff
+		luaState = new LuaState();
+		loadLuaDefaults();
 	}
 	
 	@ExposedToLua(value = false)
@@ -48,40 +64,153 @@ public class Computer implements Runnable {
 		return client;
 	}
 	
+	@ExposedToLua(value = false)
+	public LuaState getLuaState() {
+		return luaState;
+	}
+	
+	@ExposedToLua(value = false)
+	private void loadLuaDefaults() {
+		luaState.openLibs();
+		luaState.register(new NamedJavaFunction() {
+			Computer computer;
+			
+			public NamedJavaFunction init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.pushJavaObject(computer.getTerminal());
+				return 1;
+			}
+
+			@Override
+			public String getName() {
+				return "getTerminal";
+			}
+		}.init(this));
+		
+		luaState.register(new NamedJavaFunction() {
+			@Override
+			public int invoke(LuaState luaState) {
+				try {
+					Thread.sleep((long) luaState.checkNumber(0));
+				} catch (InterruptedException e) { }
+				return 0;
+			}
+
+			@Override
+			public String getName() {
+				return "sleep";
+			}
+		});
+		
+		luaState.register(new NamedJavaFunction() {
+			Computer computer;
+			
+			public NamedJavaFunction init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.pushJavaObject(computer);
+				return 1;
+			}
+
+			@Override
+			public String getName() {
+				return "getComputer";
+			}
+		}.init(this));
+		
+		luaState.register(new NamedJavaFunction() {
+			Computer computer;
+			
+			public NamedJavaFunction init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.pushJavaObject(computer.getKeyboard());
+				return 1;
+			}
+
+			@Override
+			public String getName() {
+				return "getKeyboard";
+			}
+		}.init(this));
+		
+		luaState.register(new NamedJavaFunction() {
+			Computer computer;
+			
+			public NamedJavaFunction init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.pushJavaObject(computer.getVideoCard());
+				return 1;
+			}
+
+			@Override
+			public String getName() {
+				return "getVideoCard";
+			}
+		}.init(this));
+	}
+	
+	@ExposedToLua
 	public void setGraphicsMode(boolean graphicsMode) {
 		if (this.graphicsMode != graphicsMode)
 			client.changeModes(!graphicsMode);
 		this.graphicsMode = graphicsMode;
 	}
 	
+	@ExposedToLua
 	public void setRunning(boolean value) {
 		running = value;
 	}
 	
+	@ExposedToLua(value = false)
 	public File getBaseDirectory() {
 		return baseDirectory;
 	}
 	
+	@ExposedToLua
 	public String getCurrentDirectory() {
 		return currentDirectory;
 	}
 	
+	@ExposedToLua
 	public boolean isRunning() {
 		return running;
 	}
 	
+	@ExposedToLua(value = false)
 	public SoundCard getSoundCard() {
 		return soundCard;
 	}
 	
+	@ExposedToLua(value = false)
 	public Terminal getTerminal() {
 		return terminal;
 	}
 	
+	@ExposedToLua(value = false)
 	public VideoCard getVideoCard() {
 		return videoCard;
 	}
 	
+	@ExposedToLua(value = false)
 	public Keyboard getKeyboard() {
 		return keyboard;
 	}
@@ -144,6 +273,7 @@ public class Computer implements Runnable {
 			}
 			terminal.writeLine("Goodbye!");
 			Thread.sleep(1000);
+			terminal.clear();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

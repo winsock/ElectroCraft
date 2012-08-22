@@ -10,6 +10,7 @@ import java.util.TreeMap;
 
 import com.sun.tools.javac.code.Attribute.Array;
 
+@ExposedToLua
 public class Terminal extends Writer {
 
 	private Map<Integer, Map<Integer, Character>> terminal;
@@ -24,7 +25,8 @@ public class Terminal extends Writer {
 		this.rows = rows;
 		terminal = new TreeMap<Integer, Map<Integer, Character>>();
 	}
-
+	
+	@ExposedToLua
 	public String getLine(int row) {
 		String output = "";
 		for (int i = columnOffset; i < columns + columnOffset; i++) {
@@ -46,22 +48,27 @@ public class Terminal extends Writer {
 		return terminal.get(row);
 	}
 
+	@ExposedToLua
 	public int getRows() {
 		return rows;
 	}
 
+	@ExposedToLua
 	public int getColumns() {
 		return columns;
 	}
 
+	@ExposedToLua
 	public int getCurrentRow() {
 		return currentRow;
 	}
 
+	@ExposedToLua
 	public int getCurrentColumn() {
 		return currentColumn;
 	}
 
+	@ExposedToLua
 	public void clear() {
 		synchronized(syncObject) {
 			terminal.clear();
@@ -79,6 +86,7 @@ public class Terminal extends Writer {
 	}
 
 	// Used only for Lua
+	@ExposedToLua
 	public void print(String string) {
 		synchronized(syncObject) {
 			try {
@@ -87,6 +95,7 @@ public class Terminal extends Writer {
 		}
 	}
 
+	@ExposedToLua
 	public void setChar(int row, int col, char chr) {
 		synchronized(syncObject) {
 			if (row <= rows && col <= columns) {
@@ -105,6 +114,7 @@ public class Terminal extends Writer {
 		}
 	}
 
+	@ExposedToLua
 	public void setPosition(int row, int column) {
 		synchronized(syncObject) {
 			this.currentRow = row;
@@ -112,6 +122,7 @@ public class Terminal extends Writer {
 		}
 	}
 
+	@ExposedToLua
 	public void deleteChar(boolean canDeleteLine) {
 		synchronized(syncObject) {
 			if (currentColumn > 0) {
