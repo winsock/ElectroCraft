@@ -128,7 +128,6 @@ public class ComputerServerClient implements Runnable {
 				synchronized (syncObject) {
 					switch(ComputerProtocol.values()[type]) {
 					case DISPLAY:
-
 						out.write(ComputerProtocol.DISPLAY.ordinal());
 						dos.writeInt(computer.getComputer().getVideoCard().getWidth());
 						dos.writeInt(computer.getComputer().getVideoCard().getHeight());
@@ -178,8 +177,12 @@ public class ComputerServerClient implements Runnable {
 						out.write(ComputerProtocol.TERMINAL.ordinal());
 						out.write(0); // Terminal packet type 0
 						dos.writeInt(row); // Resend the row number
-						if (computer.getComputer().getTerminal().getRows() > row)
+						if (computer.getComputer().getTerminal().getRow(row) != null) {
+							dos.writeBoolean(true);
 							dos.writeUTF(computer.getComputer().getTerminal().getLine(row));
+						} else {
+							dos.writeBoolean(false);
+						}
 						break;
 					case DOWNLOAD_IMAGE:
 						break;

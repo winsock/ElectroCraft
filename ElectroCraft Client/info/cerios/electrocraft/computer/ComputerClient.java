@@ -30,6 +30,7 @@ public class ComputerClient implements Runnable {
     private DataOutputStream dos;
     private ByteBuffer displayBuffer;
     private volatile boolean running = true;
+    private Object syncObject = new Object();
 
     private Map<ComputerProtocol, List<IComputerCallback>> callbackMap = new HashMap<ComputerProtocol, List<IComputerCallback>>();
 
@@ -56,15 +57,19 @@ public class ComputerClient implements Runnable {
     }
 
     public void sendPacket(ComputerProtocol packet) throws IOException {
-        out.write(packet.ordinal());
-        out.flush();
+    	synchronized (syncObject) {
+    		out.write(packet.ordinal());
+        	out.flush();
+    	}
     }
     
 
 	public void sendTerminalPacket(int row) throws IOException {
-		out.write(ComputerProtocol.TERMINAL.ordinal());
-		dos.writeInt(row);
-		out.flush();
+		synchronized (syncObject) {
+			out.write(ComputerProtocol.TERMINAL.ordinal());
+			dos.writeInt(row);
+			out.flush();
+		}
 	}
 
     @Override
@@ -147,8 +152,12 @@ public class ComputerClient implements Runnable {
                     
                     if (transmissionType == 0) {
                     	int row = dis.readInt();
-                    	String rowData = dis.readUTF();
-                    	returnData = new Object[] {row, rowData};
+                    	if (dis.readBoolean()) {
+                    		String rowData = dis.readUTF();
+                    		returnData = new Object[] {row, rowData};
+                    	} else {
+                    		returnData = new Object[] {row, ""};
+                    	}
                     } else if (transmissionType == 1) {
                     	boolean shiftRowsUp = in.read() == 0 ? false : true;
                     	int numberOfChangedRows = dis.readInt();
@@ -176,7 +185,9 @@ public class ComputerClient implements Runnable {
 	                }
                 }
 
-                out.flush();
+                synchronized (syncObject) {
+                	out.flush();
+                }
             } catch (IOException e) {
                 ElectroCraft.instance.getLogger().info("ComputerClient: Disconnected from server!");
                 return;
