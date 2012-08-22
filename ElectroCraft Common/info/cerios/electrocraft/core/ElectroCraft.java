@@ -14,7 +14,7 @@ import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
-import info.cerios.electrocraft.core.computer.LuaJSecurity;
+import info.cerios.electrocraft.core.computer.LuaSecurity;
 import info.cerios.electrocraft.core.items.ElectroItems;
 import info.cerios.electrocraft.core.items.ItemHandler;
 import info.cerios.electrocraft.core.network.*;
@@ -56,7 +56,7 @@ public class ElectroCraft {
     public static ElectroCraft instance;
     @SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
     public static IElectroCraftSided electroCraftSided;
-    private LuaJSecurity securityManager;
+    private LuaSecurity securityManager;
 
     // The Mod's color palette
     public static final int[] colorPalette = {
@@ -125,10 +125,8 @@ public class ElectroCraft {
         	TickRegistry.registerScheduledTickHandler(electroCraftSided.getTickHandler(), Side.CLIENT);
         }
         
-        // LuaJ Stuff
-		info.luaj.vm2.compiler.LuaC.install();
 		// Create our new security manager
-		securityManager = new LuaJSecurity("electrocraft");
+		securityManager = new LuaSecurity("electrocraft");
 		// Register the security manager
 		System.setSecurityManager(securityManager);
 		
@@ -160,7 +158,7 @@ public class ElectroCraft {
     	return server;
     }
     
-    public LuaJSecurity getSecurityManager() {
+    public LuaSecurity getSecurityManager() {
     	return securityManager;
     }
     

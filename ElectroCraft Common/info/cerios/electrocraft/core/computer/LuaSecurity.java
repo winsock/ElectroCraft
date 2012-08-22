@@ -8,12 +8,12 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.security.Permission;
 
-public class LuaJSecurity extends SecurityManager {
+public class LuaSecurity extends SecurityManager {
 	
 	private final String key;
 	private final InheritableThreadLocal<Computer> threadLocal = new InheritableThreadLocal<Computer>();
 	
-	public LuaJSecurity(String key) {
+	public LuaSecurity(String key) {
 		super();
 		this.key = key;
 	}
