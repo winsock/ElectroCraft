@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Side;
 
 public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock {
 
@@ -58,9 +59,15 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     
     public void createComputer() {
     	if (activePlayer instanceof EntityPlayerMP) {
-    		if (this.baseDirectory.isEmpty())
-    	        this.baseDirectory = "./electrocraft/computers/" + String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
-
+    		if (this.baseDirectory.isEmpty()) {
+    			String worldDir = "";
+    			if (FMLCommonHandler.instance().getSide() == Side.SERVER || FMLCommonHandler.instance().getSide() == Side.BUKKIT) {
+    				worldDir= "./" + worldObj.getWorldInfo().getWorldName();
+    			} else {
+    				worldDir = "./saves/" + worldObj.getWorldInfo().getWorldName();
+    			}
+    	        this.baseDirectory = worldDir + "/electrocraft/computers/" + String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
+    		}
     		computer = new Computer(ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer), "", baseDirectory, true, 320, 240, 40, 60);
         } else {
     		computer = new Computer(null, "", baseDirectory, true, 320, 240, 40, 60);

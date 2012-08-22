@@ -98,13 +98,11 @@ public final class NativeSupport {
 	            libFolder.mkdirs();
 
 	        File libraryFile = new File(libFolder.getAbsolutePath() + File.separator + "libElectroCraftCPU" + fileExtention);
-	        if (!libraryFile.exists()) {
-	            try {
-	                Utils.copyResource("info/cerios/electrocraft/core/natives/libElectroCraftCPU" + fileExtention, libraryFile);
-	            } catch (IOException e) {
-	            	ElectroCraft.instance.getLogger().severe("Error copying computer library! Computers will not work!");
-	            }
-	        }
+	        try {
+                Utils.copyResource("info/cerios/electrocraft/core/natives/libElectroCraftCPU" + fileExtention, libraryFile);
+            } catch (IOException e) {
+            	ElectroCraft.instance.getLogger().severe("Error copying computer library! Computers will not work!");
+            }
 
 	        try {
 	            System.load(libFolder.getAbsolutePath() + File.separator + "libElectroCraftCPU" + fileExtention);
