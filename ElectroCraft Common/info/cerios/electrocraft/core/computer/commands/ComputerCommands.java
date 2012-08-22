@@ -5,7 +5,8 @@ public enum ComputerCommands {
 	HELP("help", "Prints the system help", 0, new HelpCommand()),
 	EDIT("edit", "Creates or edits a file", 1, new EditCommand()),
 	LUA("lua", "Runs a Lua program", 1, new LuaCommand()),
-	LIST("ls", "Lists files and directories in the current folder", 0, new ListCommand());
+	LIST("ls", "Lists files and directories in the current folder", 0, new ListCommand()),
+	MAKE_DIR("mkdir", "Makes a directory", 1, new MakeDirectoryCommand());
 	
 	private String command, helpText;
 	private int argc;

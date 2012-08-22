@@ -215,7 +215,6 @@ public class Computer implements Runnable {
 	public void run() {
 		// Register the main Lua thread with the security manager
 		ElectroCraft.instance.getSecurityManager().registerThread(this);
-		
 		try {
 			terminal.write("Booting Cerios");
 			for (int i = 0; i < 20; i++) {

@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.core.ConfigHandler;
+import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
 import info.cerios.electrocraft.core.utils.Utils;
 
@@ -7,6 +9,11 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.security.Permission;
+import java.util.logging.Level;
+
+import net.minecraft.src.EntityPlayerMP;
+
+import com.naef.jnlua.LuaState.GcAction;
 
 public class LuaSecurity extends SecurityManager {
 	
@@ -20,6 +27,27 @@ public class LuaSecurity extends SecurityManager {
 	
 	public void registerThread(Computer computer) {
 		threadLocal.set(computer);
+		
+		// Memory check thread
+		new Thread(new Runnable() {
+			Computer computer;
+			
+			public Runnable init(Computer computer) {
+				this.computer = computer;
+				return this;
+			}
+			
+			@Override
+			public void run() {
+				while (computer.isRunning()) {
+					if (computer.getLuaState().gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxMemPerUser", "computer", 16).getInt(16) * 1024) {
+						computer.getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxMemPerUser", "computer", 16).getInt(16)) + "M");
+						computer.setRunning(false);
+						ElectroCraft.instance.getLogger().log(Level.WARNING, "Warning: Player: " + ((EntityPlayerMP)computer.getClient().getComputer().getActivePlayer()).username + " exceded the maximum memory allowance");
+					}
+				}
+			}
+		}.init(computer)).start();
 	}
 	
 	public boolean shouldCheckPermissions() {
