@@ -126,12 +126,14 @@ public class Terminal extends Writer {
 	public void deleteChar(boolean canDeleteLine) {
 		synchronized(syncObject) {
 			if (currentColumn > 0) {
-				currentColumn--;
+				if (columnOffset > 0)
+					columnOffset--;
+				else
+					currentColumn--;
 				if (getRow(currentRow) != null)
 					if (getRow(currentRow).size() > currentColumn + columnOffset)
 						terminal.get(currentRow).put(currentColumn + columnOffset, '\0');
-				if (columnOffset > 0)
-					columnOffset--;
+				
 			} else if ((currentRow > 0) && canDeleteLine) {
 				currentRow--;
 				currentColumn = columns - 1;
