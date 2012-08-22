@@ -31,10 +31,9 @@ public class Terminal extends Writer {
 		String output = "";
 		if (getRow(row) != null) {
 			for (int i = columnOffset; i < columns + columnOffset; i++) {
-				if (getRow(row).size() > i)
-					if (getRow(row).get(i) != null)
-						if (!Character.isIdentifierIgnorable(getRow(row).get(i)))
-							output += getRow(row).get(i);
+				if (getRow(row).get(i) != null)
+					if (!Character.isIdentifierIgnorable(getRow(row).get(i)))
+						output += getRow(row).get(i);
 			}
 		}
 		return output;
@@ -112,6 +111,10 @@ public class Terminal extends Writer {
 	@ExposedToLua
 	public void setPosition(int row, int column) {
 		synchronized(syncObject) {
+			if (row > rows)
+				row = rows - 1;
+			if (column > columns)
+				column = columns - 1;
 			this.currentRow = row;
 			this.currentColumn = column;
 		}
@@ -166,13 +169,13 @@ public class Terminal extends Writer {
 				if (Character.isIdentifierIgnorable(arg0[i]))
 					continue;
 				if (arg0[i] == '\n' || arg0[i] == '\r') {
-					if (++currentRow >= rows) {
+					if (++currentRow > rows) {
 						Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 						List<Integer> rows = new ArrayList<Integer>();
 						rows.addAll(terminal.keySet());
 						Collections.sort(rows);
 						for (int j = 1; j < rows.size(); j++) {
-							newTerminal.put(j, terminal.get(rows.get(j)));
+							newTerminal.put(j - 1, terminal.get(rows.get(j)));
 						}
 						terminal = newTerminal;
 						currentRow = this.rows - 1;
@@ -181,7 +184,7 @@ public class Terminal extends Writer {
 					columnOffset = 0;
 				} else {
 					setChar(currentRow, currentColumn, arg0[i]);
-					if (++currentColumn >= columns) {
+					if (++currentColumn > columns) {
 						columnOffset++;
 						currentColumn = columns - 1;
 					}

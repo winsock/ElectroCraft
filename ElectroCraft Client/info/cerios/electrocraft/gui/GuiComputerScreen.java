@@ -33,8 +33,8 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 	private ByteBuffer displayBuffer;
 	private boolean terminalMode = true;
 	private Map<Integer, String> terminalList = new HashMap<Integer, String>();
-	private int rows = 24;
-	private int columns = 80;
+	private int rows = 20;
+	private int columns = 50;
 	private boolean shouldAskForScreenPacket = true;
 	private Object syncObject = new Object();
 
@@ -42,7 +42,6 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 		Keyboard.enableRepeatEvents(true);
 		ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.DISPLAY, this);
 		ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.TERMINAL, this);
-		ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.TERMINAL_SIZE, this);
 		ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.MODE, this);
 	}
 
@@ -232,13 +231,15 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 					}
 					displayBuffer.rewind();
 				} else if (type == ComputerProtocol.TERMINAL) {
+					rows = (Integer) objects[2];
+					columns = (Integer) objects[3];
 					if (((Integer)objects[1]) == 0) {
-						Object[] data = (Object[])objects[2];
+						Object[] data = (Object[])objects[4];
 						int rowNumber = (Integer)data[0];
 						String rowData = (String)data[1];
 						terminalList.put(rowNumber, rowData);
 					} else if (((Integer)objects[1]) == 1) {
-						Object[] data = (Object[])objects[2];
+						Object[] data = (Object[])objects[4];
 						int numberOfRowsChanged = (Integer) data[0];
 						ObjectPair<Integer, String>[] changedRows = (ObjectPair[])data[1];
 
@@ -246,11 +247,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 							terminalList.put(changedRows[i].getValue1(), changedRows[i].getValue2());
 						}
 					}
-				} else if (type == ComputerProtocol.TERMINAL_SIZE) {
-					rows = (Integer)objects[1];
-					columns = (Integer)objects[2];
 				}
-
 				shouldAskForScreenPacket = true;
 			}
 			return null;

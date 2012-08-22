@@ -55,41 +55,6 @@ public class ComputerServerClient implements Runnable {
 		return computer;
 	}
 	
-	public void sendTerminalUpdate(boolean shiftRowsUp, int... changedRows) {
-		synchronized (syncObject) {
-			try {
-				out.write(ComputerProtocol.TERMINAL.ordinal());
-				out.write(1); // Terminal packet type 0
-				out.write(shiftRowsUp ? 1 : 0);
-				dos.writeInt(changedRows.length);
-				for (int i = 0; i < changedRows.length; i++) {
-					dos.writeInt(changedRows[i]);
-					dos.writeUTF(computer.getComputer().getTerminal().getLine(changedRows[i]));
-				}
-			} catch (IOException e) {
-				try {
-					socket.close();
-					ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
-				} catch (IOException e1) { }
-			}
-		}
-	}
-	
-	public void sendTerminalSize() {
-		synchronized (syncObject) {
-			try {
-				out.write(ComputerProtocol.TERMINAL_SIZE.ordinal());
-				dos.writeInt(computer.getComputer().getTerminal().getRows());
-				dos.writeInt(computer.getComputer().getTerminal().getColumns());
-			} catch (IOException e) {
-				try {
-					socket.close();
-					ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
-				} catch (IOException e1) {}
-			}
-		}
-	}
-	
 	public void changeModes(boolean terminal) {
 		synchronized (syncObject) {
 			try {
@@ -175,11 +140,14 @@ public class ComputerServerClient implements Runnable {
 					case TERMINAL:
 						int row = dis.readInt();
 						out.write(ComputerProtocol.TERMINAL.ordinal());
+						dos.writeInt(computer.getComputer().getTerminal().getColumns());
+						dos.writeInt(computer.getComputer().getTerminal().getRows());
 						out.write(0); // Terminal packet type 0
 						dos.writeInt(row); // Resend the row number
-						if (computer.getComputer().getTerminal().getRow(row) != null) {
+						String rowData = computer.getComputer().getTerminal().getLine(row);
+						if (!rowData.isEmpty()) {
 							dos.writeBoolean(true);
-							dos.writeUTF(computer.getComputer().getTerminal().getLine(row));
+							dos.writeUTF(rowData);
 						} else {
 							dos.writeBoolean(false);
 						}
