@@ -90,7 +90,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 					scaleFactorX = (float) ((halfScreenWidth * 2) / fontRenderer.getStringWidth(line));
 				}
 				if ((fontRenderer.FONT_HEIGHT * columns) > (halfScreenHeight * 2)) {
-					scaleFactorY = (float) ((halfScreenHeight * 2) / (fontRenderer.FONT_HEIGHT * rows));
+					scaleFactorY = (float) ((halfScreenHeight * 2) / (pixelsPerLineHeight * rows));
 				}
 				GL11.glPushMatrix();
 				GL11.glScalef(scaleFactorX, scaleFactorY, 1);

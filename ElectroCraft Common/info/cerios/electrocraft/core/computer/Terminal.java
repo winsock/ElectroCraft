@@ -129,8 +129,7 @@ public class Terminal extends Writer {
 				else
 					currentColumn--;
 				if (getRow(currentRow) != null)
-					if (getRow(currentRow).size() > currentColumn + columnOffset)
-						terminal.get(currentRow).put(currentColumn + columnOffset, '\0');
+					terminal.get(currentRow).put(currentColumn + columnOffset, '\0');
 				
 			} else if ((currentRow > 0) && canDeleteLine) {
 				currentRow--;
@@ -143,7 +142,7 @@ public class Terminal extends Writer {
 							chr = terminal.get(currentRow).get(currentColumn + columnOffset);
 					if (--currentColumn <= 0) {
 						currentColumn = columns - 1;
-						if (--currentRow <= 0) {
+						if (--currentRow < 0) {
 							currentRow = 0;
 							break;
 						}
@@ -169,7 +168,7 @@ public class Terminal extends Writer {
 				if (Character.isIdentifierIgnorable(arg0[i]))
 					continue;
 				if (arg0[i] == '\n' || arg0[i] == '\r') {
-					if (++currentRow > rows) {
+					if (++currentRow >= rows) {
 						Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 						List<Integer> rows = new ArrayList<Integer>();
 						rows.addAll(terminal.keySet());
@@ -184,7 +183,7 @@ public class Terminal extends Writer {
 					columnOffset = 0;
 				} else {
 					setChar(currentRow, currentColumn, arg0[i]);
-					if (++currentColumn > columns) {
+					if (++currentColumn >= columns) {
 						columnOffset++;
 						currentColumn = columns - 1;
 					}
