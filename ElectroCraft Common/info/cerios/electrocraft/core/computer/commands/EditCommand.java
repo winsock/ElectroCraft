@@ -2,6 +2,7 @@ package info.cerios.electrocraft.core.computer.commands;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -26,7 +27,7 @@ public class EditCommand implements IComputerCommand {
 		int currentLine = 0;
 		
 		try {
-			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + ComputerFile.separator + computer.getCurrentDirectory() + ComputerFile.separator + argv[0], computer);
+			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0], computer);
 			if (!file.exists())
 				file.createNewFile();
 			
@@ -34,7 +35,7 @@ public class EditCommand implements IComputerCommand {
 			computer.getTerminal().writeLine("Edit - Press Control - x to exit");
 			computer.getTerminal().writeLine("SAVE BEFORE EXITING");
 			computer.getTerminal().writeLine("Press Control - w to save");
-			BufferedReader br = new BufferedReader(new FileReader(file));
+			BufferedReader br = new BufferedReader(new FileReader(file.getJavaFile()));
 			String line;
 			for(int i = 0; (line = br.readLine()) != null; i++) {
 				computer.getTerminal().writeLine(line);
@@ -52,7 +53,7 @@ public class EditCommand implements IComputerCommand {
 				if ((inputKey == 'x' && computer.getKeyboard().isCtrlDown()) || inputKey == 0x18) {
 					break;
 				} else if ((inputKey == 'w' && computer.getKeyboard().isCtrlDown()) || inputKey == 0x17) {
-					BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+					BufferedWriter bw = new BufferedWriter(new FileWriter(file.getJavaFile()));
 					
 					List<Integer> keys = new ArrayList<Integer>(fileLineMap.keySet());
 					Collections.sort(keys);
@@ -79,6 +80,7 @@ public class EditCommand implements IComputerCommand {
 					}
 				}
 			}
+			computer.getTerminal().clear();
 		} catch (IOException e) {
 			computer.getTerminal().clear();
 			try {
@@ -88,7 +90,5 @@ public class EditCommand implements IComputerCommand {
 				computer.setRunning(false);
 			}
 		}
-		
-		computer.getTerminal().clear();
 	}
 }

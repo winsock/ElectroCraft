@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.computer.commands;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,8 +25,8 @@ public class LuaCommand implements IComputerCommand {
 	@Override
 	public void onCommand(Computer computer, int argc, String[] argv) {
 		try {
-			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + ComputerFile.separator + computer.getCurrentDirectory() + ComputerFile.separator + argv[0], computer);
-			FileInputStream fis = new FileInputStream(file);
+			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0], computer);
+			FileInputStream fis = new FileInputStream(file.getJavaFile());
 			computer.getLuaState().load(fis, argv[0]);
 			fis.close();
 			computer.getLuaState().call(0, LuaState.MULTRET);

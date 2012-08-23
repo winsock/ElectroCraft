@@ -11,16 +11,18 @@ import java.io.IOException;
 import com.naef.jnlua.LuaRuntimeException;
 
 @ExposedToLua
-public class ComputerFile extends File {
+public class ComputerFile {
 
 	private Computer computer;
+	private File javaFile;
 	
 	@ExposedToLua(value = false)
 	public ComputerFile(String pathname, Computer computer) {
-		super(pathname);
 		this.computer = computer;
+		this.javaFile = new File(pathname);
+		
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), this)) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
@@ -43,124 +45,120 @@ public class ComputerFile extends File {
 	}
 	
 	@ExposedToLua
-	@Override
 	public boolean mkdirs() {
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), this)) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
 		
-		return super.mkdirs();
+		return javaFile.mkdirs();
 	}
 	
 	@ExposedToLua
-	@Override
 	public boolean mkdir() {
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), this)) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				return false;
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
 		
-		return super.mkdir();
+		return javaFile.mkdir();
 	}
 	
 	@ExposedToLua
-	@Override
+	public boolean createNewFile() throws IOException {
+		try {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
+				return false;
+			}
+		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
+		return javaFile.createNewFile();
+	}
+	
+	@ExposedToLua
 	public boolean canWrite() {
 		if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10) * 1024 * 1024) {
 			return false;
 		}
-		return super.canWrite();
+		return javaFile.canWrite();
 	}
 	
 	@ExposedToLua
-	@Override
 	public boolean canRead() {
-		return super.canRead();
+		return javaFile.canRead();
 	}
 	
 	@ExposedToLua
-	@Override
 	public boolean delete() {
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), this)) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				return false;
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
-		return super.delete();
+		return javaFile.delete();
 	}
 	
 	@ExposedToLua
-	@Override
 	public boolean exists() {
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), this)) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				return false;
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
-		return super.exists();
+		return javaFile.exists();
 	}
 	
 	@ExposedToLua
-	@Override
 	public long getFreeSpace()  {
 		return (ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10) * 1024 * 1024) - computer.getBaseDirectory().length();
 	}
 	
 	@ExposedToLua
-	@Override
 	public String getPath() {
-		return super.getAbsolutePath().replace(computer.getBaseDirectory().getAbsolutePath(), "");
+		return javaFile.getPath().replace(computer.getBaseDirectory().getAbsolutePath(), "");
 	}
 	
 	@ExposedToLua
-	@Override
 	public String getName() {
-		return super.getName();
+		return javaFile.getName();
 	}
 	
 	@ExposedToLua
-	@Override
 	public ComputerFile getParentFile() {
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), super.getParentFile())) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile.getParentFile())) {
 				return null;
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
-		return new ComputerFile(super.getParent(), computer);
+		return new ComputerFile(javaFile.getParent(), computer);
 	}
 	
 	@ExposedToLua
-	@Override
 	public boolean isFile() {
-		return super.isFile();
+		return javaFile.isFile();
 	}
 	
 	@ExposedToLua
-	@Override
 	public boolean isDirectory() {
-		return super.isDirectory();
+		return javaFile.isDirectory();
 	}
 	
 	@ExposedToLua
-	@Override
 	public long length() {
-		return super.length();
+		return javaFile.length();
 	}
 	
 	@ExposedToLua
-	@Override
 	public ComputerFile[] listFiles() {
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), super.getParentFile())) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile.getParentFile())) {
 				throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
-		ComputerFile[] files = new ComputerFile[super.listFiles().length];
+		ComputerFile[] files = new ComputerFile[javaFile.listFiles().length];
 		int counter = 0;
-		for (File f : super.listFiles()) {
+		for (File f : javaFile.listFiles()) {
 			if (f.getName().contains(".persist"))
 				continue;
 			files[counter++] = new ComputerFile(f.getAbsolutePath(), computer);
@@ -169,9 +167,13 @@ public class ComputerFile extends File {
 	}
 	
 	@ExposedToLua(value = false)
-	@Override
 	public void finalize() throws Throwable {
 		computer.deincrementOpenFileHandles();
 		super.finalize();
+	}
+	
+	@ExposedToLua(value = false)
+	public File getJavaFile() {
+		return javaFile;
 	}
 }

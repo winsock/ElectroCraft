@@ -19,6 +19,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
@@ -41,6 +43,7 @@ public class Computer implements Runnable {
 	private String currentDirectory = "";
 	private int openFileHandles = 0;
 	private LuaState luaState;
+	private Map<String, Integer> persistIgnoreMap = new HashMap<String, Integer>();
 	
 	@ExposedToLua(value = false)
 	public Computer(ComputerServerClient client, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
@@ -87,10 +90,13 @@ public class Computer implements Runnable {
 //			if (!persistFile.exists())
 //				persistFile.createNewFile();
 //			FileOutputStream fos = new FileOutputStream(persistFile);
-//			luaState.getTable(LuaState.GLOBALSINDEX);
+//		    luaState.getTable(LuaState.GLOBALSINDEX);
 //			luaState.newTable();
-//			luaState.pushValue(-2);
-//			luaState.pushValue(-1);
+//		    for (String s : persistIgnoreMap.keySet()) {
+//		    	luaState.getGlobal(s);
+//		    	luaState.pushNumber(persistIgnoreMap.get(s));
+//		    	luaState.setTable(-3);
+//		    }
 //			luaState.persist(fos);
 //			fos.flush();
 //			fos.close();
@@ -104,16 +110,16 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	private void loadLuaDefaults() {
 		// Load the allowed libraries
-		luaState.openLib(Library.BASE);
-		luaState.openLib(Library.DEBUG);
-		luaState.openLib(Library.JAVA);
-		luaState.openLib(Library.MATH);
-		luaState.openLib(Library.PACKAGE);
-		luaState.openLib(Library.PLUTO);
-		luaState.openLib(Library.STRING);
-		luaState.openLib(Library.TABLE);
-
-		luaState.register(new NamedJavaFunction() {
+//		luaState.openLib(Library.BASE);
+//		luaState.openLib(Library.DEBUG);
+//		luaState.openLib(Library.JAVA);
+//		luaState.openLib(Library.MATH);
+//		luaState.openLib(Library.PACKAGE);
+//		luaState.openLib(Library.PLUTO);
+//		luaState.openLib(Library.STRING);
+//		luaState.openLib(Library.TABLE);
+		
+		NamedJavaFunction getTerminal = new NamedJavaFunction() {
 			Computer computer;
 			
 			public NamedJavaFunction init(Computer computer) {
@@ -131,9 +137,11 @@ public class Computer implements Runnable {
 			public String getName() {
 				return "getTerminal";
 			}
-		}.init(this));
+		}.init(this);
 		
-		luaState.register(new NamedJavaFunction() {
+		luaState.register(getTerminal);
+		
+		NamedJavaFunction sleep = new NamedJavaFunction() {
 			@Override
 			public int invoke(LuaState luaState) {
 				try {
@@ -146,7 +154,9 @@ public class Computer implements Runnable {
 			public String getName() {
 				return "sleep";
 			}
-		});
+		};
+		
+		luaState.register(sleep);
 		
 		luaState.register(new NamedJavaFunction() {
 			Computer computer;
@@ -247,6 +257,14 @@ public class Computer implements Runnable {
 				return "createNewFileHandle";
 			}
 		}.init(this));
+		
+		persistIgnoreMap.put("getTerminal", persistIgnoreMap.size());
+		persistIgnoreMap.put("sleep", persistIgnoreMap.size());
+		persistIgnoreMap.put("getKeyboard", persistIgnoreMap.size());
+		persistIgnoreMap.put("getVideoCard", persistIgnoreMap.size());
+		persistIgnoreMap.put("getComputer", persistIgnoreMap.size());
+		persistIgnoreMap.put("createNewSocket", persistIgnoreMap.size());
+		persistIgnoreMap.put("createNewFileHandle", persistIgnoreMap.size());
 	}
 	
 	@ExposedToLua
