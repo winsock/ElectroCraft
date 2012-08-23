@@ -14,6 +14,8 @@ import com.naef.jnlua.JavaReflector.Metamethod;
 import com.naef.jnlua.LuaState.Library;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -79,7 +81,24 @@ public class Computer implements Runnable {
 	}
 	
 	@ExposedToLua(value = false)
-	public void serverShutdown() {
+	public void saveCurrentState() {
+//		try {
+//			File persistFile = new File(baseDirectory.getAbsolutePath() + File.separator + ".persist");
+//			if (!persistFile.exists())
+//				persistFile.createNewFile();
+//			FileOutputStream fos = new FileOutputStream(persistFile);
+//			luaState.getTable(LuaState.GLOBALSINDEX);
+//			luaState.newTable();
+//			luaState.pushValue(-2);
+//			luaState.pushValue(-1);
+//			luaState.persist(fos);
+//			fos.flush();
+//			fos.close();
+//		} catch (FileNotFoundException e) {
+//			ElectroCraft.instance.getLogger().severe("Unable to open the persist file for saving!");
+//		} catch (IOException e) {
+//			ElectroCraft.instance.getLogger().severe("Unable to save a comptuers state!");
+//		}
 	}
 	
 	@ExposedToLua(value = false)

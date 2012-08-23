@@ -2,7 +2,6 @@ package info.cerios.electrocraft.core.computer.commands;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -17,6 +16,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.computer.luajavaapi.ComputerFile;
 
 public class EditCommand implements IComputerCommand {
 
@@ -26,7 +26,7 @@ public class EditCommand implements IComputerCommand {
 		int currentLine = 0;
 		
 		try {
-			File file = new File(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0]);
+			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + ComputerFile.separator + computer.getCurrentDirectory() + ComputerFile.separator + argv[0], computer);
 			if (!file.exists())
 				file.createNewFile();
 			

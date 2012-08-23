@@ -25,6 +25,10 @@ public class ComputerFile extends File {
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
 
+		if (pathname.contains(".persist")) {
+			throw new LuaRuntimeException("Error! Not allowed to open the persist file!");
+		}
+		
 		if (!this.exists()) {
 			if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10) * 1024 * 1024) {
 				throw new LuaRuntimeException("Error! Tried to make a new file when the disk is full!");
@@ -157,6 +161,8 @@ public class ComputerFile extends File {
 		ComputerFile[] files = new ComputerFile[super.listFiles().length];
 		int counter = 0;
 		for (File f : super.listFiles()) {
+			if (f.getName().contains(".persist"))
+				continue;
 			files[counter++] = new ComputerFile(f.getAbsolutePath(), computer);
 		}
 		return files;

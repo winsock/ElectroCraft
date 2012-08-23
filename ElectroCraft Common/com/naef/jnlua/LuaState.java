@@ -2196,7 +2196,11 @@ public class LuaState {
 	private native int lua_tablesize(int index);
 
 	private native void lua_tablemove(int index, int from, int to, int count);
-
+	
+	// ElectroCraft add Pluto
+	public native void persist(OutputStream out);
+	public native void unpersist(InputStream input);
+	
 	// -- Enumerated types
 	/**
 	 * Represents a Lua library.
