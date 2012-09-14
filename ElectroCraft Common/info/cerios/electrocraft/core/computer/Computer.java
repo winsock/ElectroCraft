@@ -9,11 +9,14 @@ import info.cerios.electrocraft.core.network.ComputerServerClient;
 import com.naef.jnlua.DefaultJavaReflector;
 import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaState;
+import com.naef.jnlua.LuaType;
+import com.naef.jnlua.LuaValueProxy;
 import com.naef.jnlua.NamedJavaFunction;
 import com.naef.jnlua.JavaReflector.Metamethod;
 import com.naef.jnlua.LuaState.Library;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -43,7 +46,6 @@ public class Computer implements Runnable {
 	private String currentDirectory = "";
 	private int openFileHandles = 0;
 	private LuaState luaState;
-	private Map<String, Integer> persistIgnoreMap = new HashMap<String, Integer>();
 	
 	@ExposedToLua(value = false)
 	public Computer(ComputerServerClient client, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
@@ -84,40 +86,159 @@ public class Computer implements Runnable {
 	}
 	
 	@ExposedToLua(value = false)
+	public void dumpStack() {
+		int top = luaState.getTop();
+		for (int i = 1; i <= top; i++) {
+			LuaType type = luaState.type(i);
+			switch (type) {
+			case STRING:  /* strings */
+				System.out.print(luaState.toString(i) + " | ");
+				break;
+
+			case BOOLEAN:  /* booleans */
+				System.out.print((luaState.toBoolean(i) ? "true" : "false") + " | ");
+				break;
+
+			case NUMBER:  /* numbers */
+				System.out.print(luaState.toNumber(i) + " | ");
+				break;
+
+			default:  /* other values */
+				System.out.print(luaState.typeName(i) + " | ");
+				break;
+			}
+		}
+		System.out.println();
+	}
+	
+	@ExposedToLua(value = false)
+	public void loadState() {
+		luaState.newTable();
+		luaState.pushNil(); // key unpersistMap
+		while (luaState.next(LuaState.GLOBALSINDEX)) { // value key unpersistMap
+			if (luaState.isCFunction(-1)) {
+				luaState.pushValue(-2);
+				luaState.setTable(-4);
+			} else if (luaState.isJavaFunction(-1)) {
+				luaState.pushValue(-2);
+				luaState.setTable(-4);
+			} else if (luaState.isTable(-1)) {
+				luaState.pushNil(); // key value key unpersistMap
+				while (luaState.next(-2)) { // value key value key unpersistMap
+					if (luaState.isCFunction(-1)) {
+						luaState.pushValue(-2);
+						luaState.setTable(-6);
+					} else if (luaState.isJavaFunction(-1)) {
+						luaState.pushValue(-2);
+						luaState.setTable(-6);
+					} else if (luaState.isTable(-1)) {
+						luaState.pushValue(-2);
+						luaState.setTable(-6);
+					} else if (!luaState.isNoneOrNil(-1)) {
+						luaState.pop(1); // key value key unpersistMap
+					}
+				}
+				luaState.pop(1);
+			} else if (!luaState.isNoneOrNil(-1)) {
+				luaState.pop(1); // key unpersistMap
+			}
+		}
+		// unpersistMap
+		try {
+			File persistFile = new File(baseDirectory.getAbsolutePath() + File.separator + ".persist");
+			if (!persistFile.exists())
+				return;
+			FileInputStream fis = new FileInputStream(persistFile);
+			luaState.unpersist(fis);
+			luaState.pushNil();
+			while (luaState.next(-2)) {
+				luaState.pushValue(-2);
+				luaState.pushValue(-2);
+				luaState.setTable(LuaState.GLOBALSINDEX);
+				luaState.pop(1);
+			}
+			luaState.pop(2);
+		} catch (FileNotFoundException e) {
+			ElectroCraft.instance.getLogger().severe("Unable to open the persist file for loading!");
+		}
+	}
+	
+	@ExposedToLua(value = false)
 	public void saveCurrentState() {
-//		try {
-//			File persistFile = new File(baseDirectory.getAbsolutePath() + File.separator + ".persist");
-//			if (!persistFile.exists())
-//				persistFile.createNewFile();
-//			FileOutputStream fos = new FileOutputStream(persistFile);
-//		    luaState.getTable(LuaState.GLOBALSINDEX);
-//			luaState.newTable();
-//		    for (String s : persistIgnoreMap.keySet()) {
-//		    	luaState.getGlobal(s);
-//		    	luaState.pushNumber(persistIgnoreMap.get(s));
-//		    	luaState.setTable(-3);
-//		    }
-//			luaState.persist(fos);
-//			fos.flush();
-//			fos.close();
-//		} catch (FileNotFoundException e) {
-//			ElectroCraft.instance.getLogger().severe("Unable to open the persist file for saving!");
-//		} catch (IOException e) {
-//			ElectroCraft.instance.getLogger().severe("Unable to save a comptuers state!");
-//		}
+		Map<String, Integer> persistIgnoreMap = new HashMap<String, Integer>();
+		luaState.newTable(); // persist
+		luaState.pushNil(); // key persist
+		while (luaState.next(LuaState.GLOBALSINDEX)) { // value key persist
+			if (luaState.isCFunction(-1)) {
+				persistIgnoreMap.put(luaState.toString(-2), persistIgnoreMap.size());
+			} else if (luaState.isJavaFunction(-1)) {
+				persistIgnoreMap.put(luaState.toString(-2), persistIgnoreMap.size());
+			} else if (luaState.isTable(-1)) {
+				luaState.pushNil(); // key value key persist
+				while (luaState.next(-2)) { // value key value key persist
+					if (luaState.isCFunction(-1)) {
+						persistIgnoreMap.put(luaState.toString(-2), persistIgnoreMap.size());
+					} else if (luaState.isJavaFunction(-1)) {
+						persistIgnoreMap.put(luaState.toString(-2), persistIgnoreMap.size());
+					} else if (luaState.isTable(-1)) {
+						persistIgnoreMap.put(luaState.toString(-2), persistIgnoreMap.size());
+					} else {
+						luaState.pushValue(-2); // keyCopy value key value key persist
+						luaState.pushValue(-2); // valueCopy keyCopy value key value key persist
+					    luaState.setTable(-7); // value key value key persist
+					}
+					luaState.pop(1); // key value key persist
+				}
+			} else {
+				luaState.pushValue(-2); // keyCopy value key persist
+				luaState.pushValue(-2); // valueCopy keyCopy value key persist
+				luaState.setTable(-5); // value key persist
+			}
+			luaState.pop(1); // key persist
+		}
+		try {
+			File persistFile = new File(baseDirectory.getAbsolutePath() + File.separator + ".persist");
+			if (!persistFile.exists())
+				persistFile.createNewFile();
+			FileOutputStream fos = new FileOutputStream(persistFile);
+			luaState.newTable(); // permanents persist  
+		    for (String s : persistIgnoreMap.keySet()) {
+		    	luaState.getGlobal(s);
+		    	if (luaState.isNoneOrNil(-1)) {
+		    		luaState.pop(1);
+		    		continue;
+		    	}
+		    	luaState.pushNumber(persistIgnoreMap.get(s));
+		    	if (luaState.isNoneOrNil(-1)) {
+		    		luaState.pop(1);
+		    		continue;
+		    	}
+		    	luaState.setTable(-3);
+		    }
+		    luaState.pushValue(-2); // persist permanents persist  
+		    luaState.remove(-3); // persist permanents
+		    luaState.persist(fos);
+			luaState.pop(2);
+			fos.flush();
+			fos.close();
+		} catch (FileNotFoundException e) {
+			ElectroCraft.instance.getLogger().severe("Unable to open the persist file for saving!");
+		} catch (IOException e) {
+			ElectroCraft.instance.getLogger().severe("Unable to save a comptuers state!");
+		}
 	}
 	
 	@ExposedToLua(value = false)
 	private void loadLuaDefaults() {
 		// Load the allowed libraries
-//		luaState.openLib(Library.BASE);
-//		luaState.openLib(Library.DEBUG);
-//		luaState.openLib(Library.JAVA);
-//		luaState.openLib(Library.MATH);
-//		luaState.openLib(Library.PACKAGE);
-//		luaState.openLib(Library.PLUTO);
-//		luaState.openLib(Library.STRING);
-//		luaState.openLib(Library.TABLE);
+		luaState.openLib(Library.BASE);
+		luaState.openLib(Library.DEBUG);
+		luaState.openLib(Library.JAVA);
+		luaState.openLib(Library.MATH);
+		luaState.openLib(Library.PACKAGE);
+		luaState.openLib(Library.PLUTO);
+		luaState.openLib(Library.STRING);
+		luaState.openLib(Library.TABLE);
 		
 		NamedJavaFunction getTerminal = new NamedJavaFunction() {
 			Computer computer;
@@ -258,13 +379,7 @@ public class Computer implements Runnable {
 			}
 		}.init(this));
 		
-		persistIgnoreMap.put("getTerminal", persistIgnoreMap.size());
-		persistIgnoreMap.put("sleep", persistIgnoreMap.size());
-		persistIgnoreMap.put("getKeyboard", persistIgnoreMap.size());
-		persistIgnoreMap.put("getVideoCard", persistIgnoreMap.size());
-		persistIgnoreMap.put("getComputer", persistIgnoreMap.size());
-		persistIgnoreMap.put("createNewSocket", persistIgnoreMap.size());
-		persistIgnoreMap.put("createNewFileHandle", persistIgnoreMap.size());
+		loadState();
 	}
 	
 	@ExposedToLua

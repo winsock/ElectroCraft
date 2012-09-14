@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.sun.tools.javac.code.Attribute.Array;
-
 @ExposedToLua
 public class Terminal extends Writer {
 

@@ -45,7 +45,8 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         super.writeToNBT(nbttagcompound);
         nbttagcompound.setString("baseDirectory", baseDirectory);
         nbttagcompound.setInteger("direction", direction.ordinal());
-        computer.saveCurrentState();
+        if (computer != null)
+        	computer.saveCurrentState();
     }
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
