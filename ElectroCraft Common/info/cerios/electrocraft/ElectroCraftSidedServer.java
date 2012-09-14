@@ -1,11 +1,13 @@
 package info.cerios.electrocraft;
 
+import java.io.File;
 import java.net.SocketAddress;
 
 import net.minecraft.src.TileEntity;
 import cpw.mods.fml.common.IScheduledTickHandler;
 import cpw.mods.fml.common.network.IPacketHandler;
 import cpw.mods.fml.common.network.Player;
+import cpw.mods.fml.server.FMLServerHandler;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
@@ -51,6 +53,11 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 		this.isShiftDown = state;
 	}
 
+	@Override
+	public File getBaseDir() {
+		return FMLServerHandler.instance().getServer().getFile(".");
+	}
+	
 	@Override
 	public void startComputerClient(int port, SocketAddress address) { }
 }

@@ -93,11 +93,11 @@ public final class NativeSupport {
 	            fileExtention = ".dylib";
 	        }
 
-	        File libFolder = new File("." + File.separator + "electrocraft" + File.separator + "natives");
+	        File libFolder = new File(ElectroCraft.electroCraftSided.getBaseDir(), "electrocraft" + File.separator + "natives");
 	        if (!libFolder.exists())
 	            libFolder.mkdirs();
 
-	        File libraryFile = new File(libFolder.getAbsolutePath() + File.separator + "libElectroCraftCPU" + fileExtention);
+	        File libraryFile = new File(libFolder, "libElectroCraftCPU" + fileExtention);
 	        try {
                 Utils.copyResource("info/cerios/electrocraft/core/natives/libElectroCraftCPU" + fileExtention, libraryFile);
             } catch (IOException e) {

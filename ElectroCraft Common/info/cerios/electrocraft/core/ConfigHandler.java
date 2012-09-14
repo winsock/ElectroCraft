@@ -21,7 +21,7 @@ public class ConfigHandler {
     }
 
     public static void loadOrCreateConfigFile(String file) {
-    	modConfigFolder = new File("." + File.separator + "config" + File.separator + "ElectroCraft");
+    	modConfigFolder = new File(ElectroCraft.electroCraftSided.getBaseDir(), "config" + File.separator + "ElectroCraft");
         if (!modConfigFolder.exists())
             modConfigFolder.mkdirs();
         currentConfigFile = new File(modConfigFolder + File.separator + file);

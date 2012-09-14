@@ -1,5 +1,6 @@
 package info.cerios.electrocraft;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
@@ -106,5 +107,10 @@ public class ElectroCraftClient implements IElectroCraftSided {
 		} catch (IOException e) {
 			ElectroCraft.instance.getLogger().severe("Client: Unable to connect to server!");
 		}
+	}
+
+	@Override
+	public File getBaseDir() {
+		return FMLClientHandler.instance().getClient().getMinecraftDir();
 	}
 }

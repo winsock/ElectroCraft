@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core;
 
+import java.io.File;
 import java.net.SocketAddress;
 
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
@@ -24,6 +25,8 @@ public interface IElectroCraftSided {
     public void openNetworkGui(NetworkAddressPacket packet);
     
     public IScheduledTickHandler getTickHandler();
+    
+    public File getBaseDir();
         
     //					   //
     // Client Only Methods //
