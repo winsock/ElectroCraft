@@ -3,11 +3,12 @@ package info.cerios.electrocraft.core.computer.commands;
 import java.io.File;
 
 import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
 
 public class RemoveCommand implements IComputerCommand {
 	@Override
 	public void onCommand(Computer computer, int argc, String[] argv) {
-		File file = new File(computer.getBaseDirectory() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0]);
+		ComputerFile file = new ComputerFile(computer.getBaseDirectory() + "/" + computer.getCurrentDirectory() + "/" + argv[0], computer);
 		if (file.exists()) {
 			file.delete();
 			if (file.exists()) {

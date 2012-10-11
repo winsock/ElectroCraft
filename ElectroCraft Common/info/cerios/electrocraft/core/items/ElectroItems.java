@@ -6,9 +6,9 @@ import net.minecraft.src.Item;
 
 public enum ElectroItems {
     // Defaults
-    COPPOR_INGOT(true, "ingotCopper", new CopperIngot(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("ingotCopper", "item", 30078).getInt(30078)).setIconIndex(1).setItemName("ingotCopper").setTabToDisplayOn(CreativeTabs.tabMaterials), "Copper Ingot"),
-    MAGNETITE_DUST(true, "magnetiteDust", new MagnetiteDust(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("magnetiteDust", "item", 30080).getInt(30080)).setIconIndex(3).setItemName("magnetiteDust").setTabToDisplayOn(CreativeTabs.tabMaterials), "Magnetite Dust"),
-    ELECTRO_DUST(false, "electroDust", new ElectroDust(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("electroDust", "item", 30081).getInt(30081)).setIconIndex(4).setItemName("electroDust").setTabToDisplayOn(CreativeTabs.tabRedstone), "Electrodust");
+    COPPOR_INGOT(true, "ingotCopper", new CopperIngot(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("ingotCopper", "item", 30078).getInt(30078)).setIconIndex(1).setItemName("ingotCopper").setCreativeTab(CreativeTabs.tabMaterials), "Copper Ingot"),
+    MAGNETITE_DUST(true, "magnetiteDust", new MagnetiteDust(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("magnetiteDust", "item", 30080).getInt(30080)).setIconIndex(3).setItemName("magnetiteDust").setCreativeTab(CreativeTabs.tabMaterials), "Magnetite Dust"),
+    ELECTRO_DUST(false, "electroDust", new ElectroDust(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("electroDust", "item", 30081).getInt(30081)).setIconIndex(4).setItemName("electroDust").setCreativeTab(CreativeTabs.tabRedstone), "Electrodust");
 
     private boolean isOreDicItem;
     private String name;

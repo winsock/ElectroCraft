@@ -27,7 +27,7 @@ public class EditCommand implements IComputerCommand {
 		int currentLine = 0;
 		
 		try {
-			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0], computer);
+			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + "/" + computer.getCurrentDirectory() + "/" + argv[0], computer);
 			if (!file.exists())
 				file.createNewFile();
 			

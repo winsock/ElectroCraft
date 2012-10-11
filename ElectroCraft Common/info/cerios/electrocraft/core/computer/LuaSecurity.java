@@ -9,25 +9,28 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.security.Permission;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 import net.minecraft.src.EntityPlayerMP;
 
 import com.naef.jnlua.LuaState.GcAction;
 
+import cpw.mods.fml.relauncher.RelaunchClassLoader;
+
 public class LuaSecurity extends SecurityManager {
 	
 	private final String key;
 	private final InheritableThreadLocal<Computer> threadLocal = new InheritableThreadLocal<Computer>();
+	private final ThreadGroup threadGroup = new ThreadGroup("luaThreads");
 	
 	public LuaSecurity(String key) {
 		super();
 		this.key = key;
 	}
 	
-	public void registerThread(Computer computer) {
-		threadLocal.set(computer);
-		
+	public void registerThread(Computer computer) {		
 		// Checker thread
 		new Thread(new Runnable() {
 			Computer computer;
@@ -40,36 +43,49 @@ public class LuaSecurity extends SecurityManager {
 			@Override
 			public void run() {
 				while (computer.isRunning()) {
-					// System memory check
-					if (computer.getLuaState().gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxMemPerUser", "computer", 16).getInt(16) * 1024) {
-						computer.getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxMemPerUser", "computer", 16).getInt(16)) + "M");
-						computer.setRunning(false);
-						ElectroCraft.instance.getLogger().log(Level.WARNING, "Warning: Player: " + ((EntityPlayerMP)computer.getClient().getComputer().getActivePlayer()).username + " exceded the maximum memory allowance");
+					synchronized(Computer.luaStateLock) {
+						// System memory check
+						if (computer.getLuaState().gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
+							computer.setRunning(false);
+							computer.getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
+							if (computer.getClient() != null && computer.getClient().getComputer().getActivePlayer() != null)
+								ElectroCraft.instance.getLogger().log(Level.WARNING, "Player: " + ((EntityPlayerMP)computer.getClient().getComputer().getActivePlayer()).username + " exceded the maximum memory allowance");
+						}
+
+						// Extra backup check in case my wrapped file manager doesn't catch it
+						if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
+							computer.setRunning(false);
+							computer.getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
+							if (computer.getClient() != null && computer.getClient().getComputer().getActivePlayer() != null)
+								ElectroCraft.instance.getLogger().log(Level.WARNING, "Player: " + ((EntityPlayerMP)computer.getClient().getComputer().getActivePlayer()).username + " exceded the maximum storage allowance and got past the main check");
+						}
 					}
-					
-					// Extra backup check in case my wrapped file manager doesn't catch it
-					if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10) * 1024 * 1024) {
-						computer.getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10)) + "M");
-						computer.setRunning(false);
-						ElectroCraft.instance.getLogger().log(Level.WARNING, "Warning: Player: " + ((EntityPlayerMP)computer.getClient().getComputer().getActivePlayer()).username + " exceded the maximum storage allowance and got past the main check");
-					}
-					
+
 					try {
 						Thread.sleep(500);
 					} catch (InterruptedException e) { }
 				}
 			}
 		}.init(computer)).start();
+		threadLocal.set(computer);
 	}
 	
 	public boolean shouldCheckPermissions() {
-		return false;
+		for (Class c : this.getClassContext()) {
+			if (c == RelaunchClassLoader.class) {
+				return false;
+			}
+		}
+		return threadLocal.get() != null;
 	}
 	
 	@Override
     public void checkPermission(Permission perm) {
 		if (!shouldCheckPermissions())
 			return;
+//		if (perm.getName() == "stopThread") {
+//			return;
+//		}
 		super.checkPermission(perm);
 	}
 	
@@ -120,6 +136,39 @@ public class LuaSecurity extends SecurityManager {
 	}
 	
 	@Override
+	public void checkWrite(FileDescriptor fd) {
+		if (!shouldCheckPermissions())
+			return;
+		throw new SecurityException("Error! Lua not allowed to open raw file descriptors!");
+	}
+	
+	@Override
+	public void checkWrite(String file) {
+		if (!shouldCheckPermissions())
+			return;
+		try {
+			if (!Utils.baseDirectoryContains(threadLocal.get().getBaseDirectory(), new File(file))) {
+				throw new SecurityException("Error! Lua not allowed to open files outside of its base directory!");
+			}
+		} catch (IOException e) {
+			throw new SecurityException("Error! Lua is not allowed to open this file!");
+		}
+	}
+	
+	@Override
+	public void checkDelete(String file) {
+		if (!shouldCheckPermissions())
+			return;
+		try {
+			if (!Utils.baseDirectoryContains(threadLocal.get().getBaseDirectory(), new File(file))) {
+				throw new SecurityException("Error! Lua not allowed to delete files outside of its base directory!");
+			}
+		} catch (IOException e) {
+			throw new SecurityException("Error! Lua is not allowed to delete this file!");
+		}
+	}
+
+	@Override
 	public void checkPropertiesAccess() {
 		if (!shouldCheckPermissions())
 			return;
@@ -135,11 +184,11 @@ public class LuaSecurity extends SecurityManager {
 	
 	@Override
 	public void checkPackageAccess(String pkg) {
-		if (!shouldCheckPermissions())
+		if (pkg.equals("cpw.mods.fml.relauncher") || !shouldCheckPermissions())
 			return;
 		
-		if (!pkg.startsWith("java") && !pkg.startsWith("info.cerios.electrocraft.core.computer.luajavaapi")) {
-			throw new SecurityException("Error! Lua not allowed to access non java.* or info.cerios.electrocraft.core.computer.luajavaapi.* packages!");
+		if (!pkg.startsWith("java") && !pkg.startsWith("info.cerios.electrocraft.core.computer")) {
+			throw new SecurityException("Error! Lua not allowed to access non java.* or info.cerios.electrocraft.core.computer.* packages!");
 		}
 		
 		if (pkg.startsWith("java.lang.reflect")) {
@@ -165,5 +214,22 @@ public class LuaSecurity extends SecurityManager {
 		if (pkg.startsWith("java.awt")) {
 			throw new SecurityException("Error! Lua not allowed to access java.awt.* packages!");
 		}
+		
+		if (!pkg.startsWith("info.cerios.electrocraft.core.computer.commands") && pkg.startsWith("info.cerios.electrocraft.core.computer.luaapi")) {
+			throw new SecurityException("Error! Lua not allowed to access some info.cerios.electrocraft.core.computer.* classes");
+		}
+	}
+	
+	@Override
+	public void checkAccess(Thread thread) {
+		if (!shouldCheckPermissions())
+			return;
+		if (!threadGroup.parentOf(thread.getThreadGroup())) {
+			throw new SecurityException("Error! Lua not allowed to access other threads than itself or subthreads!");
+		}
+	}
+	
+	public ThreadGroup getThreadGroup() {
+		return threadGroup;
 	}
 }

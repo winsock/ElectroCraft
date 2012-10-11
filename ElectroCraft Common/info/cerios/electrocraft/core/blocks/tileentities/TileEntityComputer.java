@@ -75,6 +75,8 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
             nbttagcompound.setInteger("row", computer.getTerminal().getCurrentRow());
             nbttagcompound.setInteger("col", computer.getTerminal().getCurrentColumn());
             
+            nbttagcompound.setByteArray("vga", computer.getVideoCard().getData());
+            
         	computer.saveCurrentState();
         }
     }
@@ -112,6 +114,8 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	computer.getTerminal().setTerminal(terminal);
         	computer.getTerminal().setPosition(nbttagcompound.getInteger("row"), nbttagcompound.getInteger("col"));
         	
+        	computer.getVideoCard().setData(nbttagcompound.getByteArray("vga"));
+        	
 	    	for (NetworkBlock ioPort : ioPorts) {
 	    		computer.registerNetworkBlock(ioPort);
 	    	}
@@ -148,6 +152,8 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     
     public void startComputer() {
     	if (computer != null) {
+    		if (!computer.getLuaState().isOpen())
+    			computer.loadLuaDefaults();
     		computer.setRunning(true);
 	    	for (NetworkBlock ioPort : ioPorts) {
 	    		computer.registerNetworkBlock(ioPort);

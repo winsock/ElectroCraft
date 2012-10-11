@@ -141,7 +141,7 @@ public class ElectroCraft {
     public void onServerStarting(FMLServerStartingEvent event) {
     	try {
     		// First try the specified port
-    		server = new ComputerServer(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("serverport", "general", 1337).getInt(1337));
+    		server = new ComputerServer(ConfigHandler.getCurrentConfig().get("general", "serverport", 1337).getInt(1337));
 			new Thread(server).start();
 		} catch (IOException e) {
 			try {
@@ -149,7 +149,7 @@ public class ElectroCraft {
 				server = new ComputerServer(0);
 				new Thread(server).start();
 			} catch (IOException e1) {
-				getLogger().severe("ElectroCraft Server: Tried to start server on port: " + ConfigHandler.getCurrentConfig().getOrCreateIntProperty("serverport", "general", 1337).getInt(1337) + " and a random free port and failed!");
+				getLogger().severe("ElectroCraft Server: Tried to start server on port: " + ConfigHandler.getCurrentConfig().get("general", "serverport", 1337).getInt(1337) + " and a random free port and failed!");
 			}
 		}
     }

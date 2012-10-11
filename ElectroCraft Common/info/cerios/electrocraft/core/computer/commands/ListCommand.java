@@ -3,12 +3,13 @@ package info.cerios.electrocraft.core.computer.commands;
 import java.io.File;
 
 import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
 
 public class ListCommand implements IComputerCommand {
 
 	@Override
 	public void onCommand(Computer computer, int argc, String[] argv) {
-		File currentDirectory = new File(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory());
+		ComputerFile currentDirectory = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + "/" + computer.getCurrentDirectory(), computer);
 		if (!currentDirectory.exists()) {
 			computer.getTerminal().print("ERROR: Error reading the current directory");
 		}
@@ -19,7 +20,7 @@ public class ListCommand implements IComputerCommand {
 		
 		int numberOfFiles = 0;
 		double totalSize = 0;
-		for (File f : currentDirectory.listFiles()) {
+		for (File f : currentDirectory.getJavaFile().listFiles()) {
 			String sizeSuffix = "B";
 			double size = f.length();
 			totalSize += size;

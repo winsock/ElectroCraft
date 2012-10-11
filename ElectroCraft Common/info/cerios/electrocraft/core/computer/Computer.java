@@ -10,7 +10,9 @@ import info.cerios.electrocraft.core.computer.luaapi.MinecraftIOInterface;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
 import com.naef.jnlua.DefaultJavaReflector;
 import com.naef.jnlua.JavaFunction;
+import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
+import com.naef.jnlua.LuaSyntaxException;
 import com.naef.jnlua.LuaType;
 import com.naef.jnlua.LuaValueProxy;
 import com.naef.jnlua.NamedJavaFunction;
@@ -30,6 +32,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
@@ -73,7 +77,6 @@ public class Computer implements Runnable {
 			this.baseDirectory.mkdirs();
 		}
 		// Lua Stuff
-		luaState = new LuaState();
 		loadLuaDefaults();
 	}
 
@@ -193,6 +196,8 @@ public class Computer implements Runnable {
 
 	@ExposedToLua(value = false)
 	public void loadState() {
+		// Register the Lua thread with the security manager
+		ElectroCraft.instance.getSecurityManager().registerThread(this);
 		wasResumed = true;
 		synchronized(luaStateLock) {
 			luaState.newTable();
@@ -210,19 +215,31 @@ public class Computer implements Runnable {
 				luaState.unpersist(fis);
 				fis.close();
 				persistFile.delete();
-				while (running) {
-					if (luaState.status(-1) == LuaState.YIELD)
+
+				luaState.resume(-1, 0);
+				luaState.reset_kill();
+				while (running && luaState.isOpen()) {
+					if (luaState.status(-1) == LuaState.YIELD) {
 						luaState.resume(-1, 0);
+						luaState.reset_kill();
+					}
 					else
 						break;
 				}
 				luaState.pop(2);
-				dumpStack();
+			} catch (LuaSyntaxException e) {
+				getTerminal().print("Error running lua script: Syntax Error!");
+				getTerminal().print(e.getLocalizedMessage());
+			} catch (LuaRuntimeException e) {
+				getTerminal().print("Error running lua script: Runtime Error!");
+				getTerminal().print(e.getLocalizedMessage());
 			} catch (FileNotFoundException e) {
 				ElectroCraft.instance.getLogger().severe("Unable to open the persist file for loading!");
 			} catch (IOException e1) {
 				// Unable to close input stream, oh well
 			}
+			// Make sure that the kill switch is reset
+			luaState.reset_kill();
 		}
 	}
 
@@ -269,7 +286,9 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua(value = false)
-	private void loadLuaDefaults() {
+	public void loadLuaDefaults() {
+		// Create a new state
+		luaState = new LuaState();
 		// Load the allowed libraries
 		getLuaState().openLib(Library.BASE);
 		getLuaState().openLib(Library.DEBUG);
@@ -279,6 +298,8 @@ public class Computer implements Runnable {
 		getLuaState().openLib(Library.PLUTO);
 		getLuaState().openLib(Library.STRING);
 		getLuaState().openLib(Library.TABLE);
+		
+		getLuaState().install_kill_hook();
 
 		// Load base ElectroCraft functions
 		NamedJavaFunction getTerminal = new NamedJavaFunction() {
@@ -393,7 +414,7 @@ public class Computer implements Runnable {
 
 	@ExposedToLua
 	public int getMaxFileHandles() {
-		return ConfigHandler.getCurrentConfig().getOrCreateIntProperty("maxFileHandlesPerUser", "computer", 20).getInt(20);
+		return ConfigHandler.getCurrentConfig().get("computer", "maxFileHandlesPerUser", 20).getInt(20);
 	}
 
 	@ExposedToLua
@@ -451,6 +472,8 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	@Override
 	public void run() {
+		if (!luaState.isOpen())
+			loadLuaDefaults();
 		// Register the main Lua thread with the security manager
 		ElectroCraft.instance.getSecurityManager().registerThread(this);
 		try {
@@ -462,12 +485,12 @@ public class Computer implements Runnable {
 				}
 				terminal.clear();
 				terminal.writeLine("Welcome to Cerios!");
-				terminal.writeLine("Cerios - A Minecraft written by Andrew Querol");
+				terminal.writeLine("Cerios - A Minecraft OS written by Andrew Querol");
 				terminal.writeLine("To get started type help!");
 			}
 			while (running) {
 				// Write the terminal prompt
-				if (!wasResumed && currentProgram != null) {
+				if (!wasResumed || currentProgram != null) {
 					terminal.write(currentDirectory + "> ");
 				} else {
 					wasResumed = false;
@@ -531,7 +554,9 @@ public class Computer implements Runnable {
 			terminal.writeLine("Goodbye!");
 			Thread.sleep(1000);
 			terminal.clear();
+			luaState.close();
 		} catch (Exception e) {
+			luaState.close();
 			e.printStackTrace();
 		}
 	}

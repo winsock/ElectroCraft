@@ -28,6 +28,11 @@ public class VideoCard {
 		return data;
 	}
 	
+	@ExposedToLua(value = false)
+	public void setData(byte[] data) {
+		this.data = data;
+	}
+	
 	@ExposedToLua
 	public void setPixel(int x, int y, byte color) {
 		if (x < width && y < height)

@@ -3,11 +3,12 @@ package info.cerios.electrocraft.core.computer.commands;
 import java.io.File;
 
 import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
 
 public class MakeDirectoryCommand implements IComputerCommand {
 	@Override
 	public void onCommand(Computer computer, int argc, String[] argv) {
-		File directoryFile = new File(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0]);
+		ComputerFile directoryFile = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + "/" + computer.getCurrentDirectory() + "/" + argv[0], computer);
 		
 		if (directoryFile.exists()) {
 			computer.getTerminal().print("ERROR: Error, requested folder already exists!");

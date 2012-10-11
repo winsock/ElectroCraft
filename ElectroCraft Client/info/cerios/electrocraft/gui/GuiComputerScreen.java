@@ -94,7 +94,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 				}
 				GL11.glPushMatrix();
 				GL11.glScalef(scaleFactorX, scaleFactorY, 1);
-				this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 1, 0xFFFFFF);
+				this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
 				GL11.glPopMatrix();
 			}
 		} else {
@@ -109,7 +109,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 		}
 
 		// Draw the screen title
-		fontRenderer.drawString("xEC Computer System", 20, 10, 0x404040);
+		fontRenderer.drawString("xEC Computer System", 53, 28, 0x404040);
 
 		super.drawScreen(par1, par2, par3);
 	}

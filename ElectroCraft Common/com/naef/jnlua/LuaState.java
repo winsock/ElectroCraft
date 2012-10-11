@@ -2200,6 +2200,10 @@ public class LuaState {
 	// ElectroCraft add Pluto
 	public native void persist(OutputStream out);
 	public native void unpersist(InputStream input);
+	public native void install_kill_hook();
+	public native void disable_kill_hook();
+	public native void reset_kill();
+	public native void kill();
 	
 	// -- Enumerated types
 	/**

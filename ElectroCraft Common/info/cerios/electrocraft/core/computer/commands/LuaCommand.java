@@ -29,6 +29,8 @@ public class LuaCommand implements IComputerCommand {
 		try {
 			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0], computer);
 			FileInputStream fis = new FileInputStream(file.getJavaFile());
+			if (!computer.getLuaState().isOpen())
+				computer.loadLuaDefaults();
 			computer.getLuaState().load(fis, argv[0]);
 			computer.getLuaState().newThread();
 			computer.getLuaState().setField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
@@ -39,14 +41,16 @@ public class LuaCommand implements IComputerCommand {
 			synchronized(Computer.luaStateLock) {
 				computer.getLuaState().getField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
 				computer.getLuaState().resume(-1, 0);
+				computer.getLuaState().reset_kill();
 				computer.getLuaState().pop(1);
 			}
-			while (computer.isRunning()) {
+			while (computer.isRunning() && computer.getLuaState().isOpen()) {
 				synchronized(Computer.luaStateLock) {
 					computer.getLuaState().getField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
-					if (computer.getLuaState().status(-1) == LuaState.YIELD)
+					if (computer.getLuaState().status(-1) == LuaState.YIELD) {
 						computer.getLuaState().resume(-1, 0);
-					else {
+						computer.getLuaState().reset_kill();
+					} else {
 						computer.getLuaState().pop(1);
 						break;
 					}
@@ -62,6 +66,7 @@ public class LuaCommand implements IComputerCommand {
 			computer.getTerminal().print(e.getLocalizedMessage());
 		} catch (LuaRuntimeException e) {
 			computer.getTerminal().print("Error running lua script: Runtime Error!");
+			computer.getTerminal().print("Possibly went to long without yielding?");
 			computer.getTerminal().print(e.getLocalizedMessage());
 		} catch (FileNotFoundException e) {
 			computer.getTerminal().print("Lua file not found!");
@@ -69,6 +74,8 @@ public class LuaCommand implements IComputerCommand {
 			computer.getTerminal().print("Lua file not found!");
 		}
 		
+		// Make sure that the kill switch is reset
+		computer.getLuaState().reset_kill();
 		// Make sure that we are in terminal mode after running the program
 		computer.setGraphicsMode(false);
 	}
