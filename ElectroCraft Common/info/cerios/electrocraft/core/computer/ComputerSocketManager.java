@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
-import info.cerios.electrocraft.core.computer.luajavaapi.ComputerSocket;
+import info.cerios.electrocraft.core.computer.luaapi.ComputerSocket;
 import info.cerios.electrocraft.core.utils.ObjectPair;
 import info.cerios.electrocraft.core.utils.Utils;
 

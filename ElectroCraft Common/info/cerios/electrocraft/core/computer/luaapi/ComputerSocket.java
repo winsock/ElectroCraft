@@ -1,6 +1,7 @@
-package info.cerios.electrocraft.core.computer.luajavaapi;
+package info.cerios.electrocraft.core.computer.luaapi;
 
 import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
 import info.cerios.electrocraft.core.computer.ExposedToLua;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager.Mode;
@@ -14,8 +15,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.naef.jnlua.LuaState;
+import com.naef.jnlua.NamedJavaFunction;
+
 @ExposedToLua
-public class ComputerSocket {
+public class ComputerSocket implements LuaAPI {
 	
 	private ByteArrayOutputStream qeuedData;
 	private boolean isBound = false;
@@ -130,5 +134,31 @@ public class ComputerSocket {
 			}
 		}
 		return string;
+	}
+	
+	@ExposedToLua(value = false)
+	@Override
+	public NamedJavaFunction[] getGlobalFunctions(Computer computer) {
+		return new NamedJavaFunction[] {
+				new NamedJavaFunction() {
+					Computer computer;
+					
+					public NamedJavaFunction init(Computer computer) {
+						this.computer = computer;
+						return this;
+					}
+					
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushJavaObject(new ComputerSocket());
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "createNewSocket";
+					}
+				}.init(computer)
+		};
 	}
 }

@@ -9,12 +9,17 @@ import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
+import net.minecraft.src.NBTTagString;
 import net.minecraftforge.common.ForgeDirection;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -26,6 +31,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();
     private EntityPlayer activePlayer;
     private ForgeDirection direction = ForgeDirection.NORTH;
+    private volatile boolean loadingState = false;
     
     /**
      * The default base directory for a new computer, its format is as follows
@@ -45,14 +51,78 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         super.writeToNBT(nbttagcompound);
         nbttagcompound.setString("baseDirectory", baseDirectory);
         nbttagcompound.setInteger("direction", direction.ordinal());
-        if (computer != null)
+        nbttagcompound.setBoolean("isOn", computer.isRunning());
+        if (computer != null && computer.isRunning()) {
+            nbttagcompound.setString("currentDirectory", computer.getCurrentDirectory());
+            nbttagcompound.setInteger("openFileHandles", computer.getNumberOfOpenFileHandles());
+            nbttagcompound.setString("runningProgram", computer.getRunningProgram() == null ? "" : computer.getRunningProgram());
+            NBTTagList prevCommands = new NBTTagList();
+            for (String s : computer.getPreviousCommands()) {
+            	prevCommands.appendTag(new NBTTagString("command", s));
+            }
+            nbttagcompound.setTag("prevCommands", prevCommands);
+
+            NBTTagList terminal = new NBTTagList();
+            for (int i = 0; i < computer.getTerminal().getRows(); i++) {
+            	Map<Integer, Character> row = computer.getTerminal().getRow(i);
+            	NBTTagList tagRow = new NBTTagList();
+            	for (int j = 0; j < computer.getTerminal().getColumns(); j++) {
+            		tagRow.appendTag(new NBTTagString("" + j, row == null ? "" : row.get(j) == null ? "" : row.get(j).toString()));
+            	}
+            	terminal.appendTag(tagRow);
+            }
+            nbttagcompound.setTag("terminal", terminal);
+            nbttagcompound.setInteger("row", computer.getTerminal().getCurrentRow());
+            nbttagcompound.setInteger("col", computer.getTerminal().getCurrentColumn());
+            
         	computer.saveCurrentState();
+        }
     }
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
         this.baseDirectory = nbttagcompound.getString("baseDirectory");
         this.direction = ForgeDirection.values()[nbttagcompound.getInteger("direction")];
+        if (nbttagcompound.getBoolean("isOn") && !loadingState) {
+        	loadingState = true;
+        	if (computer == null)
+        		createComputer();
+        	
+        	computer.setRunning(true);
+        	computer.setCurrentDirectory(nbttagcompound.getString("currentDirectory"));
+        	computer.setOpenFileHandles(nbttagcompound.getInteger("openFileHandles"));
+        	computer.setRunningProgram(nbttagcompound.getString("runningProgram"));
+        	
+        	List<String> commands = new ArrayList<String>();
+        	NBTTagList prevCommands = nbttagcompound.getTagList("prevCommands");
+        	for (int i = 0; i < prevCommands.tagCount(); i++) {
+        		commands.add(((NBTTagString)prevCommands.tagAt(i)).data);
+        	}
+        	
+        	Map<Integer, Map<Integer, Character>> terminal = new HashMap<Integer, Map<Integer, Character>>();
+        	NBTTagList terminalTag = nbttagcompound.getTagList("terminal");
+        	for (int i = 0; i < terminalTag.tagCount(); i++) {
+        		Map<Integer, Character> row = new HashMap<Integer, Character>();
+        		NBTTagList rowTag = (NBTTagList) terminalTag.tagAt(i);
+        		for (int j = 0; j < rowTag.tagCount(); j++) {
+        			row.put(j, ((NBTTagString)rowTag.tagAt(j)).data.length() <= 0 ? null : ((NBTTagString)rowTag.tagAt(j)).data.charAt(0));
+        		}
+        		terminal.put(i, row);
+        	}
+        	computer.getTerminal().setTerminal(terminal);
+        	computer.getTerminal().setPosition(nbttagcompound.getInteger("row"), nbttagcompound.getInteger("col"));
+        	
+	    	for (NetworkBlock ioPort : ioPorts) {
+	    		computer.registerNetworkBlock(ioPort);
+	    	}
+	    	new Thread(new Runnable() {
+				@Override
+				public void run() {
+		        	computer.loadState();
+					new Thread(computer).start();
+				}
+	    	}).start();
+        }
     }
     
     public Computer getComputer() {
@@ -78,14 +148,11 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     
     public void startComputer() {
     	if (computer != null) {
-//	    	computer.loadIntoMemory(assembledData.data, assembledData.length, assembledData.codeStart);
     		computer.setRunning(true);
+	    	for (NetworkBlock ioPort : ioPorts) {
+	    		computer.registerNetworkBlock(ioPort);
+	    	}
 	    	new Thread(computer).start();
-	    	
-//	    	for (NetworkBlock ioPort : ioPorts) {
-//	    		computer.registerInterupt(ioPort.getControlAddress(), ioPort);
-//	    		computer.registerInterupt(ioPort.getDataAddress(), ioPort);
-//	    	}
     	}
     }
 
@@ -96,19 +163,12 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     public EntityPlayer getActivePlayer() {
         return this.activePlayer;
     }
-
-//    public void setComputer(XECCPU xeccpu) {
-//        if (this.computer != null)
-//            this.computer.stop();
-//        this.computer = xeccpu;
-//    }
     
     public void registerIoPort(NetworkBlock block) {
-//    	if (computer != null && computer.isRunning()) {
-//			computer.registerInterupt(block.getControlAddress(), block);
-//			computer.registerInterupt(block.getDataAddress(), block);
-//		}
-//		ioPorts.add(block);
+    	if (computer != null && computer.isRunning()) {
+    		computer.registerNetworkBlock(block);
+		}
+		ioPorts.add(block);
     }
 
     @Override
@@ -118,9 +178,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
 
 	@Override
 	public Object onTaskComplete(Object... objects) {
-//		if (objects[0] instanceof InteruptData) {
-//			InteruptData data = (InteruptData)objects[0];
-//		}
 		return 0;
 	}
 	

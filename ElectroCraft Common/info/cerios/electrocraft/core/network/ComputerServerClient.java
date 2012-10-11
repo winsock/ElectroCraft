@@ -2,7 +2,6 @@ package info.cerios.electrocraft.core.network;
 
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.computer.OpenGLCommands;
 import info.cerios.electrocraft.core.utils.Utils;
 
 import java.io.DataInputStream;
@@ -66,22 +65,6 @@ public class ComputerServerClient implements Runnable {
 					ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
 				} catch (IOException e1) { }
 			}
-		}
-	}
-	
-	public void sendOpenGLPacket(OpenGLCommands command, Serializable... args) {
-		try {
-			out.write(ComputerProtocol.GLPACKET.ordinal());
-			out.write(command.ordinal());
-			dos.writeInt(args.length);
-			ObjectOutputStream oos = new ObjectOutputStream(out);
-			for (int i = 0; i < args.length; i++)
-				oos.writeObject(args[i]);
-		} catch (IOException e) {
-			try {
-				socket.close();
-				ElectroCraft.instance.getLogger().fine("ComputerServer: Client Disconnected!");
-			} catch (IOException e1) { }
 		}
 	}
 	

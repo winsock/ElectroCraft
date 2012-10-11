@@ -17,7 +17,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
-import info.cerios.electrocraft.core.computer.luajavaapi.ComputerFile;
+import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
 
 public class EditCommand implements IComputerCommand {
 
@@ -45,7 +45,7 @@ public class EditCommand implements IComputerCommand {
 			}
 			br.close();
 			
-			char inputKey = '\0';
+			int inputKey = '\0';
 
 			while (true) {
 				inputKey = computer.getKeyboard().waitForKey();
@@ -73,10 +73,12 @@ public class EditCommand implements IComputerCommand {
 							computer.getTerminal().deleteChar(true);
 						}
 					} else {
-						if (fileLineMap.get(currentLine) == null || fileLineMap.get(currentLine).isEmpty())
-							fileLineMap.put(currentLine, Character.toString(inputKey));
+						if (fileLineMap.get(currentLine) == null || fileLineMap.get(currentLine).isEmpty()) {
+							if (Character.isDefined(inputKey))
+								fileLineMap.put(currentLine, Character.toString((char) inputKey));
+						}
 						else
-							fileLineMap.put(currentLine, fileLineMap.get(currentLine) + inputKey);
+							fileLineMap.put(currentLine, fileLineMap.get(currentLine) + Character.toString((char) inputKey));
 					}
 				}
 			}

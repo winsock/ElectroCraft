@@ -43,6 +43,11 @@ public class Terminal extends Writer {
 			return null;
 		return terminal.get(row);
 	}
+	
+	@ExposedToLua(value = false)
+	public void setTerminal(Map<Integer, Map<Integer, Character>> text) {
+		terminal = text;
+	}
 
 	@ExposedToLua
 	public int getRows() {
@@ -71,6 +76,14 @@ public class Terminal extends Writer {
 			currentRow = 0;
 			currentColumn = 0;
 			columnOffset = 0;
+		}
+	}
+	
+	@ExposedToLua
+	public void clearLine() {
+		synchronized(syncObject) {
+			if (getRow(currentRow) != null)
+				getRow(currentRow).clear();
 		}
 	}
 

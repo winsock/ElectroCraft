@@ -86,7 +86,7 @@ public class ElectroCraft {
     	ecLogger.addHandler(consoleHandler);
     	
     	// Log that we are starting
-    	ecLogger.info("Loading version: " + ElectroCraft.class.getAnnotation(Mod.class).version());
+    	ecLogger.info("Loading version: ");
     	
         // Create and load the config
         ConfigHandler.loadOrCreateConfigFile("default.cfg");

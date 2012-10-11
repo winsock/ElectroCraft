@@ -8,6 +8,10 @@ public class ComputerInputPacket extends ElectroPacket {
     private int button;
     private boolean down = false;
     private int dX, dY, wD;
+    private boolean upKey = false;
+    private boolean downKey = false;
+    private boolean leftKey = false;
+    private boolean rightKey = false;
 
     public ComputerInputPacket() {
         type = Type.INPUT;
@@ -21,6 +25,10 @@ public class ComputerInputPacket extends ElectroPacket {
         dos.writeInt(key);
         dos.writeInt(button);
         dos.writeBoolean(down);
+        dos.writeBoolean(leftKey);
+        dos.writeBoolean(rightKey);
+        dos.writeBoolean(upKey);
+        dos.writeBoolean(downKey);
         dos.writeInt(dX);
         dos.writeInt(dY);
         dos.writeInt(wD);
@@ -35,6 +43,10 @@ public class ComputerInputPacket extends ElectroPacket {
         key = dis.readInt();
         button = dis.readInt();
         down = dis.readBoolean();
+        leftKey = dis.readBoolean();
+        rightKey = dis.readBoolean();
+        upKey = dis.readBoolean();
+        downKey = dis.readBoolean();
         dX = dis.readInt();
         dY = dis.readInt();
         wD = dis.readInt();
@@ -49,6 +61,38 @@ public class ComputerInputPacket extends ElectroPacket {
     public void setWasKeyDown(boolean downState) {
         down = downState;
     }
+    
+    public void setLeftArrowKey() {
+    	leftKey = true;
+    }
+    
+    public void setRightArrowKey() {
+    	rightKey = true;
+    }
+    
+ 	public void setUpArrowKey() {
+ 		upKey = true;
+ 	}
+ 	
+ 	public void setDownArrowKey() {
+ 		downKey = true;
+ 	}
+ 	
+ 	public boolean getLeftArrowKey() {
+    	return leftKey;
+    }
+    
+    public boolean getRightArrowKey() {
+    	return rightKey;
+    }
+    
+ 	public boolean getUpArrowKey() {
+ 		return upKey;
+ 	}
+ 	
+ 	public boolean getDownArrowKey() {
+ 		return downKey;
+ 	}
 
     public void setEventKey(int key) {
         this.key = key;

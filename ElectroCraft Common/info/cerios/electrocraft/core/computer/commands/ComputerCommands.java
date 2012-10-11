@@ -6,7 +6,9 @@ public enum ComputerCommands {
 	EDIT("edit", "Creates or edits a file", 1, new EditCommand()),
 	LUA("lua", "Runs a Lua program", 1, new LuaCommand()),
 	LIST("ls", "Lists files and directories in the current folder", 0, new ListCommand()),
-	MAKE_DIR("mkdir", "Makes a directory", 1, new MakeDirectoryCommand());
+	MAKE_DIR("mkdir", "Makes a directory", 1, new MakeDirectoryCommand()),
+	CHANGE_DIR("cd", "Changes to a directory", 1, new ChangeDirectroyCommand()),
+	REMOVE("rm", "Removes a file or folder", 1, new RemoveCommand());
 	
 	private String command, helpText;
 	private int argc;

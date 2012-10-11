@@ -22,23 +22,6 @@ public abstract class NetworkBlock extends ElectroTileEntity implements ICompute
         super.writeToNBT(nbttagcompound);
         nbttagcompound.setInteger("controlAddress", controlAddress);
         nbttagcompound.setInteger("dataAddress", dataAddress);
-//		NBTTagList connectionList = new NBTTagList("connections");
-//		for (Entry<Integer, ObjectTriplet<Integer, Integer, Integer>> entry : connectedDevices.entrySet()) {
-//			NBTTagCompound connectionData = new NBTTagCompound("computerData");
-//			connectionData.setInteger("x", entry.getValue().getValue1());
-//			connectionData.setInteger("y", entry.getValue().getValue2());
-//			connectionData.setInteger("z", entry.getValue().getValue3());
-//			connectionData.setInteger("orientation", entry.getKey());
-//			ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-//			try {
-//				this.saveState(new DataOutputStream(bytesOut));
-//				connectionData.setByteArray("deviceState", bytesOut.toByteArray());
-//			} catch (IOException e) {
-//				ModLoader.getLogger().severe("ElectroCraft: ERROR! Unable to save device state!");
-//			}
-//			connectionList.appendTag(connectionData);
-//		}
-//		nbttagcompound.setTag("connections", connectionList);
         if (network != null) {
             network.writeToNBT(nbttagcompound);
         }
@@ -48,22 +31,6 @@ public abstract class NetworkBlock extends ElectroTileEntity implements ICompute
         super.readFromNBT(nbttagcompound);
         controlAddress = nbttagcompound.getInteger("controlAddress");
         dataAddress = nbttagcompound.getInteger("dataAddress");
-//		NBTTagList connections = nbttagcompound.getTagList("connections");
-//		for (int i = 0; i < connections.tagCount(); i++) {
-//			if (connections.tagAt(i) instanceof NBTTagCompound) {
-//				NBTTagCompound connectionData = (NBTTagCompound) connections.tagAt(i);
-//				int x = connectionData.getInteger("x");
-//				int y = connectionData.getInteger("y");
-//				int z = connectionData.getInteger("z");
-//				int orientation = connectionData.getInteger("orientation");
-//				try {
-//					this.loadState(new DataInputStream(new ByteArrayInputStream(connectionData.getByteArray("deviceState"))));
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-//				connectedDevices.put(orientation, new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
-//			}
-//		}
         dirty = true;
     }
 

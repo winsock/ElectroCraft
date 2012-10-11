@@ -1,4 +1,4 @@
-package info.cerios.electrocraft.core.computer.luajavaapi;
+package info.cerios.electrocraft.core.computer.luaapi;
 
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.computer.Computer;
@@ -9,12 +9,16 @@ import java.io.File;
 import java.io.IOException;
 
 import com.naef.jnlua.LuaRuntimeException;
+import com.naef.jnlua.LuaState;
+import com.naef.jnlua.NamedJavaFunction;
 
 @ExposedToLua
-public class ComputerFile {
+public class ComputerFile implements LuaAPI {
 
 	private Computer computer;
 	private File javaFile;
+	
+	public ComputerFile() {};
 	
 	@ExposedToLua(value = false)
 	public ComputerFile(String pathname, Computer computer) {
@@ -175,5 +179,30 @@ public class ComputerFile {
 	@ExposedToLua(value = false)
 	public File getJavaFile() {
 		return javaFile;
+	}
+
+	@Override
+	public NamedJavaFunction[] getGlobalFunctions(Computer computer) {
+		return new NamedJavaFunction[] {
+				new NamedJavaFunction() {
+					Computer computer;
+
+					public NamedJavaFunction init(Computer computer) {
+						this.computer = computer;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushJavaObject(new ComputerFile(luaState.checkString(0), computer));
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "createNewFileHandle";
+					}
+				}.init(computer)
+		};
 	}
 }

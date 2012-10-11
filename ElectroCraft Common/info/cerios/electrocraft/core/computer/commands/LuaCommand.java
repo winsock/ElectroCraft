@@ -7,14 +7,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.LuaSyntaxException;
 
 import info.cerios.electrocraft.core.computer.Computer;
-import info.cerios.electrocraft.core.computer.luajavaapi.ComputerFile;
-import info.cerios.electrocraft.core.computer.luajavaapi.ComputerSocket;
+import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
+import info.cerios.electrocraft.core.computer.luaapi.ComputerSocket;
 
 public class LuaCommand implements IComputerCommand {
 		
@@ -23,13 +25,38 @@ public class LuaCommand implements IComputerCommand {
 	}
 	
 	@Override
-	public void onCommand(Computer computer, int argc, String[] argv) {
+	public void onCommand(final Computer computer, int argc, String[] argv) {
 		try {
 			ComputerFile file = new ComputerFile(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0], computer);
 			FileInputStream fis = new FileInputStream(file.getJavaFile());
 			computer.getLuaState().load(fis, argv[0]);
+			computer.getLuaState().newThread();
+			computer.getLuaState().setField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
 			fis.close();
-			computer.getLuaState().call(0, LuaState.MULTRET);
+			computer.setRunningProgram(computer.getBaseDirectory().getAbsolutePath() + File.separator + computer.getCurrentDirectory() + File.separator + argv[0]);
+			
+			// Resume the first time
+			synchronized(Computer.luaStateLock) {
+				computer.getLuaState().getField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
+				computer.getLuaState().resume(-1, 0);
+				computer.getLuaState().pop(1);
+			}
+			while (computer.isRunning()) {
+				synchronized(Computer.luaStateLock) {
+					computer.getLuaState().getField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
+					if (computer.getLuaState().status(-1) == LuaState.YIELD)
+						computer.getLuaState().resume(-1, 0);
+					else {
+						computer.getLuaState().pop(1);
+						break;
+					}
+					computer.getLuaState().pop(1);
+				}
+			}
+			
+			computer.setRunningProgram(null);
+			computer.getLuaState().pushNil();
+			computer.getLuaState().setField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
 		} catch (LuaSyntaxException e) {
 			computer.getTerminal().print("Error running lua script: Syntax Error!");
 			computer.getTerminal().print(e.getLocalizedMessage());
