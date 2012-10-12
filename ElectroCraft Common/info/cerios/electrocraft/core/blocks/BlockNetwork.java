@@ -63,7 +63,8 @@ public abstract class BlockNetwork extends ElectroBlock {
     						PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
     					} catch (IOException e) {
     						ElectroCraft.instance.getLogger().severe("Unable to send \"Open Address GUI Packet\"!");
-    					}                    return true;
+    					}
+    					return true;
     				}
     			}
     		}

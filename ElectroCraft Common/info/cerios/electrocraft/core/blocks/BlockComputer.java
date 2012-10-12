@@ -109,7 +109,6 @@ public class BlockComputer extends BlockNetwork {
         	if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
         		TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
         		if (computerTileEntity != null) {
-        			computerTileEntity.addActivePlayer(player);
         			if (computerTileEntity.getComputer() == null)
         				computerTileEntity.createComputer();
         			if (!computerTileEntity.getComputer().isRunning())
@@ -123,6 +122,7 @@ public class BlockComputer extends BlockNetwork {
         			} catch (IOException e) {
         				ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
         			}
+        			computerTileEntity.addActivePlayer(player);
         			return true;
         		}
         	}

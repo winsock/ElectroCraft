@@ -99,17 +99,15 @@ public class Computer implements Runnable {
 
 	public void addClient(EntityPlayer client) {
 		clients.add(client);
-		for (EntityPlayer p : clients) {
-			if (!ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false))
-				ElectroCraft.instance.getServer().getClient((EntityPlayerMP) p).changeModes(!graphicsMode);
-			else {
-				CustomPacket packet = new CustomPacket();
-				packet.id = 0;
-				packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
-				try {
-					PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) p);
-				} catch (IOException e) {
-				}
+		if (!ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false))
+			ElectroCraft.instance.getServer().getClient((EntityPlayerMP) client).changeModes(!graphicsMode);
+		else {
+			CustomPacket packet = new CustomPacket();
+			packet.id = 0;
+			packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
+			try {
+				PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) client);
+			} catch (IOException e) {
 			}
 		}
 	}
@@ -269,6 +267,8 @@ public class Computer implements Runnable {
 			}
 			// Make sure that the kill switch is reset
 			luaState.reset_kill();
+			// Make sure that we are in terminal mode after running the program
+			setGraphicsMode(false);
 		}
 	}
 
