@@ -57,10 +57,6 @@ public class LuaCommand implements IComputerCommand {
 					computer.getLuaState().pop(1);
 				}
 			}
-			
-			computer.setRunningProgram(null);
-			computer.getLuaState().pushNil();
-			computer.getLuaState().setField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
 		} catch (LuaSyntaxException e) {
 			computer.getTerminal().print("Error running lua script: Syntax Error!");
 			computer.getTerminal().print(e.getLocalizedMessage());
@@ -74,6 +70,9 @@ public class LuaCommand implements IComputerCommand {
 			computer.getTerminal().print("Lua file not found!");
 		}
 		
+		computer.getLuaState().pushNil();
+		computer.getLuaState().setField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
+		computer.setRunningProgram(null);
 		// Make sure that the kill switch is reset
 		computer.getLuaState().reset_kill();
 		// Make sure that we are in terminal mode after running the program

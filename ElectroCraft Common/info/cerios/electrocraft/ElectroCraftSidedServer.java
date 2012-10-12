@@ -11,6 +11,7 @@ import cpw.mods.fml.server.FMLServerHandler;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 
 public class ElectroCraftSidedServer implements IElectroCraftSided {
@@ -60,4 +61,7 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 	
 	@Override
 	public void startComputerClient(int port, SocketAddress address) { }
+
+	@Override
+	public void handleClientCustomPacket(CustomPacket packet) { }
 }

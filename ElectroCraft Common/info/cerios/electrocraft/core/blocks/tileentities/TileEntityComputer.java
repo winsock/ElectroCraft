@@ -1,8 +1,10 @@
 package info.cerios.electrocraft.core.blocks.tileentities;
 
+import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.network.ComputerServerClient;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 import info.cerios.electrocraft.core.utils.Utils;
 import net.minecraft.src.EntityPlayer;
@@ -29,7 +31,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
 
     private Computer computer;
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();
-    private EntityPlayer activePlayer;
+    private List<EntityPlayer> activePlayers = new ArrayList<EntityPlayer>();
     private ForgeDirection direction = ForgeDirection.NORTH;
     private volatile boolean loadingState = false;
     
@@ -76,6 +78,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
             nbttagcompound.setInteger("col", computer.getTerminal().getCurrentColumn());
             
             nbttagcompound.setByteArray("vga", computer.getVideoCard().getData());
+            nbttagcompound.setBoolean("graphics", computer.isInGraphicsMode());
             
         	computer.saveCurrentState();
         }
@@ -115,6 +118,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	computer.getTerminal().setPosition(nbttagcompound.getInteger("row"), nbttagcompound.getInteger("col"));
         	
         	computer.getVideoCard().setData(nbttagcompound.getByteArray("vga"));
+        	computer.setGraphicsMode(nbttagcompound.getBoolean("graphics"));
         	
 	    	for (NetworkBlock ioPort : ioPorts) {
 	    		computer.registerNetworkBlock(ioPort);
@@ -134,20 +138,20 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     }
     
     public void createComputer() {
-    	if (activePlayer instanceof EntityPlayerMP) {
-    		if (this.baseDirectory.isEmpty()) {
-    			String worldDir = "";
-    			if (FMLCommonHandler.instance().getSide() == Side.SERVER || FMLCommonHandler.instance().getSide() == Side.BUKKIT) {
-    				worldDir= worldObj.getWorldInfo().getWorldName();
-    			} else {
-    				worldDir = "saves/" + worldObj.getWorldInfo().getWorldName();
-    			}
-    	        this.baseDirectory = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + "/electrocraft/computers/" + String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
+    	if (worldObj == null || worldObj.isRemote) {
+			computer = new Computer(activePlayers, "", baseDirectory, true, 320, 240, 15, 50);
+			return;
+    	}
+    	if (this.baseDirectory.isEmpty()) {
+    		String worldDir = "";
+    		if (FMLCommonHandler.instance().getSide() == Side.SERVER || FMLCommonHandler.instance().getSide() == Side.BUKKIT) {
+    			worldDir= worldObj.getWorldInfo().getWorldName();
+    		} else {
+    			worldDir = "saves/" + worldObj.getWorldInfo().getWorldName();
     		}
-    		computer = new Computer(ElectroCraft.instance.getServer().getClient((EntityPlayerMP) activePlayer), "", baseDirectory, true, 320, 240, 15, 50);
-        } else {
-    		computer = new Computer(null, "", baseDirectory, true, 320, 240, 15, 50);
-        }
+    		this.baseDirectory = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + "/electrocraft/computers/" + String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
+    	}
+		computer = new Computer(activePlayers, "", baseDirectory, true, 320, 240, 15, 50);
     }
     
     public void startComputer() {
@@ -162,12 +166,23 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     	}
     }
 
-    public void setActivePlayer(EntityPlayer player) {
-        this.activePlayer = player;
+    public void addActivePlayer(EntityPlayer player) {
+        this.activePlayers.add(player);
+        if (this.computer != null) {
+    		this.computer.addClient(player);
+    	}
+    }
+    
+    public void removeActivePlayer(EntityPlayer player) {
+    	this.activePlayers.remove(player);
+    	if (this.computer != null) {
+    		this.computer.removeClient(player);
+    	}
+    	ElectroCraft.instance.setComputerForPlayer(player, null);
     }
 
-    public EntityPlayer getActivePlayer() {
-        return this.activePlayer;
+    public List<EntityPlayer> getActivePlayers() {
+        return this.activePlayers;
     }
     
     public void registerIoPort(NetworkBlock block) {

@@ -5,6 +5,7 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Side;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.network.NetworkMod;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -12,6 +13,7 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.common.registry.TickRegistry;
 import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
 import info.cerios.electrocraft.core.computer.LuaSecurity;
@@ -22,6 +24,7 @@ import info.cerios.electrocraft.core.network.ElectroPacket.Type;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.utils.Utils;
 import net.minecraft.src.*;
+import net.minecraftforge.common.Configuration;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
@@ -57,6 +60,7 @@ public class ElectroCraft {
     @SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
     public static IElectroCraftSided electroCraftSided;
     private LuaSecurity securityManager;
+    private Map<EntityPlayer, TileEntityComputer> nonCustomServerComputerMap = new HashMap<EntityPlayer, TileEntityComputer>();
 
     // The Mod's color palette
     public static final int[] colorPalette = {
@@ -75,6 +79,14 @@ public class ElectroCraft {
     public ElectroCraft() {
         instance = this;
     }
+    
+    @Mod.PreInit
+    public void preInit(FMLPreInitializationEvent event) {
+        // Create and load the config
+        ConfigHandler.loadOrCreateConfigFile("default.cfg");
+        ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false);
+    	ConfigHandler.getCurrentConfig().save();
+    }
 
     @Mod.Init
     public void init(FMLInitializationEvent event) {    
@@ -86,10 +98,7 @@ public class ElectroCraft {
     	ecLogger.addHandler(consoleHandler);
     	
     	// Log that we are starting
-    	ecLogger.info("Loading version: ");
-    	
-        // Create and load the config
-        ConfigHandler.loadOrCreateConfigFile("default.cfg");
+    	ecLogger.info("Loading version: " + FMLCommonHandler.instance().findContainerFor(this).getDisplayVersion());
 
         // Initialize any sided methods
         electroCraftSided.init();
@@ -134,28 +143,46 @@ public class ElectroCraft {
 		computerSocketManager = new ComputerSocketManager();
 		
 		// Log that we are done loading
-    	ecLogger.info("Done loading version: " + ElectroCraft.class.getAnnotation(Mod.class).version());
+    	ecLogger.info("Done loading version: " + FMLCommonHandler.instance().findContainerFor(this).getDisplayVersion());
     }
     
     @Mod.ServerStarting
     public void onServerStarting(FMLServerStartingEvent event) {
-    	try {
-    		// First try the specified port
-    		server = new ComputerServer(ConfigHandler.getCurrentConfig().get("general", "serverport", 1337).getInt(1337));
-			new Thread(server).start();
-		} catch (IOException e) {
-			try {
-				// Otherwise try to get a free port
-				server = new ComputerServer(0);
-				new Thread(server).start();
-			} catch (IOException e1) {
-				getLogger().severe("ElectroCraft Server: Tried to start server on port: " + ConfigHandler.getCurrentConfig().get("general", "serverport", 1337).getInt(1337) + " and a random free port and failed!");
-			}
-		}
+    	if (!ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false).getBoolean(false)) {
+    		try {
+    			// First try the specified port
+    			server = new ComputerServer(ConfigHandler.getCurrentConfig().get("general", "serverport", 1337).getInt(1337));
+    			new Thread(server).start();
+    		} catch (IOException e) {
+    			try {
+    				// Otherwise try to get a free port
+    				server = new ComputerServer(0);
+    				new Thread(server).start();
+    			} catch (IOException e1) {
+    				getLogger().severe("ElectroCraft Server: Tried to start server on port: " + ConfigHandler.getCurrentConfig().get("general", "serverport", 1337).getInt(1337) + " and a random free port and failed!");
+    			}
+    		}
+    	}
     }
     
     public ComputerServer getServer() {
     	return server;
+    }
+    
+    public TileEntityComputer getComputerForPlayer(EntityPlayer player) {
+    	if (ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false).getBoolean(false)) {
+    		return this.nonCustomServerComputerMap.get(player);
+    	} else {
+    		return getServer().getClient((EntityPlayerMP) player).getComputer();
+    	}
+    }
+    
+    public void setComputerForPlayer(EntityPlayer player, TileEntityComputer computer) {
+    	if (ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false).getBoolean(false)) {
+    		this.nonCustomServerComputerMap.put(player, computer);
+    	} else {
+    		getServer().getClient((EntityPlayerMP) player).setComputer(computer);
+    	}
     }
     
     public LuaSecurity getSecurityManager() {

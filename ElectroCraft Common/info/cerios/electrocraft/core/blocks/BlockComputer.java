@@ -108,14 +108,13 @@ public class BlockComputer extends BlockNetwork {
         if (player instanceof EntityPlayerMP) {
         	if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
         		TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
-        		computerTileEntity.setActivePlayer(player);
         		if (computerTileEntity != null) {
-        			computerTileEntity.setActivePlayer(player);
+        			computerTileEntity.addActivePlayer(player);
         			if (computerTileEntity.getComputer() == null)
         				computerTileEntity.createComputer();
         			if (!computerTileEntity.getComputer().isRunning())
         				computerTileEntity.startComputer();
-        			ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).setComputer(computerTileEntity);
+        			ElectroCraft.instance.setComputerForPlayer(player, computerTileEntity);
         			GuiPacket guiPacket = new GuiPacket();
         			guiPacket.setCloseWindow(false);
         			guiPacket.setGui(Gui.COMPUTER_SCREEN);

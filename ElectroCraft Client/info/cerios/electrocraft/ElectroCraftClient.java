@@ -20,10 +20,12 @@ import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import info.cerios.electrocraft.gui.GuiComputerScreen;
 import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
 import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.GuiScreen;
 import net.minecraft.src.TileEntity;
 import net.minecraftforge.client.MinecraftForgeClient;
 
@@ -31,6 +33,7 @@ public class ElectroCraftClient implements IElectroCraftSided {
 
 	public static ElectroCraftClient instance;
 	private ComputerClient computerClient;
+	private boolean runningComputerClient = false;
 	
 	public ElectroCraftClient() {
 		instance = this;
@@ -38,6 +41,10 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	
 	public ComputerClient getComputerClient() {
 		return computerClient;
+	}
+	
+	public boolean usingComputerClient() {
+		return runningComputerClient;
 	}
 
 	@Override
@@ -99,6 +106,7 @@ public class ElectroCraftClient implements IElectroCraftSided {
 
 	@Override
 	public void startComputerClient(int port, SocketAddress address) {
+		runningComputerClient = true;
 		try {
 			computerClient = new ComputerClient(port, address);
 			new Thread(computerClient).start();
@@ -112,5 +120,14 @@ public class ElectroCraftClient implements IElectroCraftSided {
 	@Override
 	public File getBaseDir() {
 		return FMLClientHandler.instance().getClient().getMinecraftDir();
+	}
+
+	@Override
+	public void handleClientCustomPacket(CustomPacket packet) {
+		GuiScreen currentScreen = FMLClientHandler.instance().getClient().currentScreen;
+		if (currentScreen instanceof GuiComputerScreen) {
+			GuiComputerScreen computerScreen = (GuiComputerScreen)currentScreen;
+			computerScreen.handleCustomPacket(packet);
+		}
 	}
 }

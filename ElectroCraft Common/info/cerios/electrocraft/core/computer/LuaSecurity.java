@@ -15,6 +15,7 @@ import java.util.logging.Level;
 
 import net.minecraft.src.EntityPlayerMP;
 
+import com.naef.jnlua.LuaState;
 import com.naef.jnlua.LuaState.GcAction;
 
 import cpw.mods.fml.relauncher.RelaunchClassLoader;
@@ -48,16 +49,12 @@ public class LuaSecurity extends SecurityManager {
 						if (computer.getLuaState().gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
 							computer.setRunning(false);
 							computer.getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
-							if (computer.getClient() != null && computer.getClient().getComputer().getActivePlayer() != null)
-								ElectroCraft.instance.getLogger().log(Level.WARNING, "Player: " + ((EntityPlayerMP)computer.getClient().getComputer().getActivePlayer()).username + " exceded the maximum memory allowance");
 						}
 
 						// Extra backup check in case my wrapped file manager doesn't catch it
 						if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
 							computer.setRunning(false);
 							computer.getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
-							if (computer.getClient() != null && computer.getClient().getComputer().getActivePlayer() != null)
-								ElectroCraft.instance.getLogger().log(Level.WARNING, "Player: " + ((EntityPlayerMP)computer.getClient().getComputer().getActivePlayer()).username + " exceded the maximum storage allowance and got past the main check");
 						}
 					}
 
@@ -72,9 +69,10 @@ public class LuaSecurity extends SecurityManager {
 	
 	public boolean shouldCheckPermissions() {
 		for (Class c : this.getClassContext()) {
-			if (c == RelaunchClassLoader.class) {
+			if (c == RelaunchClassLoader.class)
 				return false;
-			}
+			if (c == LuaState.class)
+				return false;
 		}
 		return threadLocal.get() != null;
 	}
@@ -83,9 +81,6 @@ public class LuaSecurity extends SecurityManager {
     public void checkPermission(Permission perm) {
 		if (!shouldCheckPermissions())
 			return;
-//		if (perm.getName() == "stopThread") {
-//			return;
-//		}
 		super.checkPermission(perm);
 	}
 	
@@ -213,10 +208,6 @@ public class LuaSecurity extends SecurityManager {
 		
 		if (pkg.startsWith("java.awt")) {
 			throw new SecurityException("Error! Lua not allowed to access java.awt.* packages!");
-		}
-		
-		if (!pkg.startsWith("info.cerios.electrocraft.core.computer.commands") && pkg.startsWith("info.cerios.electrocraft.core.computer.luaapi")) {
-			throw new SecurityException("Error! Lua not allowed to access some info.cerios.electrocraft.core.computer.* classes");
 		}
 	}
 	

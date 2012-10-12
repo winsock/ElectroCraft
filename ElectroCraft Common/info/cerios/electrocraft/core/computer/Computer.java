@@ -8,6 +8,8 @@ import info.cerios.electrocraft.core.computer.luaapi.ComputerSocket;
 import info.cerios.electrocraft.core.computer.luaapi.LuaAPI;
 import info.cerios.electrocraft.core.computer.luaapi.MinecraftIOInterface;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
+import info.cerios.electrocraft.core.network.CustomPacket;
+
 import com.naef.jnlua.DefaultJavaReflector;
 import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaRuntimeException;
@@ -35,7 +37,12 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.EntityPlayerMP;
+
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.common.network.Player;
 
 @ExposedToLua
 public class Computer implements Runnable {
@@ -49,7 +56,7 @@ public class Computer implements Runnable {
 	private Keyboard keyboard;
 	private MinecraftIOInterface mcIO;
 	private boolean graphicsMode = false;
-	private ComputerServerClient client;
+	private List<EntityPlayer> clients;
 	private File baseDirectory;
 	/**
 	 * The current directory of the computer relative to the baseDirectory
@@ -64,13 +71,13 @@ public class Computer implements Runnable {
 	private volatile boolean wasResumed = false;
 
 	@ExposedToLua(value = false)
-	public Computer(ComputerServerClient client, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
+	public Computer(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
 		this.isInternal = isInternal;
 		this.soundCard = new SoundCard();
 		this.videoCard = new VideoCard(width, height);
 		this.terminal = new Terminal(rows, columns);
 		this.keyboard = new Keyboard(terminal);
-		this.client = client;
+		this.clients = clients;
 		this.bootScript = script;
 		this.baseDirectory = new File(baseDirectory);
 		if (!this.baseDirectory.exists()) {
@@ -81,10 +88,32 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua(value = false)
-	public ComputerServerClient getClient() {
-		return client;
+	public List<EntityPlayer> getClients() {
+		return clients;
+	}
+	
+	@ExposedToLua(value = false)
+	public void removeClient(EntityPlayer client) {
+		clients.remove(client);
 	}
 
+	public void addClient(EntityPlayer client) {
+		clients.add(client);
+		for (EntityPlayer p : clients) {
+			if (!ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false))
+				ElectroCraft.instance.getServer().getClient((EntityPlayerMP) p).changeModes(!graphicsMode);
+			else {
+				CustomPacket packet = new CustomPacket();
+				packet.id = 0;
+				packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
+				try {
+					PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) p);
+				} catch (IOException e) {
+				}
+			}
+		}
+	}
+	
 	@ExposedToLua(value = false)
 	public void incrementOpenFileHandles() {
 		this.openFileHandles++;
@@ -246,9 +275,8 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	public void saveCurrentState() {
 		synchronized(luaStateLock) {
-			dumpStack();
 			luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
-			if (getLuaState().isNoneOrNil(-1)) {
+			if (getLuaState().isNoneOrNil(-1) || getRunningProgram() == null) {
 				luaState.pop(1);
 				return;
 			}
@@ -312,7 +340,7 @@ public class Computer implements Runnable {
 
 			@Override
 			public int invoke(LuaState luaState) {
-				getLuaState().pushJavaObject(computer.getTerminal());
+				luaState.pushJavaObject(computer.getTerminal());
 				return 1;
 			}
 
@@ -328,7 +356,7 @@ public class Computer implements Runnable {
 			@Override
 			public int invoke(LuaState luaState) {
 				try {
-					Thread.sleep((long) getLuaState().checkNumber(0));
+					Thread.sleep((long) luaState.checkNumber(0));
 				} catch (InterruptedException e) { }
 				return 0;
 			}
@@ -351,7 +379,7 @@ public class Computer implements Runnable {
 
 			@Override
 			public int invoke(LuaState luaState) {
-				getLuaState().pushJavaObject(computer);
+				luaState.pushJavaObject(computer);
 				return 1;
 			}
 
@@ -371,7 +399,7 @@ public class Computer implements Runnable {
 
 			@Override
 			public int invoke(LuaState luaState) {
-				getLuaState().pushJavaObject(computer.getKeyboard());
+				luaState.pushJavaObject(computer.getKeyboard());
 				return 1;
 			}
 
@@ -391,7 +419,7 @@ public class Computer implements Runnable {
 
 			@Override
 			public int invoke(LuaState luaState) {
-				getLuaState().pushJavaObject(computer.getVideoCard());
+				luaState.pushJavaObject(computer.getVideoCard());
 				return 1;
 			}
 
@@ -420,8 +448,25 @@ public class Computer implements Runnable {
 	@ExposedToLua
 	public void setGraphicsMode(boolean graphicsMode) {
 		if (this.graphicsMode != graphicsMode)
-			client.changeModes(!graphicsMode);
+			for (EntityPlayer p : clients) {
+				if (!ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false))
+					ElectroCraft.instance.getServer().getClient((EntityPlayerMP) p).changeModes(!graphicsMode);
+				else {
+					CustomPacket packet = new CustomPacket();
+					packet.id = 0;
+					packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
+					try {
+						PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) p);
+					} catch (IOException e) {
+					}
+				}
+			}
 		this.graphicsMode = graphicsMode;
+	}
+	
+	@ExposedToLua
+	public boolean isInGraphicsMode() {
+		return this.graphicsMode;
 	}
 
 	@ExposedToLua

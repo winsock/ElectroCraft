@@ -5,9 +5,11 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -158,4 +160,63 @@ public class Utils {
         }
         return false;
     }
+    
+
+	/**
+	 * Compares array1 to array two and gets the ChangedBytes
+	 * @param beginOffset
+	 * @param array1
+	 * @param array2
+	 * @return
+	 */
+	public static ChangedBytes getNextBlock(int beginOffset, byte[] array1, byte[] array2) {
+		if (beginOffset >= array1.length || beginOffset >= array2.length) {
+			ChangedBytes changedBytes = new ChangedBytes();
+			changedBytes.length = 0;
+			return changedBytes;
+		} else if (array1.length <= beginOffset) {
+			ChangedBytes changedBytes = new ChangedBytes();
+			changedBytes.b = Arrays.copyOfRange(array2, beginOffset, array2.length);
+			changedBytes.offset = beginOffset;
+			changedBytes.length = array2.length - beginOffset;
+			return changedBytes;
+		} else if (array2.length <= beginOffset) {
+			ChangedBytes changedBytes = new ChangedBytes();
+			changedBytes.length = 0;
+			return changedBytes;
+		} else if (array2 == null || array2.length <= 0) {
+			ChangedBytes changedBytes = new ChangedBytes();
+			changedBytes.b = array1;
+			changedBytes.offset = beginOffset;
+			changedBytes.length = array1.length;
+			return changedBytes;
+		} else {
+			ChangedBytes changedBytes = new ChangedBytes();
+			int offset = beginOffset;
+			while (array1[offset] == array2[offset]) {
+				offset++;
+				if (offset >= array1.length || offset >= array2.length) {
+					changedBytes.length = 0;
+					return changedBytes;
+				}
+			}
+			changedBytes.offset = offset;
+			ByteBuffer buffer = ByteBuffer.allocate(array1.length - beginOffset);
+			while (array1[offset] != array2[offset]) {
+				buffer.put(array1[offset]);
+				offset++;
+			}
+			changedBytes.length = offset - changedBytes.offset;
+			changedBytes.b = new byte[changedBytes.length];
+			buffer.rewind();
+			buffer.get(changedBytes.b, 0, changedBytes.length);
+			return changedBytes;
+		}
+	}
+	
+	public static class ChangedBytes {
+		public byte[] b;
+		public int offset;
+		public int length;
+	}
 }

@@ -5,6 +5,7 @@ import java.net.SocketAddress;
 
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import cpw.mods.fml.common.IScheduledTickHandler;
 import cpw.mods.fml.common.network.IPacketHandler;
@@ -40,4 +41,6 @@ public interface IElectroCraftSided {
     public boolean isShiftHeld();
     
     public void startComputerClient(int port, SocketAddress address);
+    
+    public void handleClientCustomPacket(CustomPacket packet);
 }

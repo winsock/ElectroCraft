@@ -3,6 +3,7 @@ package info.cerios.electrocraft.core.network;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.utils.Utils;
+import info.cerios.electrocraft.core.utils.Utils.ChangedBytes;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -96,10 +97,10 @@ public class ComputerServerClient implements Runnable {
 							int lastOffset = 0;
 							int totalLength = 0;
 							while (current == null ? true : current.length > 0) {
-								if (current == null ) {
-									current = getNextBlock(0, vgadata, lastVGAData);
+								if (current == null) {
+									current = Utils.getNextBlock(0, vgadata, lastVGAData);
 								} else {
-									current = getNextBlock(lastOffset + current.length, vgadata, lastVGAData);
+									current = Utils.getNextBlock(lastOffset + current.length, vgadata, lastVGAData);
 								}
 								lastOffset = current.offset;
 								totalLength += current.length;
@@ -156,63 +157,5 @@ public class ComputerServerClient implements Runnable {
 				return;
 			}
 		}
-	}
-	
-	/**
-	 * Compares array1 to array two and gets the ChangedBytes
-	 * @param beginOffset
-	 * @param array1
-	 * @param array2
-	 * @return
-	 */
-	public ChangedBytes getNextBlock(int beginOffset, byte[] array1, byte[] array2) {
-		if (beginOffset >= array1.length || beginOffset >= array2.length) {
-			ChangedBytes changedBytes = new ChangedBytes();
-			changedBytes.length = 0;
-			return changedBytes;
-		} else if (array1.length <= beginOffset) {
-			ChangedBytes changedBytes = new ChangedBytes();
-			changedBytes.b = Arrays.copyOfRange(array2, beginOffset, array2.length);
-			changedBytes.offset = beginOffset;
-			changedBytes.length = array2.length - beginOffset;
-			return changedBytes;
-		} else if (array2.length <= beginOffset) {
-			ChangedBytes changedBytes = new ChangedBytes();
-			changedBytes.length = 0;
-			return changedBytes;
-		} else if (array2 == null || array2.length <= 0) {
-			ChangedBytes changedBytes = new ChangedBytes();
-			changedBytes.b = array1;
-			changedBytes.offset = beginOffset;
-			changedBytes.length = array1.length;
-			return changedBytes;
-		} else {
-			ChangedBytes changedBytes = new ChangedBytes();
-			int offset = beginOffset;
-			while (array1[offset] == array2[offset]) {
-				offset++;
-				if (offset >= array1.length || offset >= array2.length) {
-					changedBytes.length = 0;
-					return changedBytes;
-				}
-			}
-			changedBytes.offset = offset;
-			ByteBuffer buffer = ByteBuffer.allocate(array1.length - beginOffset);
-			while (array1[offset] != array2[offset]) {
-				buffer.put(array1[offset]);
-				offset++;
-			}
-			changedBytes.length = offset - changedBytes.offset;
-			changedBytes.b = new byte[changedBytes.length];
-			buffer.rewind();
-			buffer.get(changedBytes.b, 0, changedBytes.length);
-			return changedBytes;
-		}
-	}
-	
-	private class ChangedBytes {
-		public byte[] b;
-		public int offset;
-		public int length;
 	}
 }

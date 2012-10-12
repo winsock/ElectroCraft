@@ -8,7 +8,11 @@ import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.*;
 import info.cerios.electrocraft.core.network.ComputerInputPacket;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
+import info.cerios.electrocraft.core.network.CustomPacket;
+import info.cerios.electrocraft.core.network.GuiPacket;
+import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.utils.ObjectPair;
+import info.cerios.electrocraft.core.utils.Utils;
 import net.minecraft.src.GuiButton;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.ModLoader;
@@ -17,10 +21,15 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.DataFormatException;
 
 public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
@@ -40,9 +49,11 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
 	public GuiComputerScreen() {
 		Keyboard.enableRepeatEvents(true);
-		ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.DISPLAY, this);
-		ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.TERMINAL, this);
-		ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.MODE, this);
+		if (ElectroCraftClient.instance.usingComputerClient()) {
+			ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.DISPLAY, this);
+			ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.TERMINAL, this);
+			ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.MODE, this);
+		}
 	}
 
 	public void initGui() {
@@ -144,11 +155,28 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 							}
 						}
 						// Ask for another screen packet
-						ElectroCraftClient.instance.getComputerClient().sendPacket(ComputerProtocol.DISPLAY);
+						if (ElectroCraftClient.instance.usingComputerClient()) {
+							ElectroCraftClient.instance.getComputerClient().sendPacket(ComputerProtocol.DISPLAY);
+						} else {
+							CustomPacket packet = new CustomPacket();
+							packet.id = 1;
+							packet.data = new byte[] {};
+		                    PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+						}
 						shouldAskForScreenPacket = false;
 					} else {
 						for (int i = 0; i < rows; i++) {
-							ElectroCraftClient.instance.getComputerClient().sendTerminalPacket(i);
+							if (ElectroCraftClient.instance.usingComputerClient()) {
+								ElectroCraftClient.instance.getComputerClient().sendTerminalPacket(i);
+							} else {
+								CustomPacket packet = new CustomPacket();
+								packet.id = 2;
+								ByteArrayOutputStream out = new ByteArrayOutputStream();
+			                    DataOutputStream dos = new DataOutputStream(out);
+			                    dos.writeInt(i);
+			                    packet.data = out.toByteArray();
+			                    PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+							}
 							shouldAskForScreenPacket = false;
 						}
 					}
@@ -161,6 +189,14 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
 	@Override
 	public void onGuiClosed() {
+		GuiPacket packet = new GuiPacket();
+		packet.setCloseWindow(true);
+		packet.setGui(Gui.COMPUTER_SCREEN);
+		try {
+			PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+		} catch (IOException e) {
+			// Oh well we tried
+		}
 		Keyboard.enableRepeatEvents(repeatEventsOldState);
 		this.isVisible = false;
 	}
@@ -202,6 +238,121 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 					ElectroCraft.instance.getLogger().fine("Unable to send computer input data!");
 				}
 			}
+		}
+	}
+	
+	public void handleCustomPacket(CustomPacket packet) {
+		try {
+			if (packet.id == 0) {
+				terminalMode = packet.data[0] == 0 ? false : true; 
+			} else if (packet.id == 1) {
+				ByteArrayInputStream in = new ByteArrayInputStream(packet.data);
+				DataInputStream dis = new DataInputStream(in);
+				int width = dis.readInt();
+				int height = dis.readInt();
+
+				int transmissionType = in.read();
+				int length = dis.readInt();
+
+				if (displayBuffer == null || displayBuffer.capacity() < width * height * 3) {
+					ByteBuffer newBuffer = ByteBuffer.allocateDirect(width * height * 3);
+					if (displayBuffer != null) {
+						displayBuffer.rewind();
+						newBuffer.put(displayBuffer);
+					}
+					displayBuffer = newBuffer;
+				}
+
+				if (transmissionType == 0) {
+					int compressedLength = dis.readInt();
+					byte[] data = new byte[compressedLength];
+					int bytesRead = dis.read(data, 0, compressedLength);
+					if (bytesRead < compressedLength) {
+						while (bytesRead < compressedLength) {
+							bytesRead += dis.read(data, bytesRead, compressedLength - bytesRead);
+						}
+					}
+
+					try {
+						displayBuffer.clear();
+						for (byte b : Utils.extractBytes(data)) {
+							int rgb = ElectroCraft.colorPalette[b & 0xFF];
+							byte red = (byte) ((rgb >> 16) & 0xFF);
+							byte green = (byte) ((rgb >> 8) & 0xFF);
+							byte blue = (byte) (rgb & 0xFF);
+							displayBuffer.put(red);
+							displayBuffer.put(green);
+							displayBuffer.put(blue);
+						}
+					} catch (DataFormatException e) {
+						ElectroCraft.instance.getLogger().severe("Unable to read display full update packet!");
+						return;
+					}
+					displayBuffer.rewind();
+				} else {
+					int currentLength = 0;
+					while (currentLength < length) {
+						int sectionLength = dis.readInt();
+						byte[] data = new byte[sectionLength];
+						int offset = dis.readInt();
+						int bytesRead = in.read(data, 0, sectionLength);
+						if (bytesRead < sectionLength) {
+							while (bytesRead < sectionLength) {
+								bytesRead += in.read(data, bytesRead, sectionLength - bytesRead);
+							}
+						}
+						try {
+							byte[] extractedData = Utils.extractBytes(data);
+							for (int i = 0; i < extractedData.length; i++, offset++) {
+								int rgb = ElectroCraft.colorPalette[extractedData[i] & 0xFF];
+								byte red = (byte) ((rgb >> 16) & 0xFF);
+								byte green = (byte) ((rgb >> 8) & 0xFF);
+								byte blue = (byte) (rgb & 0xFF);
+								displayBuffer.put(offset, red);
+								displayBuffer.put(offset + 1, green);
+								displayBuffer.put(offset + 2, blue);
+							}
+							currentLength += extractedData.length;
+						} catch (DataFormatException e) {
+							ElectroCraft.instance.getLogger().severe("Unable to read display partial update packet!");
+							return;
+						}
+					}
+					displayBuffer.rewind();
+				}
+				displayWidth = width;
+				displayHeight = height;
+				shouldAskForScreenPacket = true;
+			} else if (packet.id == 2) {
+				ByteArrayInputStream in = new ByteArrayInputStream(packet.data);
+				DataInputStream dis = new DataInputStream(in);
+				int cols = dis.readInt();
+            	int rows = dis.readInt();
+            	
+                int transmissionType = in.read();
+                
+                if (transmissionType == 0) {
+                	int row = dis.readInt();
+                	if (dis.readBoolean()) {
+                		String rowData = dis.readUTF();
+                		terminalList.put(row, rowData);
+                	} else {
+                		terminalList.put(row, "");
+                	}
+                } else if (transmissionType == 1) {
+                	boolean shiftRowsUp = in.read() == 0 ? false : true;
+                	int numberOfChangedRows = dis.readInt();
+                	
+                	ObjectPair<Integer, String>[] changedRows = new ObjectPair[numberOfChangedRows];
+                	for (int i = 0; i < numberOfChangedRows; i++) {
+                		int rowNumber = dis.readInt();
+						terminalList.put(rowNumber, dis.readUTF());
+                	}
+                }
+				shouldAskForScreenPacket = true;
+			}
+		} catch (IOException e) {
+			ElectroCraft.instance.getLogger().severe("Unable to read custom client computer packet!");
 		}
 	}
 

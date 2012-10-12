@@ -21,13 +21,15 @@ import cpw.mods.fml.common.network.Player;
 public class ConnectionHandler implements IConnectionHandler {
 
 	@Override
-	public void playerLoggedIn(Player player, NetHandler netHandler, NetworkManager manager) {	
-		ServerPortPacket portPacket = new ServerPortPacket();
-		portPacket.setPort(ElectroCraft.instance.getServer().getPort());
-		try {
-			manager.addToSendQueue(portPacket.getMCPacket());
-		} catch (IOException e) {
-			ElectroCraft.instance.getLogger().severe("Unable to send computer servers port!");
+	public void playerLoggedIn(Player player, NetHandler netHandler, NetworkManager manager) {
+		if (!ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false)) {
+			ServerPortPacket portPacket = new ServerPortPacket();
+			portPacket.setPort(ElectroCraft.instance.getServer().getPort());
+			try {
+				manager.addToSendQueue(portPacket.getMCPacket());
+			} catch (IOException e) {
+				ElectroCraft.instance.getLogger().severe("Unable to send computer servers port!");
+			}    	
 		}
 	}
 

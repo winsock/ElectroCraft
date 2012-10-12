@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
+@ExposedToLua
 public class VideoCard {
 	
 	private int width;
