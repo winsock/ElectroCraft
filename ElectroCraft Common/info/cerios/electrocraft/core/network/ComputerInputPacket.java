@@ -5,6 +5,7 @@ import java.io.*;
 public class ComputerInputPacket extends ElectroPacket {
 
     private int key;
+    private String keyName;
     private int button;
     private boolean down = false;
     private int dX, dY, wD;
@@ -23,6 +24,7 @@ public class ComputerInputPacket extends ElectroPacket {
         DataOutputStream dos = new DataOutputStream(bos);
         dos.write(type.ordinal());
         dos.writeInt(key);
+        dos.writeUTF(keyName);
         dos.writeInt(button);
         dos.writeBoolean(down);
         dos.writeBoolean(leftKey);
@@ -41,6 +43,7 @@ public class ComputerInputPacket extends ElectroPacket {
         DataInputStream dis = new DataInputStream(bis);
         dis.read(); // Throw away the type info
         key = dis.readInt();
+        keyName = dis.readUTF();
         button = dis.readInt();
         down = dis.readBoolean();
         leftKey = dis.readBoolean();
@@ -97,6 +100,10 @@ public class ComputerInputPacket extends ElectroPacket {
     public void setEventKey(int key) {
         this.key = key;
     }
+    
+    public void setEventKeyName(String name) {
+    	this.keyName = name;
+    }
 
     public void setEventMouseButton(int button) {
         this.button = button;
@@ -120,6 +127,10 @@ public class ComputerInputPacket extends ElectroPacket {
 
     public int getEventKey() {
         return key;
+    }
+    
+    public String getEventKeyName() {
+    	return keyName;
     }
 
     public boolean wasKeyDown() {

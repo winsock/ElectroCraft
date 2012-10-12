@@ -35,6 +35,8 @@ public class Keyboard extends Reader {
 			keyBuffer.add(upScanCode);
 		if (inputPacket.getEventKey() > 0)
 			onKeyPress(inputPacket.getEventKey());
+		else if (inputPacket.getEventKeyName() == "KEY_RETURN")
+			onKeyPress('\n');
 	}
 	
 	@ExposedToLua(value = false)
