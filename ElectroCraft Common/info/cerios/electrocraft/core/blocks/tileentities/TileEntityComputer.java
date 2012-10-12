@@ -53,8 +53,8 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         super.writeToNBT(nbttagcompound);
         nbttagcompound.setString("baseDirectory", baseDirectory);
         nbttagcompound.setInteger("direction", direction.ordinal());
-        nbttagcompound.setBoolean("isOn", computer.isRunning());
         if (computer != null && computer.isRunning()) {
+            nbttagcompound.setBoolean("isOn", computer.isRunning());
             nbttagcompound.setString("currentDirectory", computer.getCurrentDirectory());
             nbttagcompound.setInteger("openFileHandles", computer.getNumberOfOpenFileHandles());
             nbttagcompound.setString("runningProgram", computer.getRunningProgram() == null ? "" : computer.getRunningProgram());
@@ -147,9 +147,9 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     		if (FMLCommonHandler.instance().getSide() == Side.SERVER || FMLCommonHandler.instance().getSide() == Side.BUKKIT) {
     			worldDir= worldObj.getWorldInfo().getWorldName();
     		} else {
-    			worldDir = "saves/" + worldObj.getWorldInfo().getWorldName();
+    			worldDir = "saves" + File.separator + worldObj.getWorldInfo().getWorldName();
     		}
-    		this.baseDirectory = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + "/electrocraft/computers/" + String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
+    		this.baseDirectory = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
     	}
 		computer = new Computer(activePlayers, "", baseDirectory, true, 320, 240, 15, 50);
     }

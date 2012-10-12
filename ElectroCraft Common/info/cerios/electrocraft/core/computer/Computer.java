@@ -276,7 +276,7 @@ public class Computer implements Runnable {
 	public void saveCurrentState() {
 		synchronized(luaStateLock) {
 			luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_program_coroutine");
-			if (getLuaState().isNoneOrNil(-1) || getRunningProgram() == null) {
+			if (luaState.isNoneOrNil(-1) || getRunningProgram() == null || !luaState.isOpen()) {
 				luaState.pop(1);
 				return;
 			}

@@ -73,6 +73,8 @@ public class LuaSecurity extends SecurityManager {
 				return false;
 			if (c == LuaState.class)
 				return false;
+			if (c == Utils.class)
+				return false;
 		}
 		return threadLocal.get() != null;
 	}

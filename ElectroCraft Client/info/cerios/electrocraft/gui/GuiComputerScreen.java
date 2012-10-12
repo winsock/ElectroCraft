@@ -229,6 +229,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 				if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT))
 					inputPacket.setRightArrowKey();
 				inputPacket.setEventKey(Keyboard.getEventCharacter());
+				ElectroCraft.instance.getLogger().info(Character.toString(Keyboard.getEventCharacter()) + Keyboard.getEventKey());
 				inputPacket.setEventKeyName(Keyboard.getKeyName(Keyboard.getEventKey()));
 				inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
 				inputPacket.setEventMouseButton(Mouse.getEventButton());
