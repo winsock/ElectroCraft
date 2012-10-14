@@ -12,17 +12,19 @@ import cpw.mods.fml.common.IWorldGenerator;
 public class WorldGenerator implements IWorldGenerator {
 	@Override
 	public void generate(Random random, int chunkX, int chunkZ, World world, IChunkProvider chunkGenerator, IChunkProvider chunkProvider) {
-		for (int i = 0; i < 20; i++) { // Rarity
-            // Copper
-            int randPosX = chunkX + random.nextInt(16);
-            int randPosY = random.nextInt(48); // Min Height
-            int randPosZ = chunkZ + random.nextInt(8);
-            new WorldGenMinable(ElectroBlocks.COPPER_ORE.getBlock().blockID, 10/* Vein Size */).generate(world, random, randPosX, randPosY, randPosZ);
-            // Magnetite
-            randPosX = chunkX + random.nextInt(16);
-            randPosY = random.nextInt(128); // Min Height
-            randPosZ = chunkZ + random.nextInt(10);
-            new WorldGenMinable(ElectroBlocks.MAGNETITE_ORE.getBlock().blockID, 10/* Vein Size */).generate(world, random, randPosX, randPosY, randPosZ);
-        }
+		if (!world.provider.isHellWorld) {
+			for (int i = 0; i < 20; i++) { // Rarity
+				// Copper
+				int randPosX = chunkX * 16 + random.nextInt(16);
+				int randPosY = random.nextInt(48); // Min Height
+				int randPosZ = chunkZ * 16 + random.nextInt(16);
+				new WorldGenMinable(ElectroBlocks.COPPER_ORE.getBlock().blockID, 10/* Vein Size */).generate(world, random, randPosX, randPosY, randPosZ);
+				// Magnetite
+				randPosX = chunkX * 16 + random.nextInt(16);
+				randPosY = random.nextInt(128); // Min Height
+				randPosZ = chunkZ * 16 + random.nextInt(16);
+				new WorldGenMinable(ElectroBlocks.MAGNETITE_ORE.getBlock().blockID, 10/* Vein Size */).generate(world, random, randPosX, randPosY, randPosZ);
+			}
+		}
 	}
 }

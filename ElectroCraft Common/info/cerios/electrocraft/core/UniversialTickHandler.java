@@ -16,6 +16,8 @@ public class UniversialTickHandler implements IScheduledTickHandler {
 	public void tickStart(EnumSet<TickType> type, Object... tickData) {
 		if (((World)tickData[0]).isRemote)
 			return;
+		if (!FMLCommonHandler.instance().getMinecraftServerInstance().isServerRunning())
+			return;
 		FMLCommonHandler.instance().getMinecraftServerInstance().theProfiler.startSection(getLabel());
 		List<IMCRunnable> tasks = ElectroCraft.instance.getAndClearTasks();
 		for (IMCRunnable r : tasks) {
