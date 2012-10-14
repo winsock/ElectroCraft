@@ -276,6 +276,8 @@ public class Terminal extends Writer {
 						}
 						terminal = newTerminal;
 						currentRow = this.rows;
+					} else {
+						terminal.put(currentRow, new TreeMap<Integer, Character>());
 					}
 					currentColumn = 0;
 					columnOffset = 0;
