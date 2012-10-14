@@ -16,7 +16,8 @@ import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
-import info.cerios.electrocraft.core.computer.LuaSecurity;
+import info.cerios.electrocraft.core.computer.IComputerRunnable;
+import info.cerios.electrocraft.core.computer.IMCRunnable;
 import info.cerios.electrocraft.core.items.ElectroItems;
 import info.cerios.electrocraft.core.items.ItemHandler;
 import info.cerios.electrocraft.core.network.*;
@@ -39,7 +40,9 @@ import java.io.StringWriter;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.ConsoleHandler;
@@ -59,8 +62,9 @@ public class ElectroCraft {
     public static ElectroCraft instance;
     @SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
     public static IElectroCraftSided electroCraftSided;
-    private LuaSecurity securityManager;
     private Map<EntityPlayer, TileEntityComputer> nonCustomServerComputerMap = new HashMap<EntityPlayer, TileEntityComputer>();
+    private List<IMCRunnable> mainThreadFunctions = new ArrayList<IMCRunnable>();
+    private Object mainThreadLock = new Object();
 
     // The Mod's color palette
     public static final int[] colorPalette = {
@@ -128,16 +132,15 @@ public class ElectroCraft {
         
         // Preload the textures
         electroCraftSided.loadTextures();
-
+        
         // Register client stuff
         if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
         	TickRegistry.registerScheduledTickHandler(electroCraftSided.getTickHandler(), Side.CLIENT);
         }
         
-		// Create our new security manager
-		securityManager = new LuaSecurity("electrocraft");
-		// Register the security manager
-		System.setSecurityManager(securityManager);
+        // Register the tick handler for delegating back to the main thread
+        UniversialTickHandler tickHandler = new UniversialTickHandler();
+        TickRegistry.registerScheduledTickHandler(tickHandler, Side.SERVER);
 		
 		// Create out computer socket connection manager
 		computerSocketManager = new ComputerSocketManager();
@@ -185,10 +188,6 @@ public class ElectroCraft {
     	}
     }
     
-    public LuaSecurity getSecurityManager() {
-    	return securityManager;
-    }
-    
     public ComputerSocketManager getComputerSocketManager() {
     	return computerSocketManager;
     }
@@ -201,6 +200,18 @@ public class ElectroCraft {
     
     public boolean isShiftHeld() {
         return electroCraftSided.isShiftHeld();
+    }
+    
+    public void registerRunnable(IMCRunnable runnable) {
+    	synchronized(mainThreadLock) {
+    		mainThreadFunctions.add(runnable);
+    	}
+    }
+    
+    public List<IMCRunnable> getAndClearTasks() {
+    	synchronized(mainThreadLock) {
+    		return new ArrayList<IMCRunnable>(mainThreadFunctions);
+    	}
     }
     
     public Logger getLogger() {

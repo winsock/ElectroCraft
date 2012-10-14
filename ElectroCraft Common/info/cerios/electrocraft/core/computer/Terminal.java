@@ -16,6 +16,7 @@ public class Terminal extends Writer {
 	private int currentColumn, currentRow;
 	private int columnOffset = 0;
 	private Object syncObject = new Object();
+	private volatile boolean editing = false;
 
 	@ExposedToLua(value = false)
 	public Terminal(int rows, int columns) {
@@ -24,14 +25,27 @@ public class Terminal extends Writer {
 		terminal = new TreeMap<Integer, Map<Integer, Character>>();
 	}
 	
-	@ExposedToLua
+	@ExposedToLua(value = false)
 	public String getLine(int row) {
 		String output = "";
-		if (getRow(row) != null) {
-			for (int i = columnOffset; i < columns + columnOffset; i++) {
-				if (getRow(row).get(i) != null)
-					if (!Character.isIdentifierIgnorable(getRow(row).get(i)))
-						output += getRow(row).get(i);
+		int timeWaited = 0;
+		while (editing) {
+			if (timeWaited > 1000) {
+				editing = false;
+			}
+			try {
+				Thread.sleep(1);
+				timeWaited += 1;
+			} catch (InterruptedException e) {
+			}
+		}
+		synchronized(syncObject) {
+			if (getRow(row) != null) {
+				for (int i = columnOffset; i < columns + columnOffset; i++) {
+					if (getRow(row).get(i) != null)
+						if (!Character.isIdentifierIgnorable(getRow(row).get(i)))
+							output += getRow(row).get(i);
+				}
 			}
 		}
 		return output;
@@ -84,6 +98,8 @@ public class Terminal extends Writer {
 		synchronized(syncObject) {
 			if (getRow(currentRow) != null)
 				getRow(currentRow).clear();
+			currentColumn = 0;
+			columnOffset = 0;
 		}
 	}
 
@@ -94,13 +110,20 @@ public class Terminal extends Writer {
 		}
 	}
 
-	// Used only for Lua
 	@ExposedToLua
 	public void print(String string) {
 		synchronized(syncObject) {
 			try {
-				writeLine(string);
-			} catch (IOException e) { }
+				write(string);
+			} catch (IOException e) {
+			}
+		}
+	}
+	
+	@ExposedToLua
+	public void setEditing(boolean state) {
+		synchronized(syncObject) {
+			editing = state;
 		}
 	}
 
@@ -123,11 +146,54 @@ public class Terminal extends Writer {
 	public void setPosition(int row, int column) {
 		synchronized(syncObject) {
 			if (row > rows)
-				row = rows - 1;
-			if (column > columns)
-				column = columns - 1;
+				row = rows;
+			if (column > columns) {
+				columnOffset = column - columns;
+				column = columns;
+			} else {
+				columnOffset = 0;
+			}
 			this.currentRow = row;
 			this.currentColumn = column;
+		}
+	}
+	
+	@ExposedToLua
+	public void deleteRow(int row) {
+		if (terminal.size() < row)
+			return;
+		Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
+		List<Integer> rows = new ArrayList<Integer>();
+		rows.addAll(terminal.keySet());
+		Collections.sort(rows);
+		for (int j = 0; j < rows.size(); j++) {
+			if (j == row) {
+				continue;
+			} else if (j > row) {
+				newTerminal.put(j - 1, terminal.get(rows.get(j)));
+			} else {
+				newTerminal.put(j, terminal.get(rows.get(j)));
+			}
+		}
+		terminal = newTerminal;
+	}
+	
+	@ExposedToLua
+	public void insertRow(int row) {
+		if (terminal.size() >= rows)
+			return;
+		Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
+		List<Integer> rows = new ArrayList<Integer>();
+		rows.addAll(terminal.keySet());
+		Collections.sort(rows);
+		for (int j = 0; j < rows.size(); j++) {
+			if (j == row) {
+				newTerminal.put(j, new TreeMap<Integer, Character>());
+			} else if (j > row) {
+				newTerminal.put(j + 1, terminal.get(rows.get(j)));
+			} else {
+				newTerminal.put(j, terminal.get(rows.get(j)));
+			}
 		}
 	}
 
@@ -139,25 +205,33 @@ public class Terminal extends Writer {
 					columnOffset--;
 				else
 					currentColumn--;
-				if (getRow(currentRow) != null)
-					terminal.get(currentRow).put(currentColumn + columnOffset, '\0');
-				
-			} else if ((currentRow > 0) && canDeleteLine) {
-				currentRow--;
-				currentColumn = columns - 1;
-
-				char chr = '\0';
-				while (chr == '\0') {
-					if (getRow(currentRow) != null)
-						if (getRow(currentRow).size() > currentColumn + columnOffset)
-							chr = terminal.get(currentRow).get(currentColumn + columnOffset);
-					if (--currentColumn <= 0) {
-						currentColumn = columns - 1;
-						if (--currentRow < 0) {
-							currentRow = 0;
-							break;
-						}
+				if (getRow(currentRow) != null) {
+					Map<Integer, Character> row = terminal.get(currentRow);
+					Map<Integer, Character> newRow = new TreeMap<Integer, Character>();
+					int count = 0;
+					for (int col : row.keySet()) {
+						if (row.get(col) == '\0')
+							continue;
+						if (count == currentColumn - 1)
+							continue;
+						newRow.put(newRow.size(), row.get(col));
+						count++;
 					}
+					terminal.put(currentRow, newRow);
+				}
+			} else if ((currentRow > 0) && canDeleteLine) {
+				Map<Integer, Character> oldRow = terminal.get(currentRow);
+				currentRow--;
+				// Merge any remaining data onto the previous line
+				if (oldRow.size() > 0) {
+					for (int col : oldRow.keySet()) {
+						getRow(currentRow).put(getRow(currentRow).size(), oldRow.get(col));
+					}
+				}
+				currentColumn = getRow(currentRow).size();
+				if (currentColumn > columns) {
+					columnOffset = currentColumn - columns;
+					currentColumn = columns;
 				}
 			}
 		}
@@ -178,8 +252,8 @@ public class Terminal extends Writer {
 			for (int i = arg1; i < arg2; i++) {
 				if (Character.isIdentifierIgnorable(arg0[i]))
 					continue;
-				if (arg0[i] == '\n' || arg0[i] == '\r') {
-					if (++currentRow >= rows) {
+				if (arg0[i] == '\n') {
+					if (++currentRow > rows) {
 						Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 						List<Integer> rows = new ArrayList<Integer>();
 						rows.addAll(terminal.keySet());
@@ -188,15 +262,15 @@ public class Terminal extends Writer {
 							newTerminal.put(j - 1, terminal.get(rows.get(j)));
 						}
 						terminal = newTerminal;
-						currentRow = this.rows - 1;
+						currentRow = this.rows;
 					}
 					currentColumn = 0;
 					columnOffset = 0;
 				} else {
 					setChar(currentRow, currentColumn, arg0[i]);
-					if (++currentColumn >= columns) {
+					if (++currentColumn > columns) {
 						columnOffset++;
-						currentColumn = columns - 1;
+						currentColumn = columns;
 					}
 				}
 			}

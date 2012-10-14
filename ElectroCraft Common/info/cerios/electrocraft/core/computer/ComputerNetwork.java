@@ -6,12 +6,15 @@ import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 import info.cerios.electrocraft.core.utils.ObjectTriplet;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
+import net.minecraft.src.TileEntity;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import cpw.mods.fml.common.FMLCommonHandler;
 
 public class ComputerNetwork {
     private Set<ObjectTriplet<Integer, Integer, Integer>> devices = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
@@ -57,6 +60,14 @@ public class ComputerNetwork {
     		}
     	}
     }
+    
+    public void removeDevice(NetworkBlock device) {
+    	for (Integer dim : dims) {
+    		for (TileEntityComputer computer : getComputers(dim)) {
+    			computer.removeIoPort(device);
+    		}
+    	}
+    }
 
     public void updateProviderChain(NetworkBlock startBlock, int d) {
         devices = getDevicesInChain(new ObjectTriplet<Integer, Integer, Integer>(startBlock.xCoord, startBlock.yCoord, startBlock.zCoord), d);
@@ -79,18 +90,22 @@ public class ComputerNetwork {
     }
 
     public TileEntityComputer getTileEntityComputerFromLocation(int x, int y, int z, int d) {
-    	if (dims.contains(d))
-	        if (ElectroCraft.electroCraftSided.getBlockTileEntity(x, y, z, d) instanceof TileEntityComputer) {
-	            return (TileEntityComputer) ElectroCraft.electroCraftSided.getBlockTileEntity(x, y, z, d);
+    	if (dims.contains(d)) {
+    		TileEntity tile = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(d).getBlockTileEntity(x, y, z);
+	        if (tile instanceof TileEntityComputer) {
+	            return (TileEntityComputer) tile;
 	        }
+    	}
         return null;
     }
 
     public NetworkBlock getNetworkBlockFromLocation(int x, int y, int z, int d) {
-    	if (dims.contains(d))
-	        if (ElectroCraft.electroCraftSided.getBlockTileEntity(x, y, z, d) instanceof NetworkBlock) {
-	            return (NetworkBlock) ElectroCraft.electroCraftSided.getBlockTileEntity(x, y, z, d);
+    	if (dims.contains(d)) {
+    		TileEntity tile = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(d).getBlockTileEntity(x, y, z);
+	        if (tile instanceof NetworkBlock) {
+	            return (NetworkBlock) tile;
 	        }
+    	}
         return null;
     }
 

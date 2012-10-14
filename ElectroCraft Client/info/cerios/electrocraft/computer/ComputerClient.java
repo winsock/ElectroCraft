@@ -149,6 +149,8 @@ public class ComputerClient implements Runnable {
                 } else if (type == ComputerProtocol.TERMINAL.ordinal()) {
                 	int cols = dis.readInt();
                 	int rows = dis.readInt();
+                	int currentCol = dis.readInt();
+                	int currentRow = dis.readInt();
                 	
                     int transmissionType = in.read();
                     Object returnData = null;
@@ -174,7 +176,7 @@ public class ComputerClient implements Runnable {
                     	returnData = new Object[] {numberOfChangedRows, changedRows};
                     }
                     
-                    callbackData = new Object[]{ComputerProtocol.values()[type], transmissionType, rows, cols, returnData};
+                    callbackData = new Object[]{ComputerProtocol.values()[type], transmissionType, rows, cols, currentCol, currentRow, returnData};
                 } else if (type == ComputerProtocol.MODE.ordinal()) {
                     callbackData = new Object[]{ComputerProtocol.values()[type], in.read()};
                 }

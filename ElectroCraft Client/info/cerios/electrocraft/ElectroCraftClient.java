@@ -49,13 +49,6 @@ public class ElectroCraftClient implements IElectroCraftSided {
 
 	@Override
 	public void init() { }
-	
-    @Override
-    public TileEntity getBlockTileEntity(int x, int y, int z, int d) {
-    	if (FMLClientHandler.instance().getClient().theWorld != null)
-    		return FMLClientHandler.instance().getClient().theWorld.getBlockTileEntity(x, y, z);
-    	return null;
-    }
 
     @Override
     public void closeGui(Object... optionalPlayers) {

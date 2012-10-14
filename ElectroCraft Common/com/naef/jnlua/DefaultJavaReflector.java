@@ -5,6 +5,8 @@
 
 package com.naef.jnlua;
 
+import info.cerios.electrocraft.core.computer.ExposedToLua;
+
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -138,10 +140,21 @@ public class DefaultJavaReflector implements JavaReflector {
 	 */
 	private Map<String, Accessor> createClassAccessors(Class<?> clazz) {
 		Map<String, Accessor> result = new HashMap<String, Accessor>();
-
+		boolean allowAll = false;
+		
+		if (clazz.isAnnotationPresent(ExposedToLua.class)) {
+			if (clazz.getAnnotation(ExposedToLua.class).allowAll())
+				allowAll = true;
+		}
+		
 		// Fields
 		Field[] fields = clazz.getFields();
 		for (int i = 0; i < fields.length; i++) {
+			if (fields[i].isAnnotationPresent(ExposedToLua.class) && !allowAll) {
+				if (!fields[i].getAnnotation(ExposedToLua.class).value()) {
+					continue;
+				}
+			}
 			result.put(fields[i].getName(), new FieldAccessor(fields[i]));
 		}
 
@@ -153,6 +166,11 @@ public class DefaultJavaReflector implements JavaReflector {
 			Method method = methods[i];
 			if (result.containsKey(method.getName())) {
 				continue;
+			}
+			if (method.isAnnotationPresent(ExposedToLua.class) && !allowAll) {
+				if (!method.getAnnotation(ExposedToLua.class).value()) {
+					continue;
+				}
 			}
 
 			// Find the method in an interface if the declaring class is not
@@ -199,6 +217,11 @@ public class DefaultJavaReflector implements JavaReflector {
 			if (!Modifier.isPublic(constructors[i].getDeclaringClass()
 					.getModifiers())) {
 				continue;
+			}
+			if (constructors[i].isAnnotationPresent(ExposedToLua.class) && !allowAll) {
+				if (!constructors[i].getAnnotation(ExposedToLua.class).value()) {
+					continue;
+				}
 			}
 			accessibleConstructors
 					.add(new InvocableConstructor(constructors[i]));

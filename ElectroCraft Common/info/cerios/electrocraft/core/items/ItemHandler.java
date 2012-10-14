@@ -7,6 +7,8 @@ import net.minecraftforge.oredict.OreDictionary;
 
 import java.util.*;
 
+import cpw.mods.fml.common.registry.LanguageRegistry;
+
 public class ItemHandler {
 
     private Map<ElectroItems, Set<Item>> items = new HashMap<ElectroItems, Set<Item>>();
@@ -22,7 +24,7 @@ public class ItemHandler {
             // Loop through all of the names, each name increments the damage value by 1. The damage is kept in i
             for (int i = 0; i < item.getHumanNames().length; i++) {
                 // Register the item
-                ModLoader.addName(new ItemStack(item.getItem(), 1, i), item.getHumanNames()[i]);
+            	LanguageRegistry.addName(new ItemStack(item.getItem(), 1, i), item.getHumanNames()[i]);
 
                 if (item.isOreDicItem())
                     // If it is a ore dictionary item add it to the ore dictionary
@@ -68,7 +70,7 @@ public class ItemHandler {
             // Loop through all of the names, each name increments the damage value by 1. The damage is kept in i
             for (int i = 0; i < item.getHumanNames().length; i++) {
                 // Register the item
-                ModLoader.addName(new ItemStack(item.getItem(), 1, i), item.getHumanNames()[i]);
+                LanguageRegistry.addName(new ItemStack(item.getItem(), 1, i), item.getHumanNames()[i]);
 
                 if (item.isOreDicItem())
                     // If it is a ore dictionary item add it to the ore dictionary

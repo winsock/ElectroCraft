@@ -2,14 +2,20 @@ package info.cerios.electrocraft;
 
 import java.io.File;
 import java.net.SocketAddress;
+import java.util.EnumSet;
+import java.util.List;
 
 import net.minecraft.src.TileEntity;
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.IScheduledTickHandler;
+import cpw.mods.fml.common.TickType;
 import cpw.mods.fml.common.network.IPacketHandler;
 import cpw.mods.fml.common.network.Player;
 import cpw.mods.fml.server.FMLServerHandler;
+import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
+import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
@@ -20,9 +26,6 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 	
 	@Override
 	public void init() { }
-
-	@Override
-	public TileEntity getBlockTileEntity(int x, int y, int z, int d) { return null; }
 
 	@Override
 	public void closeGui(Object... optionalPlayers) { }

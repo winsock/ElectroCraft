@@ -10,6 +10,7 @@ import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
+import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.Material;
@@ -36,9 +37,14 @@ public abstract class BlockNetwork extends ElectroBlock {
 
     @Override
     public void breakBlock(World world, int x, int y, int z, int par5, int par6) {
-    	super.breakBlock(world, x, y, z, par5, par6);
     	if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-            ((NetworkBlock) world.getBlockTileEntity(x, y, z)).update((NetworkBlock) world.getBlockTileEntity(x, y, z));
+    		NetworkBlock block = (NetworkBlock) world.getBlockTileEntity(x, y, z);
+    		if (block.getComputerNetwork() != null)
+    			block.getComputerNetwork().removeDevice(block);
+        	super.breakBlock(world, x, y, z, par5, par6);
+        	block.update(block);
+        } else {
+        	super.breakBlock(world, x, y, z, par5, par6);
         }
     }
     
@@ -56,11 +62,13 @@ public abstract class BlockNetwork extends ElectroBlock {
     		if (ElectroCraft.instance.isShiftHeld()) {
     			if (world.getBlockId(x, y, z) == this.blockID) {
     				if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-    					GuiPacket guiPacket = new GuiPacket();
-    					guiPacket.setCloseWindow(false);
-    					guiPacket.setGui(Gui.ADDRESS_SCREEN);
+    					NetworkBlock block = (NetworkBlock)world.getBlockTileEntity(x, y, z);
+    					NetworkAddressPacket networkAddressPacket = new NetworkAddressPacket();
+    					networkAddressPacket.setControlAddress(block.getControlAddress());
+    					networkAddressPacket.setDataAddress(block.getDataAddress());
+    					networkAddressPacket.setLocation(world.provider.dimensionId, x, y, z);
     					try {
-    						PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
+    						PacketDispatcher.sendPacketToPlayer(networkAddressPacket.getMCPacket(), (Player) player);
     					} catch (IOException e) {
     						ElectroCraft.instance.getLogger().severe("Unable to send \"Open Address GUI Packet\"!");
     					}

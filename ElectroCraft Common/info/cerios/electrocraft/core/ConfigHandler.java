@@ -29,7 +29,7 @@ public class ConfigHandler {
             try {
                 currentConfigFile.createNewFile();
             } catch (IOException e) {
-                ModLoader.getLogger().severe("ElectroCraft: Unable to make config file! Do you have write permissions?");
+                ElectroCraft.instance.getLogger().severe("ElectroCraft: Unable to make config file! Do you have write permissions?");
             }
         }
         currentConfig = new Configuration(currentConfigFile);

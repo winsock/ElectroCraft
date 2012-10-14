@@ -1,0 +1,191 @@
+local tArgs = {...}
+
+if #tArgs < 1 then
+	print("Usage: edit <file>\n")
+	return;
+end
+
+if type(tArgs[1]) ~= "string" then
+	print("Usage: edit <file>\n")
+	return;
+end
+
+local fileHandle
+local startChar = tArgs[1]:sub(1, 1)
+
+if startChar == "/" then
+	fileHandle = file.createNewFileHandle(tArgs[1])
+else
+	fileHandle = file.createNewFileHandle(shell.path() .. tArgs[1])
+end
+
+if not fileHandle then
+	print("Unable to open or create file!\n")
+	return;
+end
+
+if not fileHandle:exists() then
+	fileHandle:createNewFile()
+end
+
+if not fileHandle:canRead() or not fileHandle:canWrite() or fileHandle:isDirectory() then
+	print("Unable to open or create file!\n")
+	return;
+end
+
+getTerminal():clear()
+
+local data = {}
+local running = true
+local inMenu = false
+
+function save()
+	local write = fileHandle:open("w")
+	local first = true
+	for i, v in ipairs(data) do
+		if not first then
+			write:newLine()
+		end
+		write:write(v, 0, v:len())
+		first = false
+	end
+	write:flush()
+	write:close()
+end
+
+local read = fileHandle:open("r")
+local first = true
+while read:ready() do
+	if not first then
+		print("\n")
+	end
+	local line = read:readLine()
+	table.insert(data, line)
+	print(line)
+	first = false
+end
+read:close()
+
+local col = 1
+local row = 1
+
+if #data <= 0 then
+	table.insert(data, "")
+else
+	row = #data
+	col = data[#data]:len()
+end
+
+while running do
+	local event, key = os.waitForEvent("key", "code")
+	getTerminal():setEditing(true)
+	if inMenu then
+		if key == "q" then
+			save()
+			running = false
+		elseif key == "s" then
+			running = false
+		elseif key == "s" then
+			save()
+		elseif key == getKeyboard().ctrlScanCode then
+			inMenu = not inMenu
+		end
+	elseif event == "key" then
+		if key == "\n" then
+			getTerminal():insertRow(row)
+			if data[row] and data[row]:len() > col + 1 then
+				local part = data[row]:sub(col + 1, data[row]:len())
+				data[row] = data[row]:sub(0, col)
+				getTerminal():clearLine()
+				print(data[row])
+				table.insert(data, row + 1, part)
+				getTerminal():setPosition(row, 0)
+				print(part)
+			else
+				table.insert(data, row + 1, "")
+			end
+			row = row + 1
+			col = 0
+			getTerminal():setPosition(row - 1, col)
+		else
+			local front = ""
+			local back = ""
+			if col >= 1 then
+				front = data[row]:sub(1, col)
+			end
+			if data[row]:len() >= col + 1 then
+				back = data[row]:sub(col + 1, data[row]:len())
+			end
+			data[row] = front .. key .. back
+			col = col + 1
+			getTerminal():clearLine()
+			print(data[row])
+			getTerminal():setPosition(row - 1, col)
+		end
+	elseif event == "code" then
+		if key == getKeyboard().backspaceScanCode then
+			if col > 0 and data[row] and data[row]:len() > 0 then
+				local front = ""
+				local back = ""
+				if col - 1 > 0 then
+					front = data[row]:sub(1, col - 1)
+				end
+				if data[row]:len() >= col + 1 then
+					back = data[row]:sub(col + 1, data[row]:len())
+				end
+				data[row] = front..back
+				getTerminal():clearLine()
+				print(data[row])
+				col = col - 1
+				getTerminal():setPosition(row - 1, col)
+			elseif #data > 1 and row > 1 then
+				if data[row] and data[row]:len() > 0 then
+					local part = data[row]:sub(0, data[row]:len())
+					if not data[row - 1] then
+						data[row - 1] = part
+					else
+						data[row - 1] = data[row - 1] .. part
+					end
+					getTerminal():setPosition(row - 2, data[row - 1]:len())
+					print(part)
+				end
+				getTerminal():deleteRow(row - 1)
+				table.remove(data, row)
+				row = row - 1
+				col = data[row]:len()
+				getTerminal():setPosition(row - 1, col)
+			end
+		elseif key == getKeyboard().ctrlScanCode then
+			inMenu = not inMenu
+		elseif key == getKeyboard().leftScanCode then
+			if col > 0 then
+				col = col - 1
+				getTerminal():setPosition(row - 1, col)
+			end
+		elseif key == getKeyboard().rightScanCode then
+			if data[row] and col < data[row]:len() then
+				col = col + 1
+				getTerminal():setPosition(row - 1, col)
+			end
+		elseif key == getKeyboard().upScanCode then
+			if row > 1 then
+				row = row - 1
+				if data[row]:len() < col then
+					col = data[row]:len()
+				end
+				getTerminal():setPosition(row - 1, col)
+			end
+		elseif key == getKeyboard().downScanCode then
+			if row + 1 <= #data then
+				row = row + 1
+				if data[row]:len() < col then
+					col = data[row]:len()
+				end
+				getTerminal():setPosition(row - 1, col)
+			end
+		end
+	end
+	getTerminal():setEditing(false)
+end
+
+getTerminal():clear()

@@ -161,4 +161,13 @@ public class ComputerSocket implements LuaAPI {
 				}.init(computer)
 		};
 	}
+
+	@Override
+	public String getNamespace() {
+		return "net";
+	}
+
+	@Override
+	public void tick(Computer computer) {
+	}
 }

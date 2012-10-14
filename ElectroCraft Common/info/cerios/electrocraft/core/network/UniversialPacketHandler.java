@@ -49,7 +49,8 @@ public class UniversialPacketHandler implements IPacketHandler {
 						((ElectroCraftSidedServer)ElectroCraft.electroCraftSided).setShiftState(modifierPacket.isShiftDown());
 					
 					// Send the modifier packet to the computer if it is a valid computer
-					ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getKeyboard().proccessModifierPacket(modifierPacket);
+					if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null && ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer() != null)
+						ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getKeyboard().proccessModifierPacket(modifierPacket);
 				} else if (ecPacket.getType() == Type.ADDRESS) {
 					NetworkAddressPacket addressPacket = (NetworkAddressPacket)ecPacket;
 					World world = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(addressPacket.getWorldId());
@@ -127,6 +128,8 @@ public class UniversialPacketHandler implements IPacketHandler {
 	                    DataOutputStream dos = new DataOutputStream(out);
 						dos.writeInt(ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getTerminal().getColumns());
 						dos.writeInt(ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getTerminal().getRows());
+						dos.writeInt(ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getTerminal().getCurrentColumn());
+						dos.writeInt(ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getTerminal().getCurrentRow());
 						out.write(0); // Terminal packet type 0
 						dos.writeInt(row); // Resend the row number
 						String rowData = ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getTerminal().getLine(row);
@@ -140,6 +143,13 @@ public class UniversialPacketHandler implements IPacketHandler {
 						returnPacket.id = customPacket.id;
 						returnPacket.data = out.toByteArray();
 						manager.addToSendQueue(returnPacket.getMCPacket());
+	            	} else if (customPacket.id == 3) {
+	            		if (customPacket.data[0] == 0) {
+	            			if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null && ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer() != null) {
+	            				ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().postEvent("kill");
+	            				ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().setRunning(false);
+	            			}
+	            		}
 	            	}
 				}
 			} catch (Exception e) {

@@ -8,7 +8,7 @@ import net.minecraftforge.common.ForgeDirection;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class NetworkBlock extends ElectroTileEntity implements IComputerCallback {
+public abstract class NetworkBlock extends ElectroTileEntity {
 
     protected boolean hasBeenNetworkProbed = false;
     protected Map<Integer, ObjectTriplet<Integer, Integer, Integer>> connectedDevices = new HashMap<Integer, ObjectTriplet<Integer, Integer, Integer>>();
@@ -17,7 +17,8 @@ public abstract class NetworkBlock extends ElectroTileEntity implements ICompute
     private boolean dirty = true, hasBeenChecked = false;
 
     public abstract boolean canConnectNetwork(NetworkBlock block);
-
+    public abstract void tick(Computer computer);
+    
     public void writeToNBT(NBTTagCompound nbttagcompound) {
         super.writeToNBT(nbttagcompound);
         nbttagcompound.setInteger("controlAddress", controlAddress);
@@ -57,6 +58,10 @@ public abstract class NetworkBlock extends ElectroTileEntity implements ICompute
     @Override
     public void updateEntity() {
         super.updateEntity();
+        if (worldObj.isRemote) {
+            computeNetworkConnections();
+        	return;
+        }
         if (dirty) {
             update(this);
             dirty = false;
@@ -73,11 +78,19 @@ public abstract class NetworkBlock extends ElectroTileEntity implements ICompute
     }
 
     public void setControlAddress(int controlAddress) {
+    	if (network != null)
+    		network.registerDevice(this);
         this.controlAddress = controlAddress;
+        if (network != null)
+    		network.removeDevice(this);
     }
 
     public void setDataAddress(int dataAddress) {
+    	if (network != null)
+    		network.removeDevice(this);
         this.dataAddress = dataAddress;
+        if (network != null)
+    		network.registerDevice(this);
     }
 
     public int getControlAddress() {
@@ -137,6 +150,8 @@ public abstract class NetworkBlock extends ElectroTileEntity implements ICompute
     }
 
     public void computeNetworkConnections() {
+    	if (network != null)
+    		network.removeDevice(this);
         connectedDevices.clear();
         // X
         if (worldObj.getBlockTileEntity(xCoord + 1, yCoord, zCoord) instanceof NetworkBlock) {

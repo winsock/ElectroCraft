@@ -1,6 +1,7 @@
 package info.cerios.electrocraft.gui;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.network.PacketDispatcher;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
@@ -83,7 +84,7 @@ public class GuiNetworkAddressScreen extends GuiScreen {
             }
             if (isSmp) {
                 try {
-                    ModLoader.sendPacket(packetInProgress.getMCPacket());
+                    PacketDispatcher.sendPacketToServer(packetInProgress.getMCPacket());
                 } catch (IOException e) {
                     ElectroCraft.instance.getLogger().severe("Unable to send network address packet!");
                 }

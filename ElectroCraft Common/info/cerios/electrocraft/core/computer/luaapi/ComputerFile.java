@@ -5,8 +5,24 @@ import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ExposedToLua;
 import info.cerios.electrocraft.core.utils.Utils;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
@@ -17,39 +33,52 @@ public class ComputerFile implements LuaAPI {
 
 	private Computer computer;
 	private File javaFile;
+	private InputStream resource;
+	private String pathname;
 	
 	public ComputerFile() {};
 	
 	@ExposedToLua(value = false)
 	public ComputerFile(String pathname, Computer computer) {
 		this.computer = computer;
-		this.javaFile = new File(pathname);
-		
-		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
-				throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
-			}
-		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
+		this.pathname = pathname;
+		if (!pathname.startsWith("/rom")) {
+			this.javaFile = new File(computer.getBaseDirectory() + File.separator + pathname);
+			
+			try {
+				if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
+					throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
+				}
+			} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }
 
-		if (pathname.contains(".persist")) {
-			throw new LuaRuntimeException("Error! Not allowed to open the persist file!");
-		}
-		
-		if (!this.exists()) {
-			if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10) * 1024 * 1024) {
-				throw new LuaRuntimeException("Error! Tried to make a new file when the disk is full!");
+			if (pathname.contains(".persist")) {
+				throw new LuaRuntimeException("Error! Not allowed to open the persist file!");
 			}
+			
+			if (!this.exists()) {
+				if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
+					throw new LuaRuntimeException("Error! Tried to make a new file when the disk is full!");
+				}
+			}
+			
+			if (computer.getNumberOfOpenFileHandles() >= computer.getMaxFileHandles()) {
+				throw new LuaRuntimeException("Error! Tried to open too many files!");
+			} else {
+				computer.incrementOpenFileHandles();
+			}
+		} else {
+			resource = this.getClass().getResourceAsStream("/info/cerios/electrocraft" + pathname);
 		}
 		
-		if (computer.getNumberOfOpenFileHandles() >= computer.getMaxFileHandles()) {
-			throw new LuaRuntimeException("Error! Tried to open too many files!");
-		} else {
-			computer.incrementOpenFileHandles();
+		if (resource == null && javaFile == null) {
+			throw new LuaRuntimeException("Error making handle");
 		}
 	}
 	
 	@ExposedToLua
 	public boolean mkdirs() {
+		if (resource != null)
+			return false;
 		try {
 			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
@@ -61,6 +90,8 @@ public class ComputerFile implements LuaAPI {
 	
 	@ExposedToLua
 	public boolean mkdir() {
+		if (resource != null)
+			return false;
 		try {
 			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				return false;
@@ -72,6 +103,8 @@ public class ComputerFile implements LuaAPI {
 	
 	@ExposedToLua
 	public boolean createNewFile() throws IOException {
+		if (resource != null)
+			return false;
 		try {
 			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				return false;
@@ -82,7 +115,9 @@ public class ComputerFile implements LuaAPI {
 	
 	@ExposedToLua
 	public boolean canWrite() {
-		if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10) * 1024 * 1024) {
+		if (resource != null)
+			return false;
+		if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
 			return false;
 		}
 		return javaFile.canWrite();
@@ -90,11 +125,15 @@ public class ComputerFile implements LuaAPI {
 	
 	@ExposedToLua
 	public boolean canRead() {
+		if (resource != null)
+			return true;
 		return javaFile.canRead();
 	}
 	
 	@ExposedToLua
 	public boolean delete() {
+		if (resource != null)
+			return false;
 		try {
 			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				return false;
@@ -105,6 +144,8 @@ public class ComputerFile implements LuaAPI {
 	
 	@ExposedToLua
 	public boolean exists() {
+		if (resource != null)
+			return true;
 		try {
 			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				return false;
@@ -115,21 +156,27 @@ public class ComputerFile implements LuaAPI {
 	
 	@ExposedToLua
 	public long getFreeSpace()  {
-		return (ConfigHandler.getCurrentConfig().getOrCreateIntProperty("MaxStoragePerUser", "computer", 10).getInt(10) * 1024 * 1024) - computer.getBaseDirectory().length();
+		if (resource != null)
+			return 0;
+		return (ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) - computer.getBaseDirectory().length();
 	}
 	
 	@ExposedToLua
 	public String getPath() {
-		return javaFile.getPath().replace(computer.getBaseDirectory().getAbsolutePath(), "");
+		return pathname;
 	}
 	
 	@ExposedToLua
 	public String getName() {
+		if (resource != null)
+			return pathname.substring(pathname.lastIndexOf("/"));
 		return javaFile.getName();
 	}
 	
 	@ExposedToLua
 	public ComputerFile getParentFile() {
+		if (resource != null)
+			return new ComputerFile(pathname.endsWith("/") ? pathname.substring(0, pathname.length() - 1).substring(0, pathname.substring(0, pathname.length() - 1).lastIndexOf("/")) : pathname.substring(0, pathname.lastIndexOf("/")), computer);
 		try {
 			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile.getParentFile())) {
 				return null;
@@ -140,21 +187,33 @@ public class ComputerFile implements LuaAPI {
 	
 	@ExposedToLua
 	public boolean isFile() {
+		if (resource != null)
+			return true;
 		return javaFile.isFile();
 	}
 	
 	@ExposedToLua
 	public boolean isDirectory() {
+		if (resource != null)
+			return false;
 		return javaFile.isDirectory();
 	}
 	
 	@ExposedToLua
 	public long length() {
+		if (resource != null)
+			try {
+				return resource.available();
+			} catch (IOException e) {
+				return 0;
+			}
 		return javaFile.length();
 	}
 	
 	@ExposedToLua
 	public ComputerFile[] listFiles() {
+		if (resource != null)
+			return null;
 		try {
 			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile.getParentFile())) {
 				throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
@@ -170,9 +229,41 @@ public class ComputerFile implements LuaAPI {
 		return files;
 	}
 	
+	@ExposedToLua
+	public void close() {
+		javaFile = null;
+		resource = null;
+		computer.deincrementOpenFileHandles();
+	}
+	
+	@ExposedToLua
+	public Object open(String mode) throws IOException {
+		if (resource != null) {
+			if (mode.equalsIgnoreCase("r")) {
+				return new ComputerBufferedReader(new InputStreamReader(resource));
+			} else if (mode.equalsIgnoreCase("rb")) {
+				return new ComputerInputStream(resource);
+			}
+		} else if (mode.equalsIgnoreCase("r")) {
+			return new ComputerBufferedReader(new FileReader(javaFile));
+		} else if (mode.equalsIgnoreCase("w")) {
+			return new ComputerBufferedWriter(new FileWriter(javaFile));
+		} else if (mode.equalsIgnoreCase("a")) {
+			return new ComputerBufferedWriter(new FileWriter(javaFile, true));
+		} else if (mode.equalsIgnoreCase("rb")) {
+			return new ComputerInputStream(new FileInputStream(javaFile));
+		} else if (mode.equalsIgnoreCase("wb")) {
+			return new ComputerOutputStream(new FileOutputStream(javaFile));
+		} else if (mode.equalsIgnoreCase("ab")) {
+			return new ComputerOutputStream(new FileOutputStream(javaFile, true));
+		}
+		return null;
+	}
+	
 	@ExposedToLua(value = false)
 	public void finalize() throws Throwable {
-		computer.deincrementOpenFileHandles();
+		if (javaFile != null)
+			computer.deincrementOpenFileHandles();
 		super.finalize();
 	}
 	
@@ -180,7 +271,13 @@ public class ComputerFile implements LuaAPI {
 	public File getJavaFile() {
 		return javaFile;
 	}
-
+	
+	@ExposedToLua(value = false)
+	public InputStream getResource() {
+		return resource;
+	}
+	
+	@ExposedToLua(value = false)
 	@Override
 	public NamedJavaFunction[] getGlobalFunctions(Computer computer) {
 		return new NamedJavaFunction[] {
@@ -194,7 +291,12 @@ public class ComputerFile implements LuaAPI {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						luaState.pushJavaObject(new ComputerFile(luaState.checkString(0), computer));
+						try {
+							ComputerFile file = new ComputerFile(luaState.checkString(-1), computer);
+							luaState.pushJavaObject(file);
+						} catch (LuaRuntimeException e) {
+							luaState.pushNil();
+						}
 						return 1;
 					}
 
@@ -204,5 +306,57 @@ public class ComputerFile implements LuaAPI {
 					}
 				}.init(computer)
 		};
+	}
+	
+	@ExposedToLua(value = false)
+	@Override
+	public String getNamespace() {
+		return "file";
+	}
+	
+	@ExposedToLua(value = false)
+	@Override
+	public void tick(Computer computer) {
+	}
+	
+	@ExposedToLua(allowAll = true)
+	public class ComputerBufferedReader extends BufferedReader {
+		public ComputerBufferedReader(Reader in) {
+			super(in);
+		}
+		
+		public String readAll() throws IOException {
+			StringBuilder result = new StringBuilder(new String());
+			String line = readLine();
+			while(line != null) {
+				result.append(line);
+				line = readLine();
+				if( line != null ) {
+					result.append("\n");
+				}
+			}
+			return result.toString();
+		}
+	}
+	
+	@ExposedToLua(allowAll = true)
+	public class ComputerBufferedWriter extends BufferedWriter {
+		public ComputerBufferedWriter(Writer arg0) {
+			super(arg0);
+		}
+	}
+	
+	@ExposedToLua(allowAll = true)
+	public class ComputerInputStream extends DataInputStream {
+		public ComputerInputStream(InputStream stream) {
+			super(stream);
+		}
+	}
+	
+	@ExposedToLua(allowAll = true)
+	public class ComputerOutputStream extends DataOutputStream {
+		public ComputerOutputStream(OutputStream stream) {
+			super(stream);
+		}
 	}
 }

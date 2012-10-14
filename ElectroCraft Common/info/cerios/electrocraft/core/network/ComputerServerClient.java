@@ -126,6 +126,8 @@ public class ComputerServerClient implements Runnable {
 						out.write(ComputerProtocol.TERMINAL.ordinal());
 						dos.writeInt(computer.getComputer().getTerminal().getColumns());
 						dos.writeInt(computer.getComputer().getTerminal().getRows());
+						dos.writeInt(computer.getComputer().getTerminal().getCurrentColumn());
+						dos.writeInt(computer.getComputer().getTerminal().getCurrentRow());
 						out.write(0); // Terminal packet type 0
 						dos.writeInt(row); // Resend the row number
 						String rowData = computer.getComputer().getTerminal().getLine(row);

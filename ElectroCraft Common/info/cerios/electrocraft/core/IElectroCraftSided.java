@@ -17,8 +17,6 @@ public interface IElectroCraftSided {
 	
 	public void init();
 	
-    public TileEntity getBlockTileEntity(int x, int y, int z, int d);
-
     public void closeGui(Object... optionalPlayers);
     
     public void openComputerGui();

@@ -44,8 +44,13 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 	private Map<Integer, String> terminalList = new HashMap<Integer, String>();
 	private int rows = 20;
 	private int columns = 50;
+	private int currentRow = 0;
+	private int currentCol = 0;
 	private boolean shouldAskForScreenPacket = true;
 	private Object syncObject = new Object();
+	private int ticksSinceLastBlink = 0;
+	private int delayTicks = 0;
+	private int ticksControlComboPressed = 0;
 
 	public GuiComputerScreen() {
 		Keyboard.enableRepeatEvents(true);
@@ -91,7 +96,6 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 			for (int i = 0; i < terminalList.size(); i++) {
 				int currentLine = terminalList.keySet().toArray(new Integer[terminalList.size()])[i];
 				String line = terminalList.get(currentLine);
-
 				float pixelsPerChar = (halfScreenWidth * 2) / columns;
 				float pixelsPerLineHeight = ((halfScreenHeight * 2) / rows);
 
@@ -106,6 +110,17 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 				GL11.glPushMatrix();
 				GL11.glScalef(scaleFactorX, scaleFactorY, 1);
 				this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
+				if (i == currentRow && (ticksSinceLastBlink > 500 || delayTicks > 0)) {
+					this.fontRenderer.drawString("_", (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)) + (currentCol > line.length() ? fontRenderer.getStringWidth(line) : fontRenderer.getStringWidth(line.substring(0, currentCol))), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
+					if (delayTicks <= 0)
+						delayTicks = 500;
+				} else if (ticksSinceLastBlink <= 500) {
+					ticksSinceLastBlink++;
+				} else if (delayTicks > 0) {
+					delayTicks--;
+					if (delayTicks <= 0)
+						ticksSinceLastBlink = 0;
+				}
 				GL11.glPopMatrix();
 			}
 		} else {
@@ -161,7 +176,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 							CustomPacket packet = new CustomPacket();
 							packet.id = 1;
 							packet.data = new byte[] {};
-		                    PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+							PacketDispatcher.sendPacketToServer(packet.getMCPacket());
 						}
 						shouldAskForScreenPacket = false;
 					} else {
@@ -172,10 +187,10 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 								CustomPacket packet = new CustomPacket();
 								packet.id = 2;
 								ByteArrayOutputStream out = new ByteArrayOutputStream();
-			                    DataOutputStream dos = new DataOutputStream(out);
-			                    dos.writeInt(i);
-			                    packet.data = out.toByteArray();
-			                    PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+								DataOutputStream dos = new DataOutputStream(out);
+								dos.writeInt(i);
+								packet.data = out.toByteArray();
+								PacketDispatcher.sendPacketToServer(packet.getMCPacket());
 							}
 							shouldAskForScreenPacket = false;
 						}
@@ -211,38 +226,54 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 		while (Mouse.next()) {
 			this.handleMouseInput();
 		}
-		while (Keyboard.next()) {
-			boolean down;
-			if (Keyboard.getEventKeyState()) {
-				down = true;
-			} else {
-				down = false;
-			}
-			synchronized (syncObject) {
-				ComputerInputPacket inputPacket = new ComputerInputPacket();
-				if (Keyboard.isKeyDown(Keyboard.KEY_UP))
-					inputPacket.setUpArrowKey();
-				if (Keyboard.isKeyDown(Keyboard.KEY_LEFT))
-					inputPacket.setLeftArrowKey();
-				if (Keyboard.isKeyDown(Keyboard.KEY_DOWN))
-					inputPacket.setDownArrowKey();
-				if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT))
-					inputPacket.setRightArrowKey();
-				inputPacket.setEventKey(Keyboard.getEventCharacter());
-				ElectroCraft.instance.getLogger().info(Character.toString(Keyboard.getEventCharacter()) + Keyboard.getEventKey());
-				inputPacket.setEventKeyName(Keyboard.getKeyName(Keyboard.getEventKey()));
-				inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
-				inputPacket.setEventMouseButton(Mouse.getEventButton());
-				inputPacket.setWasKeyDown(down);
+		if ((Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) && Keyboard.isKeyDown(Keyboard.KEY_T)) {
+			if (ticksControlComboPressed >= 50) {
+				CustomPacket customPacket = new CustomPacket();
+				customPacket.id = 3;
+				customPacket.data = new byte[] { 0 };
 				try {
-					FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(inputPacket.getMCPacket());
+					FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(customPacket.getMCPacket());
 				} catch (IOException e) {
-					ElectroCraft.instance.getLogger().fine("Unable to send computer input data!");
+					ElectroCraft.instance.getLogger().fine("Unable to send program terminate!");
+				}
+				ticksControlComboPressed = 0;
+			} else {
+				ticksControlComboPressed++;
+			}
+		} else {
+			ticksControlComboPressed = 0;
+			while (Keyboard.next()) {
+				boolean down;
+				if (Keyboard.getEventKeyState()) {
+					down = true;
+				} else {
+					down = false;
+				}
+				synchronized (syncObject) {
+					ComputerInputPacket inputPacket = new ComputerInputPacket();
+					if (Keyboard.isKeyDown(Keyboard.KEY_UP))
+						inputPacket.setUpArrowKey();
+					if (Keyboard.isKeyDown(Keyboard.KEY_LEFT))
+						inputPacket.setLeftArrowKey();
+					if (Keyboard.isKeyDown(Keyboard.KEY_DOWN))
+						inputPacket.setDownArrowKey();
+					if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT))
+						inputPacket.setRightArrowKey();
+					inputPacket.setEventKey(Keyboard.getEventCharacter());
+					inputPacket.setEventKeyName(Keyboard.getKeyName(Keyboard.getEventKey()));
+					inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
+					inputPacket.setEventMouseButton(Mouse.getEventButton());
+					inputPacket.setWasKeyDown(down);
+					try {
+						FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(inputPacket.getMCPacket());
+					} catch (IOException e) {
+						ElectroCraft.instance.getLogger().fine("Unable to send computer input data!");
+					}
 				}
 			}
 		}
 	}
-	
+
 	public void handleCustomPacket(CustomPacket packet) {
 		try {
 			if (packet.id == 0) {
@@ -328,29 +359,31 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 			} else if (packet.id == 2) {
 				ByteArrayInputStream in = new ByteArrayInputStream(packet.data);
 				DataInputStream dis = new DataInputStream(in);
-				int cols = dis.readInt();
-            	int rows = dis.readInt();
-            	
-                int transmissionType = in.read();
-                
-                if (transmissionType == 0) {
-                	int row = dis.readInt();
-                	if (dis.readBoolean()) {
-                		String rowData = dis.readUTF();
-                		terminalList.put(row, rowData);
-                	} else {
-                		terminalList.put(row, "");
-                	}
-                } else if (transmissionType == 1) {
-                	boolean shiftRowsUp = in.read() == 0 ? false : true;
-                	int numberOfChangedRows = dis.readInt();
-                	
-                	ObjectPair<Integer, String>[] changedRows = new ObjectPair[numberOfChangedRows];
-                	for (int i = 0; i < numberOfChangedRows; i++) {
-                		int rowNumber = dis.readInt();
+				columns = dis.readInt();
+				rows = dis.readInt();
+				currentCol = dis.readInt();
+				currentRow = dis.readInt();
+
+				int transmissionType = in.read();
+
+				if (transmissionType == 0) {
+					int row = dis.readInt();
+					if (dis.readBoolean()) {
+						String rowData = dis.readUTF();
+						terminalList.put(row, rowData);
+					} else {
+						terminalList.put(row, "");
+					}
+				} else if (transmissionType == 1) {
+					boolean shiftRowsUp = in.read() == 0 ? false : true;
+					int numberOfChangedRows = dis.readInt();
+
+					ObjectPair<Integer, String>[] changedRows = new ObjectPair[numberOfChangedRows];
+					for (int i = 0; i < numberOfChangedRows; i++) {
+						int rowNumber = dis.readInt();
 						terminalList.put(rowNumber, dis.readUTF());
-                	}
-                }
+					}
+				}
 				shouldAskForScreenPacket = true;
 			}
 		} catch (IOException e) {
@@ -394,13 +427,15 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 				} else if (type == ComputerProtocol.TERMINAL) {
 					rows = (Integer) objects[2];
 					columns = (Integer) objects[3];
+					currentCol = (Integer) objects[4];
+					currentRow = (Integer) objects[5];
 					if (((Integer)objects[1]) == 0) {
-						Object[] data = (Object[])objects[4];
+						Object[] data = (Object[])objects[6];
 						int rowNumber = (Integer)data[0];
 						String rowData = (String)data[1];
 						terminalList.put(rowNumber, rowData);
 					} else if (((Integer)objects[1]) == 1) {
-						Object[] data = (Object[])objects[4];
+						Object[] data = (Object[])objects[6];
 						int numberOfRowsChanged = (Integer) data[0];
 						ObjectPair<Integer, String>[] changedRows = (ObjectPair[])data[1];
 

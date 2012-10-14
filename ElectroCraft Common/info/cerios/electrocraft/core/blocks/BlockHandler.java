@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.blocks;
 
+import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.common.registry.LanguageRegistry;
 import info.cerios.electrocraft.core.items.ItemHandler;
 import net.minecraft.src.ItemStack;
 import net.minecraft.src.ModLoader;
@@ -20,14 +22,14 @@ public class BlockHandler implements IEventListener {
     public void registerBlocks() {
         for (ElectroBlocks block : ElectroBlocks.values()) {
             if (block.getBlockItem() != null) {
-                ModLoader.registerBlock(block.getBlock(), block.getBlockItem());
+                GameRegistry.registerBlock(block.getBlock(), block.getBlockItem());
             } else {
-                ModLoader.registerBlock(block.getBlock());
+            	GameRegistry.registerBlock(block.getBlock());
             }
             if (block.getTileEntity() != null) {
-                ModLoader.registerTileEntity(block.getTileEntity(), block.getName());
+            	GameRegistry.registerTileEntity(block.getTileEntity(), block.getName());
             }
-            ModLoader.addName(block.getBlock(), block.getHumanName());
+            LanguageRegistry.addName(block.getBlock(), block.getHumanName());
             if (block.isOreDicBlock())
                 OreDictionary.registerOre(block.getName(), block.getBlock());
         }

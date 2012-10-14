@@ -9,4 +9,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR})
 public @interface ExposedToLua {
 	public boolean value() default true;
+	public boolean allowAll() default false;
 }
