@@ -51,13 +51,13 @@ local prompt = path .. "> "
 
 os.registerSaveHandler(saveShell)
 
-print(prompt)
+write(prompt)
 while true do
 	local event, key = os.waitForEvent("key", "code")
 	prompt = path .. "> "
 	getTerminal():setEditing(true)
 	if key == "\n" then
-		print("\n")
+		write("\n")
 		local params = {}
 		for match in string.gmatch(line, "[^ \t]+") do
 			table.insert(params, match)
@@ -67,13 +67,12 @@ while true do
 			local ok, err = shell.run(params[1], unpack(params, 2))
 			if not ok and err then
 				print(err)
-				print("\n")
 			end
 		end
 		table.insert(history, line)
 		line = ""
 		col = 1
-		print(prompt)
+		write(prompt)
 	elseif event == "key" then
 		local front = ""
 		local back = ""
@@ -86,7 +85,7 @@ while true do
 		line = front .. key .. back
 		col = col + 1
 		getTerminal():clearLine()
-		print(prompt .. line)
+		write(prompt .. line)
 		getTerminal():setPosition(getTerminal():getCurrentRow(), col + prompt:len())
 	elseif event == "code" then
 		if key == getKeyboard().backspaceScanCode then
@@ -112,7 +111,7 @@ while true do
 				table.insert(history, oldLine)
 				col = line:len()
 				getTerminal():clearLine()
-				print(prompt .. line)
+				write(prompt .. line)
 			end
 		elseif key == getKeyboard().downScanCode then
 			if historyNumber > 0 then
@@ -125,7 +124,7 @@ while true do
 					col = 1
 				end
 				getTerminal():clearLine()
-				print(prompt .. line)
+				write(prompt .. line)
 			end
 		end
 	end

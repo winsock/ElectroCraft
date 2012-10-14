@@ -76,8 +76,12 @@ function dofile(file, ...)
 	end
 end
 
-function print(string)
+function write(string)
 	getTerminal():print(string)
+end
+
+function print(string)
+	getTerminal():printLine(string)
 end
 
 local saveFuncs = {}
@@ -133,14 +137,14 @@ if #tArgs > 1 then
 		print(err)
 	end
 else
-	print("Booting up Cerios!\n")
+	print("Booting up Cerios!")
 	for i = 1, 20 do
-		print(".")
+		write(".")
 		sleep(20)
 	end
-	print("\n")
-	print("Welcome to Cerios!\n")
-	print("To get started type help.\n")
+	write("\n")
+	print("Welcome to Cerios!")
+	print("To get started type help.")
 	local ok, err = os.run(func)
 	if not ok and err then
 		print(err)

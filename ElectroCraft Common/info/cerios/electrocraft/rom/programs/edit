@@ -1,12 +1,12 @@
 local tArgs = {...}
 
 if #tArgs < 1 then
-	print("Usage: edit <file>\n")
+	print("Usage: edit <file>")
 	return;
 end
 
 if type(tArgs[1]) ~= "string" then
-	print("Usage: edit <file>\n")
+	print("Usage: edit <file>")
 	return;
 end
 
@@ -20,7 +20,7 @@ else
 end
 
 if not fileHandle then
-	print("Unable to open or create file!\n")
+	print("Unable to open or create file!")
 	return;
 end
 
@@ -29,7 +29,7 @@ if not fileHandle:exists() then
 end
 
 if not fileHandle:canRead() or not fileHandle:canWrite() or fileHandle:isDirectory() then
-	print("Unable to open or create file!\n")
+	print("Unable to open or create file!")
 	return;
 end
 
@@ -38,6 +38,10 @@ getTerminal():clear()
 local data = {}
 local running = true
 local inMenu = false
+local col = 1
+local row = 1
+local menuIndex = 1;
+local menuItems = { "quit", "exit", "save" }
 
 function save()
 	local write = fileHandle:open("w")
@@ -57,17 +61,27 @@ local read = fileHandle:open("r")
 local first = true
 while read:ready() do
 	if not first then
-		print("\n")
+		write("\n")
 	end
 	local line = read:readLine()
 	table.insert(data, line)
-	print(line)
+	write(line)
 	first = false
 end
 read:close()
 
-local col = 1
-local row = 1
+function displayMenu()
+	getTerminal():setPosition(getTerminal():getRows() - 1, 0);
+	write("Menu: ")
+	for i, v in ipairs(menuItems) do
+		if i == menuIndex then
+			write("[" .. v .. "] ")
+		else
+			write(v .. " ")
+		end
+	end
+	getTerminal():setPosition(row - 1, col)
+end
 
 if #data <= 0 then
 	table.insert(data, "")
@@ -80,15 +94,38 @@ while running do
 	local event, key = os.waitForEvent("key", "code")
 	getTerminal():setEditing(true)
 	if inMenu then
-		if key == "q" then
-			save()
-			running = false
-		elseif key == "s" then
-			running = false
-		elseif key == "s" then
-			save()
-		elseif key == getKeyboard().ctrlScanCode then
+		if key == "\n" then
+			if menuIndex == 1 then
+				save()
+				running = false
+			elseif menuIndex == 2 then
+				running = false
+			elseif menuIndex == 3 then
+				save()
+			end
 			inMenu = not inMenu
+		elseif key == getKeyboard().leftScanCode then
+			if menuIndex > 1 then
+				menuIndex = menuIndex - 1
+			end
+		elseif key == getKeyboard().rightScanCode then
+			if menuIndex < #menuItems then
+				menuIndex = menuIndex + 1
+			end
+		end
+		if key == getKeyboard().ctrlScanCode then
+			if #data >= getTerminal():getRows() and data[getTerminal():getRows()] then
+				getTerminal():setPosition(getTerminal():getRows() - 1, 1);
+				write(data[getTerminal():getRows()])
+				getTerminal():setPosition(row - 1, col)
+			else
+				getTerminal():setPosition(getTerminal():getRows() - 1, 1);
+				getTerminal():clearLine()
+				getTerminal():setPosition(row - 1, col)
+			end
+			inMenu = not inMenu
+		else
+			displayMenu()
 		end
 	elseif event == "key" then
 		if key == "\n" then
@@ -97,10 +134,10 @@ while running do
 				local part = data[row]:sub(col + 1, data[row]:len())
 				data[row] = data[row]:sub(0, col)
 				getTerminal():clearLine()
-				print(data[row])
+				write(data[row])
 				table.insert(data, row + 1, part)
 				getTerminal():setPosition(row, 0)
-				print(part)
+				write(part)
 			else
 				table.insert(data, row + 1, "")
 			end
@@ -119,7 +156,7 @@ while running do
 			data[row] = front .. key .. back
 			col = col + 1
 			getTerminal():clearLine()
-			print(data[row])
+			write(data[row])
 			getTerminal():setPosition(row - 1, col)
 		end
 	elseif event == "code" then
@@ -135,7 +172,7 @@ while running do
 				end
 				data[row] = front..back
 				getTerminal():clearLine()
-				print(data[row])
+				write(data[row])
 				col = col - 1
 				getTerminal():setPosition(row - 1, col)
 			elseif #data > 1 and row > 1 then
@@ -147,9 +184,8 @@ while running do
 						data[row - 1] = data[row - 1] .. part
 					end
 					getTerminal():setPosition(row - 2, data[row - 1]:len())
-					print(part)
+					write(part)
 				end
-				getTerminal():deleteRow(row - 1)
 				table.remove(data, row)
 				row = row - 1
 				col = data[row]:len()
@@ -157,6 +193,9 @@ while running do
 			end
 		elseif key == getKeyboard().ctrlScanCode then
 			inMenu = not inMenu
+			if inMenu then
+				displayMenu()
+			end
 		elseif key == getKeyboard().leftScanCode then
 			if col > 0 then
 				col = col - 1

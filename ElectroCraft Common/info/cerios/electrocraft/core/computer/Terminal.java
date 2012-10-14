@@ -121,6 +121,16 @@ public class Terminal extends Writer {
 	}
 	
 	@ExposedToLua
+	public void printLine(String string) {
+		synchronized(syncObject) {
+			try {
+				write(string + "\n");
+			} catch (IOException e) {
+			}
+		}
+	}
+	
+	@ExposedToLua
 	public void setEditing(boolean state) {
 		synchronized(syncObject) {
 			editing = state;
@@ -154,11 +164,14 @@ public class Terminal extends Writer {
 				columnOffset = 0;
 			}
 			this.currentRow = row;
+			while (terminal.size() - 1 <= row) {
+				terminal.put(terminal.size(), new TreeMap<Integer, Character>());
+			}
 			this.currentColumn = column;
 		}
 	}
 	
-	@ExposedToLua
+	@ExposedToLua(value = false)
 	public void deleteRow(int row) {
 		if (terminal.size() < row)
 			return;
