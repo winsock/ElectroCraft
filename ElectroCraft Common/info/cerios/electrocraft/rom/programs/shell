@@ -12,6 +12,8 @@ function saveShell(nbttagcompound)
 	nbttagcompound:setString("currentFile", currentFile)
 end
 
+os.registerSaveHandler(saveShell)
+
 function shell.run(file, ...)
 	local found, func, err = loadfile(path .. "/" .. file)
 	if not found then
@@ -48,14 +50,13 @@ local line = ""
 local col = 1
 local historyNumber = 0
 local prompt = path .. "> "
-
-os.registerSaveHandler(saveShell)
+local term = os.getTerminal()
 
 write(prompt)
 while true do
 	local event, key = os.waitForEvent("key", "code")
 	prompt = path .. "> "
-	getTerminal():setEditing(true)
+	term:setEditing(true)
 	if key == "\n" then
 		write("\n")
 		local params = {}
@@ -63,12 +64,12 @@ while true do
 			table.insert(params, match)
 		end
 		if #params > 0 then
-			getTerminal():setEditing(false)
+			term:setEditing(false)
 			local ok, err = shell.run(params[1], unpack(params, 2))
 			if not ok and err then
 				print(err)
 			end
-			getTerminal():setEditing(true)
+			term:setEditing(true)
 		end
 		if table[#table] ~= line then
 			table.insert(history, line)
@@ -88,26 +89,36 @@ while true do
 		end
 		line = front .. key .. back
 		col = col + 1
-		getTerminal():clearLine()
+		term:clearLine()
 		write(prompt .. line)
-		getTerminal():setPosition(getTerminal():getCurrentRow(), col + prompt:len())
+		term:setPosition(term:getCurrentRow(), col + prompt:len())
 	elseif event == "code" then
-		if key == getKeyboard().backspaceScanCode then
+		if key == kbrd.keycodes.backspace then
 			if line:len() > 0 then
-				line = line:sub(0, line:len() - 1)
-				getTerminal():deleteChar(false)
+				local front = ""
+				local back = ""
+				col = col - 1
+				if col - 1 > 0 then
+					front = line:sub(1, col - 1)
+				end
+				if line:len() >= col + 1 then
+					back = line:sub(col + 1, line:len())
+				end
+				line = front .. back
+				term:clearLine()
+				write(prompt .. line)
 			end
-		elseif key == getKeyboard().leftScanCode then
+		elseif key == kbrd.keycodes.left then
 			if col > 0 then
 				col = col - 1
-				getTerminal():setPosition(getTerminal():getCurrentRow(), col + prompt:len())
+				term:setPosition(term:getCurrentRow(), col + prompt:len() - 1)
 			end
-		elseif key == getKeyboard().rightScanCode then
+		elseif key == kbrd.keycodes.right then
 			if col < line:len() then
 				col = col + 1
-				getTerminal():setPosition(getTerminal():getCurrentRow(), col + prompt:len())
+				term:setPosition(term:getCurrentRow(), col + prompt:len() - 1)
 			end
-		elseif key == getKeyboard().upScanCode then
+		elseif key == kbrd.keycodes.up then
 			if historyNumber >= #history then
 				historyNumber = historyNumber - 1
 				line = history[historyNumber]
@@ -115,21 +126,21 @@ while true do
 					line = ""
 				end
 				col = line:len() + 1 
-				getTerminal():clearLine()
+				term:clearLine()
 				write(prompt .. line)
 			end
-		elseif key == getKeyboard().downScanCode then
+		elseif key == kbrd.keycodes.down then
 			if historyNumber < #history then
 				historyNumber = historyNumber + 1
 				line = history[historyNumber]
 				if not line then
 					line = ""
 				end
-				getTerminal():clearLine()
+				term:clearLine()
 				col = line:len() + 1
 				write(prompt .. line)
 			end
 		end
 	end
-	getTerminal():setEditing(false)
+	term:setEditing(false)
 end

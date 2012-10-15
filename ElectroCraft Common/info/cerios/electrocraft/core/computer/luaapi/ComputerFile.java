@@ -215,7 +215,7 @@ public class ComputerFile implements LuaAPI {
 		if (resource != null)
 			return null;
 		try {
-			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile.getParentFile())) {
+			if (!Utils.baseDirectoryContains(computer.getBaseDirectory(), javaFile)) {
 				throw new LuaRuntimeException("Error! Not allowed to open files outside of its base directory!");
 			}
 		} catch (IOException e) { throw new LuaRuntimeException("Error checking if path is valid"); }

@@ -1,8 +1,7 @@
 local tArgs = {...}
-os = {}
 local realDebug = debug
 debug = nil
-getTerminal():clear()
+os.getTerminal():clear()
 
 local nativeYield = coroutine.yield or nativeYeild
 local events = {}
@@ -78,11 +77,11 @@ function dofile(file, ...)
 end
 
 function write(string)
-	getTerminal():print(string)
+	os.getTerminal():print(string)
 end
 
 function print(string)
-	getTerminal():printLine(string)
+	os.getTerminal():printLine(string)
 end
 
 local saveFuncs = {}
@@ -92,7 +91,7 @@ function os.registerSaveHandler(func)
 end
 
 function os.shutdown()
-	getComputer():shutdown()
+	os.getComputer():shutdown()
 end
 
 function os.run(func, ...)
@@ -120,7 +119,13 @@ function onSave(storage)
 	end
 end
 
-local nativeSaveCallback = saveCallback
+kbrd = {}
+kbrd.keycodes = {
+	up = os.getKeyboard().upScanCode, down = os.getKeyboard().downScanCode, left = os.getKeyboard().leftScanCode, right = os.getKeyboard().rightScanCode,
+	ctrl = os.getKeyboard().ctrlScanCode, backspace = os.getKeyboard().backspaceScanCode
+}
+
+local nativeSaveCallback = os.saveCallback
 saveCallback = nil
 nativeSaveCallback("onSave")
 
@@ -138,10 +143,10 @@ if #tArgs > 1 then
 		print(err)
 	end
 else
-	print("Booting up Cerios!")
+	write("Booting up Cerios!")
 	for i = 1, 20 do
 		write(".")
-		sleep(20)
+		os.sleep(20)
 	end
 	write("\n")
 	print("Welcome to Cerios!")
@@ -151,4 +156,12 @@ else
 		print(err)
 	end
 end
+
+write("Shutting down!")
+for i = 1, 20 do
+	write(".")
+	os.sleep(20)
+end
+print("\nGoodbye!")
+
 os.shutdown()

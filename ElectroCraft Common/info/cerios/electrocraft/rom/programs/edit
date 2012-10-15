@@ -33,7 +33,7 @@ if not fileHandle:canRead() or not fileHandle:canWrite() or fileHandle:isDirecto
 	return;
 end
 
-getTerminal():clear()
+os.getTerminal():clear()
 
 local data = {}
 local running = true
@@ -42,6 +42,7 @@ local col = 1
 local row = 1
 local menuIndex = 1;
 local menuItems = { "quit", "exit", "save" }
+local term = os.getTerminal()
 
 function save()
 	local write = fileHandle:open("w")
@@ -71,7 +72,7 @@ end
 read:close()
 
 function displayMenu()
-	getTerminal():setPosition(getTerminal():getRows() - 1, 0);
+	term:setPosition(term:getRows() - 1, 0);
 	write("Menu: ")
 	for i, v in ipairs(menuItems) do
 		if i == menuIndex then
@@ -80,7 +81,7 @@ function displayMenu()
 			write(v .. " ")
 		end
 	end
-	getTerminal():setPosition(row - 1, col)
+	term:setPosition(row - 1, col)
 end
 
 if #data <= 0 then
@@ -92,7 +93,7 @@ end
 
 while running do
 	local event, key = os.waitForEvent("key", "code")
-	getTerminal():setEditing(true)
+	term:setEditing(true)
 	if inMenu then
 		if key == "\n" then
 			if menuIndex == 1 then
@@ -104,24 +105,24 @@ while running do
 				save()
 			end
 			inMenu = not inMenu
-		elseif key == getKeyboard().leftScanCode then
+		elseif key == kbrd.keycodes.left then
 			if menuIndex > 1 then
 				menuIndex = menuIndex - 1
 			end
-		elseif key == getKeyboard().rightScanCode then
+		elseif key == kbrd.keycodes.right then
 			if menuIndex < #menuItems then
 				menuIndex = menuIndex + 1
 			end
 		end
-		if key == getKeyboard().ctrlScanCode then
-			if #data >= getTerminal():getRows() and data[getTerminal():getRows()] then
-				getTerminal():setPosition(getTerminal():getRows() - 1, 1);
-				write(data[getTerminal():getRows()])
-				getTerminal():setPosition(row - 1, col)
+		if key == kbrd.keycodes.ctrl then
+			if #data >= term:getRows() and data[term:getRows()] then
+				term:setPosition(term:getRows() - 1, 0);
+				write(data[term:getRows()])
+				term:setPosition(row - 1, col)
 			else
-				getTerminal():setPosition(getTerminal():getRows() - 1, 1);
-				getTerminal():clearLine()
-				getTerminal():setPosition(row - 1, col)
+				term:setPosition(term:getRows() - 1, 0);
+				term:clearLine()
+				term:setPosition(row - 1, col)
 			end
 			inMenu = not inMenu
 		else
@@ -129,38 +130,38 @@ while running do
 		end
 	elseif event == "key" then
 		if key == "\n" then
-			getTerminal():insertRow(row)
 			if data[row] and data[row]:len() > col + 1 then
 				local part = data[row]:sub(col + 1, data[row]:len())
 				data[row] = data[row]:sub(0, col)
-				getTerminal():clearLine()
+				term:clearLine()
 				write(data[row])
 				table.insert(data, row + 1, part)
-				getTerminal():setPosition(row, 0)
+				write("\n")
+				term:setPosition(row, 0)
 				write(part)
 			else
 				table.insert(data, row + 1, "")
 			end
-			row = row + 1
 			col = 0
-			getTerminal():setPosition(row - 1, col)
+			row = row + 1
+			term:setPosition(row - 1, col)
 		else
 			local front = ""
 			local back = ""
 			if col >= 1 then
 				front = data[row]:sub(1, col)
 			end
-			if data[row]:len() >= col + 1 then
+			if data[row] and data[row]:len() >= col + 1 then
 				back = data[row]:sub(col + 1, data[row]:len())
 			end
 			data[row] = front .. key .. back
 			col = col + 1
-			getTerminal():clearLine()
+			term:clearLine()
 			write(data[row])
-			getTerminal():setPosition(row - 1, col)
+			term:setPosition(row - 1, col)
 		end
 	elseif event == "code" then
-		if key == getKeyboard().backspaceScanCode then
+		if key == kbrd.keycodes.backspace then
 			if col > 0 and data[row] and data[row]:len() > 0 then
 				local front = ""
 				local back = ""
@@ -171,10 +172,10 @@ while running do
 					back = data[row]:sub(col + 1, data[row]:len())
 				end
 				data[row] = front..back
-				getTerminal():clearLine()
+				term:clearLine()
 				write(data[row])
 				col = col - 1
-				getTerminal():setPosition(row - 1, col)
+				term:setPosition(row - 1, col)
 			elseif #data > 1 and row > 1 then
 				if data[row] and data[row]:len() > 0 then
 					local part = data[row]:sub(0, data[row]:len())
@@ -183,48 +184,49 @@ while running do
 					else
 						data[row - 1] = data[row - 1] .. part
 					end
-					getTerminal():setPosition(row - 2, data[row - 1]:len())
+					term:setPosition(row - 2, data[row - 1]:len())
 					write(part)
 				end
 				table.remove(data, row)
+				term:deleteRow(row - 1)
 				row = row - 1
 				col = data[row]:len()
-				getTerminal():setPosition(row - 1, col)
+				term:setPosition(row - 1, col)
 			end
-		elseif key == getKeyboard().ctrlScanCode then
+		elseif key == kbrd.keycodes.ctrl then
 			inMenu = not inMenu
 			if inMenu then
 				displayMenu()
 			end
-		elseif key == getKeyboard().leftScanCode then
+		elseif key == kbrd.keycodes.left then
 			if col > 0 then
 				col = col - 1
-				getTerminal():setPosition(row - 1, col)
+				term:setPosition(row - 1, col)
 			end
-		elseif key == getKeyboard().rightScanCode then
+		elseif key == kbrd.keycodes.right then
 			if data[row] and col < data[row]:len() then
 				col = col + 1
-				getTerminal():setPosition(row - 1, col)
+				term:setPosition(row - 1, col)
 			end
-		elseif key == getKeyboard().upScanCode then
+		elseif key == kbrd.keycodes.up then
 			if row > 1 then
 				row = row - 1
 				if data[row]:len() < col then
 					col = data[row]:len()
 				end
-				getTerminal():setPosition(row - 1, col)
+				term:setPosition(row - 1, col)
 			end
-		elseif key == getKeyboard().downScanCode then
+		elseif key == kbrd.keycodes.down then
 			if row + 1 <= #data then
 				row = row + 1
 				if data[row]:len() < col then
 					col = data[row]:len()
 				end
-				getTerminal():setPosition(row - 1, col)
+				term:setPosition(row - 1, col)
 			end
 		end
 	end
-	getTerminal():setEditing(false)
+	term:setEditing(false)
 end
 
-getTerminal():clear()
+term:clear()

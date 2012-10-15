@@ -42,9 +42,11 @@ public class Terminal extends Writer {
 		synchronized(syncObject) {
 			if (getRow(row) != null) {
 				for (int i = columnOffset; i < columns + columnOffset; i++) {
-					if (getRow(row).get(i) != null)
-						if (!Character.isIdentifierIgnorable(getRow(row).get(i)))
+					if (getRow(row).get(i) != null) {
+						if (!Character.isIdentifierIgnorable(getRow(row).get(i))) {
 							output += getRow(row).get(i);
+						}
+					}
 				}
 			}
 		}
@@ -155,14 +157,18 @@ public class Terminal extends Writer {
 	@ExposedToLua
 	public void setPosition(int row, int column) {
 		synchronized(syncObject) {
-			if (row > rows)
+			if (row > rows || row < 0)
 				row = rows;
 			if (column > columns) {
 				columnOffset = column - columns;
 				column = columns;
+			} else if (column < 0) {
+				column = columns;
+				columnOffset = 0;
 			} else {
 				columnOffset = 0;
 			}
+			
 			this.currentRow = row;
 			Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 			List<Integer> rows = new ArrayList<Integer>();
@@ -171,17 +177,15 @@ public class Terminal extends Writer {
 			for (int j = 0; j < rows.size(); j++) {
 				newTerminal.put(j, terminal.get(rows.get(j)));
 			}
-			if (rows.size() < row) {
-				for (int i = rows.size(); i < row; i++) {
-					newTerminal.put(i, new TreeMap<Integer, Character>());
-				}
+			for (int i = rows.size(); i < row; i++) {
+				newTerminal.put(i, new TreeMap<Integer, Character>());
 			}
 			terminal = newTerminal;
 			this.currentColumn = column;
 		}
 	}
 	
-	@ExposedToLua(value = false)
+	@ExposedToLua
 	public void deleteRow(int row) {
 		if (terminal.size() < row)
 			return;
@@ -198,6 +202,7 @@ public class Terminal extends Writer {
 				newTerminal.put(j, terminal.get(rows.get(j)));
 			}
 		}
+		newTerminal.put(rows.size(), new TreeMap<Integer, Character>());
 		terminal = newTerminal;
 	}
 	
@@ -213,7 +218,7 @@ public class Terminal extends Writer {
 			if (j == row) {
 				newTerminal.put(j, new TreeMap<Integer, Character>());
 			} else if (j > row) {
-				newTerminal.put(j + 1, terminal.get(rows.get(j)));
+				newTerminal.put(j + 1, terminal.get(rows.get(j - 1)));
 			} else {
 				newTerminal.put(j, terminal.get(rows.get(j)));
 			}
@@ -287,7 +292,20 @@ public class Terminal extends Writer {
 						terminal = newTerminal;
 						currentRow = this.rows - 1;
 					} else {
-						terminal.put(currentRow, new TreeMap<Integer, Character>());
+						Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
+						List<Integer> rows = new ArrayList<Integer>();
+						rows.addAll(terminal.keySet());
+						Collections.sort(rows);
+						for (int j = 0; j < rows.size() + 1; j++) {
+							if (j == currentRow || rows.size() <= j) {
+								newTerminal.put(j, new TreeMap<Integer, Character>());
+							} else if (j > currentRow) {
+								newTerminal.put(j + 1, terminal.get(rows.get(j - 1)));
+							} else {
+								newTerminal.put(j, terminal.get(rows.get(j)));
+							}
+						}
+						terminal = newTerminal;
 					}
 					currentColumn = 0;
 					columnOffset = 0;

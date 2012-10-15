@@ -333,7 +333,7 @@ public class Computer {
 	public void tick() {
 		if (killYielded)
 			postEvent("resume");
-		
+
 		if (getKeyboard().getKeysInBuffer() > 0) {
 			if (getKeyboard().peak() > Character.MAX_VALUE)
 				postEvent("code", getKeyboard().popKey());
@@ -376,7 +376,7 @@ public class Computer {
 				if (luaState.isBoolean(1))
 					if (!luaState.checkBoolean(1, true))
 						throw new LuaRuntimeException("Runtime error!");
-				if (luaState.getTop() == 2 && luaState.isNumber(-1)) {
+				if (luaState.isNumber(-1)) {
 					finishedSleeping = false;
 					sleepTimer.schedule(new TimerTask() {
 						@Override
@@ -395,13 +395,14 @@ public class Computer {
 			e.printStackTrace(new PrintWriter(getTerminal()));
 		} catch (LuaRuntimeException e) {
 			getTerminal().print("Runtime Error!");
-			dumpStack();
 			if (luaState.isString(-1))
 				getTerminal().print(luaState.checkString(-1));
 			else {
 				e.printLuaStackTrace(new PrintWriter(getTerminal()));
 				e.printLuaStackTrace();
 			}
+			this.setRunning(false);
+			return;
 		}
 		luaState.pop(luaState.getTop());
 	}
@@ -476,130 +477,128 @@ public class Computer {
 		getLuaState().openLib(Library.DEBUG);
 		getLuaState().openLib(Library.JAVA);
 		getLuaState().openLib(Library.MATH);
-		getLuaState().openLib(Library.PACKAGE);
 		getLuaState().openLib(Library.PLUTO);
 		getLuaState().openLib(Library.STRING);
 		getLuaState().openLib(Library.TABLE);
-		
+
 		// Reseting it, if not enabled will enable it
 		luaState.install_kill_hook(100);
-		
+
 		// Load base ElectroCraft functions
-		NamedJavaFunction getTerminal = new NamedJavaFunction() {
-			Computer computer;
+		NamedJavaFunction[] osFunctions = new NamedJavaFunction[] {
+				new NamedJavaFunction() {
+					Computer computer;
 
-			public NamedJavaFunction init(Computer computer) {
-				this.computer = computer;
-				return this;
-			}
+					public NamedJavaFunction init(Computer computer) {
+						this.computer = computer;
+						return this;
+					}
 
-			@Override
-			public int invoke(LuaState luaState) {
-				luaState.pushJavaObject(computer.getTerminal());
-				return 1;
-			}
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushJavaObject(computer.getTerminal());
+						return 1;
+					}
 
-			@Override
-			public String getName() {
-				return "getTerminal";
-			}
-		}.init(this);
+					@Override
+					public String getName() {
+						return "getTerminal";
+					}
+				}.init(this),
 
-		getLuaState().register(getTerminal);
+				new NamedJavaFunction() {
+					@Override
+					public int invoke(LuaState luaState) {
+						return luaState.yield(1);
+					}
 
-		NamedJavaFunction sleep = new NamedJavaFunction() {
-			@Override
-			public int invoke(LuaState luaState) {
-				return luaState.yield(1);
-			}
+					@Override
+					public String getName() {
+						return "sleep";
+					}
+				},
 
-			@Override
-			public String getName() {
-				return "sleep";
-			}
+				new NamedJavaFunction() {
+					Computer computer;
+
+					public NamedJavaFunction init(Computer computer) {
+						this.computer = computer;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushJavaObject(computer);
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "getComputer";
+					}
+				}.init(this),
+
+				new NamedJavaFunction() {
+					Computer computer;
+
+					public NamedJavaFunction init(Computer computer) {
+						this.computer = computer;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushJavaObject(computer.getKeyboard());
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "getKeyboard";
+					}
+				}.init(this),
+
+				new NamedJavaFunction() {
+					Computer computer;
+
+					public NamedJavaFunction init(Computer computer) {
+						this.computer = computer;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushJavaObject(computer.getVideoCard());
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "getVideoCard";
+					}
+				}.init(this),
+
+				new NamedJavaFunction() {
+					Computer computer;
+
+					public NamedJavaFunction init(Computer computer) {
+						this.computer = computer;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						onSaveMethods.add(luaState.checkString(-1));
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "saveCallback";
+					}
+				}.init(this)
 		};
-
-		getLuaState().register(sleep);
-
-		getLuaState().register(new NamedJavaFunction() {
-			Computer computer;
-
-			public NamedJavaFunction init(Computer computer) {
-				this.computer = computer;
-				return this;
-			}
-
-			@Override
-			public int invoke(LuaState luaState) {
-				luaState.pushJavaObject(computer);
-				return 1;
-			}
-
-			@Override
-			public String getName() {
-				return "getComputer";
-			}
-		}.init(this));
-
-		getLuaState().register(new NamedJavaFunction() {
-			Computer computer;
-
-			public NamedJavaFunction init(Computer computer) {
-				this.computer = computer;
-				return this;
-			}
-
-			@Override
-			public int invoke(LuaState luaState) {
-				luaState.pushJavaObject(computer.getKeyboard());
-				return 1;
-			}
-
-			@Override
-			public String getName() {
-				return "getKeyboard";
-			}
-		}.init(this));
-
-		getLuaState().register(new NamedJavaFunction() {
-			Computer computer;
-
-			public NamedJavaFunction init(Computer computer) {
-				this.computer = computer;
-				return this;
-			}
-
-			@Override
-			public int invoke(LuaState luaState) {
-				luaState.pushJavaObject(computer.getVideoCard());
-				return 1;
-			}
-
-			@Override
-			public String getName() {
-				return "getVideoCard";
-			}
-		}.init(this));
-
-		getLuaState().register(new NamedJavaFunction() {
-			Computer computer;
-
-			public NamedJavaFunction init(Computer computer) {
-				this.computer = computer;
-				return this;
-			}
-
-			@Override
-			public int invoke(LuaState luaState) {
-				onSaveMethods.add(luaState.checkString(-1));
-				return 0;
-			}
-
-			@Override
-			public String getName() {
-				return "saveCallback";
-			}
-		}.init(this));
+		luaState.register("os", osFunctions);
 
 		// Load ElectroCraft default libraries
 		loadAPI(new ComputerFile());
@@ -700,7 +699,7 @@ public class Computer {
 	public void shutdown() {
 		running = false;
 	}
-	
+
 	@ExposedToLua(value = false)
 	public void setRunning(boolean value) {
 		running = value;
