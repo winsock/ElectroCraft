@@ -66,7 +66,7 @@ public class MinecraftInterface implements LuaAPI {
 
 	@Override
 	public void tick(Computer computer) {
-		// TODO Auto-generated method stub
-		
+		for (NetworkBlock block : ioMap.values())
+			block.tick(computer);
 	}
 }

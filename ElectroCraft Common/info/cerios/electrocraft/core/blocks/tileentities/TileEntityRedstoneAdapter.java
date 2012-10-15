@@ -23,7 +23,9 @@ import net.minecraft.src.World;
 public class TileEntityRedstoneAdapter extends NetworkBlock {
 
     private boolean redstonePower = false;
+    private boolean externalPower = false;
     private boolean receiveMode = false;
+    private boolean outputChanged = false;
     private boolean inputChanged = false;
 
     public TileEntityRedstoneAdapter() {
@@ -34,6 +36,14 @@ public class TileEntityRedstoneAdapter extends NetworkBlock {
     @Override
     public void updateEntity() {
     	super.updateEntity();
+    	if (outputChanged) {
+    		worldObj.markBlockAsNeedsUpdate(xCoord, yCoord, zCoord);
+    		worldObj.notifyBlocksOfNeighborChange(xCoord, yCoord, zCoord, ElectroBlocks.REDSTONE_ADAPTER.getBlock().blockID);
+    		outputChanged = false;
+    	}
+    	if (externalPower != worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord)) {
+    		setExternalState(worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord));
+    	}
     }
     
     public boolean getRedstonePower() {
@@ -69,24 +79,30 @@ public class TileEntityRedstoneAdapter extends NetworkBlock {
     
     @ExposedToLua
     public boolean getState() {
-    	return redstonePower;
+    	return receiveMode ? externalPower : redstonePower;
     }
     
     @ExposedToLua
     public void setState(final boolean state) {
-    	if (receiveMode && state != redstonePower) {
-    		inputChanged = true;
-    	} else if (redstonePower != state) {
-    		worldObj.markBlockAsNeedsUpdate(xCoord, yCoord, zCoord);
-    		worldObj.notifyBlocksOfNeighborChange(xCoord, yCoord, zCoord, ElectroBlocks.REDSTONE_ADAPTER.getBlock().blockID);
+    	if (redstonePower != state) {
+    		outputChanged = true;
     	}
     	redstonePower = state;
     }
-
+    
+    @ExposedToLua(value = false)
+    public void setExternalState(boolean state) {
+    	if (receiveMode && state != externalPower) {
+    		inputChanged = true;
+    	}
+    	externalPower = state;
+    }
+    
+    @ExposedToLua(value = false)
 	@Override
 	public void tick(Computer computer) {
 		if (inputChanged) {
-			computer.postEvent("rs", dataAddress, redstonePower);
+			computer.postEvent("rs", dataAddress, externalPower);
 			inputChanged = false;
 		}
 	}

@@ -164,9 +164,19 @@ public class Terminal extends Writer {
 				columnOffset = 0;
 			}
 			this.currentRow = row;
-			while (terminal.size() - 1 <= row) {
-				terminal.put(terminal.size(), new TreeMap<Integer, Character>());
+			Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
+			List<Integer> rows = new ArrayList<Integer>();
+			rows.addAll(terminal.keySet());
+			Collections.sort(rows);
+			for (int j = 0; j < rows.size(); j++) {
+				newTerminal.put(j, terminal.get(rows.get(j)));
 			}
+			if (rows.size() < row) {
+				for (int i = rows.size(); i < row; i++) {
+					newTerminal.put(i, new TreeMap<Integer, Character>());
+				}
+			}
+			terminal = newTerminal;
 			this.currentColumn = column;
 		}
 	}
@@ -266,7 +276,7 @@ public class Terminal extends Writer {
 				if (Character.isIdentifierIgnorable(arg0[i]))
 					continue;
 				if (arg0[i] == '\n') {
-					if (++currentRow > rows) {
+					if (++currentRow >= rows) {
 						Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 						List<Integer> rows = new ArrayList<Integer>();
 						rows.addAll(terminal.keySet());
@@ -275,7 +285,7 @@ public class Terminal extends Writer {
 							newTerminal.put(j - 1, terminal.get(rows.get(j)));
 						}
 						terminal = newTerminal;
-						currentRow = this.rows;
+						currentRow = this.rows - 1;
 					} else {
 						terminal.put(currentRow, new TreeMap<Integer, Character>());
 					}

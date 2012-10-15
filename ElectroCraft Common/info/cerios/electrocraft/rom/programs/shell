@@ -59,7 +59,7 @@ while true do
 	if key == "\n" then
 		write("\n")
 		local params = {}
-		for match in string.gmatch(line, "[^ \t]+") do
+		for match in string.gmatch(line, "[^%s]+") do
 			table.insert(params, match)
 		end
 		if #params > 0 then
@@ -68,8 +68,12 @@ while true do
 			if not ok and err then
 				print(err)
 			end
+			getTerminal():setEditing(true)
 		end
-		table.insert(history, line)
+		if table[#table] ~= line then
+			table.insert(history, line)
+		end
+		historyNumber = #history + 1
 		line = ""
 		col = 1
 		write(prompt)
@@ -104,26 +108,25 @@ while true do
 				getTerminal():setPosition(getTerminal():getCurrentRow(), col + prompt:len())
 			end
 		elseif key == getKeyboard().upScanCode then
-			if #history > 0 and #history > historyNumber then
-				historyNumber = historyNumber + 1
-				local oldLine = line
+			if historyNumber >= #history then
+				historyNumber = historyNumber - 1
 				line = history[historyNumber]
-				table.insert(history, oldLine)
-				col = line:len()
+				if not line then
+					line = ""
+				end
+				col = line:len() + 1 
 				getTerminal():clearLine()
 				write(prompt .. line)
 			end
 		elseif key == getKeyboard().downScanCode then
-			if historyNumber > 0 then
-				history[historyNumber] = line
-				historyNumber = historyNumber - 1
+			if historyNumber < #history then
+				historyNumber = historyNumber + 1
 				line = history[historyNumber]
-				if line then
-					col = line:len()
-				else
-					col = 1
+				if not line then
+					line = ""
 				end
 				getTerminal():clearLine()
+				col = line:len() + 1
 				write(prompt .. line)
 			end
 		end

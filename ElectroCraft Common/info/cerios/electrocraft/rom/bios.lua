@@ -2,6 +2,7 @@ local tArgs = {...}
 os = {}
 local realDebug = debug
 debug = nil
+getTerminal():clear()
 
 local nativeYield = coroutine.yield or nativeYeild
 local events = {}

@@ -15,6 +15,11 @@ public class VideoCard {
 	}
 	
 	@ExposedToLua
+	public void clear() {
+		this.data = new byte[width * height];
+	}
+	
+	@ExposedToLua
 	public int getWidth() {
 		return width;
 	}

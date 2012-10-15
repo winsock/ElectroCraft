@@ -30,12 +30,12 @@ public class BlockRedstoneAdapter extends BlockNetwork {
     
     @Override
     public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
+    	super.onNeighborBlockChange(world, x, y, z, id);
     	if (world.getBlockTileEntity(x, y, z) instanceof TileEntityRedstoneAdapter) {
             TileEntityRedstoneAdapter adapter = (TileEntityRedstoneAdapter) world.getBlockTileEntity(x, y, z);
             if (world.isBlockIndirectlyGettingPowered(x, y, z) != adapter.getState())
-            	adapter.setState(world.isBlockIndirectlyGettingPowered(x, y, z));
+            	adapter.setExternalState(world.isBlockIndirectlyGettingPowered(x, y, z));
     	}
-    	super.onNeighborBlockChange(world, x, y, z, id);
     }
 
     @Override
