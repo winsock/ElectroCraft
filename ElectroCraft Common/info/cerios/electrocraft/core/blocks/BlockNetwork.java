@@ -59,7 +59,7 @@ public abstract class BlockNetwork extends ElectroBlock {
     @Override
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int par6, float par7, float par8, float par9) {
     	if (player instanceof EntityPlayerMP) {
-    		if (ElectroCraft.instance.isShiftHeld()) {
+    		if (player.isSneaking()) {
     			if (world.getBlockId(x, y, z) == this.blockID) {
     				if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
     					NetworkBlock block = (NetworkBlock)world.getBlockTileEntity(x, y, z);

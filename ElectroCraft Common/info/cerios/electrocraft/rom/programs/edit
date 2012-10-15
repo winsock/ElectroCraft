@@ -139,6 +139,9 @@ while running do
 				write("\n")
 				term:setPosition(row, 0)
 				write(part)
+				for i=row+2, #data do
+					write("\n" .. data[i])
+				end
 			else
 				table.insert(data, row + 1, "")
 			end
