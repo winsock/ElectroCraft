@@ -40,6 +40,7 @@ local running = true
 local inMenu = false
 local col = 1
 local row = 1
+local rowOffset = 0
 local menuIndex = 1;
 local menuItems = { "quit", "exit", "save" }
 local term = os.getTerminal()
@@ -84,10 +85,29 @@ function displayMenu()
 	term:setPosition(row - 1, col)
 end
 
+function redrawScreen()
+	term:clear()
+	local first = true
+	for i=0, term:getRows() do
+		if not first then
+			write("\n")
+		end
+		if data[i + rowOffset] then
+			write(data[i + rowOffset])
+		end
+		first = false
+	end
+	term:setPosition(row - 1, col)
+end
+
 if #data <= 0 then
 	table.insert(data, "")
 else
 	row = #data
+	rowOffset = row - term:getRows()
+	if rowOffset < 0 then
+		rowOffset = 0
+	end
 	col = data[#data]:len()
 end
 
@@ -115,9 +135,9 @@ while running do
 			end
 		end
 		if key == kbrd.keycodes.ctrl then
-			if #data >= term:getRows() and data[term:getRows()] then
-				term:setPosition(term:getRows() - 1, 0);
-				write(data[term:getRows()])
+			if #data >= term:getRows() and data[term:getRows() + rowOffset] then
+				term:setPosition(term:getRows() + rowOffset - 1, 0);
+				write(data[term:getRows() + rowOffset])
 				term:setPosition(row - 1, col)
 			else
 				term:setPosition(term:getRows() - 1, 0);
@@ -130,70 +150,78 @@ while running do
 		end
 	elseif event == "key" then
 		if key == "\n" then
-			if data[row] and data[row]:len() > col + 1 then
-				local part = data[row]:sub(col + 1, data[row]:len())
-				data[row] = data[row]:sub(0, col)
+			if data[row + rowOffset] and data[row + rowOffset]:len() > col + 1 then
+				local part = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
+				data[row + rowOffset] = data[row + rowOffset]:sub(0, col)
 				term:clearLine()
-				write(data[row])
-				table.insert(data, row + 1, part)
+				write(data[row + rowOffset])
+				table.insert(data, row + rowOffset + 1, part)
 				write("\n")
 				term:setPosition(row, 0)
 				write(part)
-				for i=row+2, #data do
-					write("\n" .. data[i])
+				for i = row + rowOffset + 2, term:getRows() + rowOffset do
+					if data[i] then
+						write("\n" .. data[i])
+					end
 				end
+				col = 0
+				term:setPosition(row - 1, col)
 			else
-				table.insert(data, row + 1, "")
+				col = 0
+				table.insert(data, row + rowOffset + 1, "")
+				write("\n")
 			end
-			col = 0
-			row = row + 1
-			term:setPosition(row - 1, col)
-		else
+			if row + 1 > term:getRows() then
+				rowOffset = rowOffset + 1
+			else
+				row = row + 1
+			end
+		elseif term:isCharVisible(key) then
 			local front = ""
 			local back = ""
-			if col >= 1 then
-				front = data[row]:sub(1, col)
+			if col >= 1 and data[row + rowOffset] then
+				front = data[row + rowOffset]:sub(1, col)
 			end
-			if data[row] and data[row]:len() >= col + 1 then
-				back = data[row]:sub(col + 1, data[row]:len())
+			if data[row + rowOffset] and data[row + rowOffset]:len() >= col + 1 then
+				back = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
 			end
-			data[row] = front .. key .. back
+			data[row + rowOffset] = front .. key .. back
 			col = col + 1
 			term:clearLine()
-			write(data[row])
+			write(data[row + rowOffset])
 			term:setPosition(row - 1, col)
 		end
 	elseif event == "code" then
 		if key == kbrd.keycodes.backspace then
-			if col > 0 and data[row] and data[row]:len() > 0 then
+			if col > 0 and data[row + rowOffset] and data[row + rowOffset]:len() > 0 then
 				local front = ""
 				local back = ""
 				if col - 1 > 0 then
-					front = data[row]:sub(1, col - 1)
+					front = data[row + rowOffset]:sub(1, col - 1)
 				end
-				if data[row]:len() >= col + 1 then
-					back = data[row]:sub(col + 1, data[row]:len())
+				if data[row + rowOffset]:len() >= col + 1 then
+					back = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
 				end
-				data[row] = front..back
+				data[row + rowOffset] = front..back
 				term:clearLine()
-				write(data[row])
+				write(data[row + rowOffset])
 				col = col - 1
 				term:setPosition(row - 1, col)
 			elseif #data > 1 and row > 1 then
-				if data[row] and data[row]:len() > 0 then
-					local part = data[row]:sub(0, data[row]:len())
-					if not data[row - 1] then
-						data[row - 1] = part
+				if data[row + rowOffset] and data[row + rowOffset]:len() > 0 then
+					local part = data[row + rowOffset]:sub(0, data[row + rowOffset]:len())
+					if not data[row + rowOffset - 1] then
+						data[row + rowOffset - 1] = part
 					else
-						data[row - 1] = data[row - 1] .. part
+						data[row + rowOffset - 1] = data[row + rowOffset - 1] .. part
 					end
-					term:setPosition(row - 2, data[row - 1]:len())
+					term:setPosition(row - 2, data[row + rowOffset - 1]:len())
 					write(part)
+					col = data[row + rowOffset]:len()
 				end
-				table.remove(data, row)
+				table.remove(data, row + rowOffset)
 				term:deleteRow(row - 1)
 				row = row - 1
-				col = data[row]:len()
 				term:setPosition(row - 1, col)
 			end
 		elseif key == kbrd.keycodes.ctrl then
@@ -207,25 +235,39 @@ while running do
 				term:setPosition(row - 1, col)
 			end
 		elseif key == kbrd.keycodes.right then
-			if data[row] and col < data[row]:len() then
+			if data[row + rowOffset] and col < data[row + rowOffset]:len() then
 				col = col + 1
 				term:setPosition(row - 1, col)
 			end
 		elseif key == kbrd.keycodes.up then
-			if row > 1 then
-				row = row - 1
-				if data[row]:len() < col then
-					col = data[row]:len()
+			if (rowOffset > 0) and (row <= 1) then
+				if data[row + rowOffset - 1] then
+					rowOffset = rowOffset - 1
+					term:insertRow(0)
+					term:setPosition(0, 0)
+					write(data[row + rowOffset])
 				end
+			elseif row > 1 then
+				if data[row + rowOffset - 1] and data[row + rowOffset - 1]:len() < col then
+					col = data[row + rowOffset - 1]:len()
+				end
+				row = row - 1
 				term:setPosition(row - 1, col)
 			end
 		elseif key == kbrd.keycodes.down then
-			if row + 1 <= #data then
+			if row < term:getRows() then
 				row = row + 1
-				if data[row]:len() < col then
-					col = data[row]:len()
+				if not data[row + rowOffset] then
+					row = row - 1
+				elseif data[row + rowOffset]:len() < col then
+					col = data[row + rowOffset]:len()
 				end
 				term:setPosition(row - 1, col)
+			elseif rowOffset < #data then
+				if data[row + rowOffset + 1] then
+					rowOffset = rowOffset + 1
+					write("\n" .. data[row + rowOffset])
+				end
 			end
 		end
 	end

@@ -249,6 +249,10 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 				} else {
 					down = false;
 				}
+				if (Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
+					mc.displayGuiScreen(null);
+					return;
+				}
 				synchronized (syncObject) {
 					ComputerInputPacket inputPacket = new ComputerInputPacket();
 					if (Keyboard.isKeyDown(Keyboard.KEY_UP))

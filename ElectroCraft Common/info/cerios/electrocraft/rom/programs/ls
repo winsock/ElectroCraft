@@ -15,10 +15,7 @@ local files = folder:listFiles()
 local makeNewLine = false
 for i=1,#files do
 	local file = files[i]
-	local isFile = false
-	if file:isFile() then
-		isFile = true
-	end
+	local isFile = not file:isDirectory()
 	local size = file:length()
 	local suffix = "B"
 	if size > 1024 then

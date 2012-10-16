@@ -154,6 +154,7 @@ public class UniversialPacketHandler implements IPacketHandler {
 				}
 			} catch (Exception e) {
 				ElectroCraft.instance.getLogger().severe("Unable to parse packet sent on our channel!");
+				e.printStackTrace();
 			}
 		} else {
 			// Must be a client sided packet

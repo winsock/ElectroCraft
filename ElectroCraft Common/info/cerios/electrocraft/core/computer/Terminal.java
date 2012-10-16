@@ -208,13 +208,11 @@ public class Terminal extends Writer {
 	
 	@ExposedToLua
 	public void insertRow(int row) {
-		if (terminal.size() >= rows)
-			return;
 		Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 		List<Integer> rows = new ArrayList<Integer>();
 		rows.addAll(terminal.keySet());
 		Collections.sort(rows);
-		for (int j = 0; j < rows.size(); j++) {
+		for (int j = 0; j < rows.size() + 1; j++) {
 			if (j == row) {
 				newTerminal.put(j, new TreeMap<Integer, Character>());
 			} else if (j > row) {
@@ -223,6 +221,12 @@ public class Terminal extends Writer {
 				newTerminal.put(j, terminal.get(rows.get(j)));
 			}
 		}
+		terminal = newTerminal;
+	}
+	
+	@ExposedToLua
+	public boolean isCharVisible(String string) {
+		return !Character.isIdentifierIgnorable(string.charAt(0));
 	}
 
 	@ExposedToLua
