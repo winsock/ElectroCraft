@@ -4,12 +4,13 @@ import info.cerios.electrocraft.core.network.ComputerInputPacket;
 import info.cerios.electrocraft.core.network.ModifierPacket;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
 @ExposedToLua
-public class Keyboard extends Reader {
+public class Keyboard extends InputStream {
 	
 	@ExposedToLua
 	public static final int upScanCode = 1999999256, downScanCode = 1999999257, leftScanCode = 1999999258;
@@ -106,23 +107,9 @@ public class Keyboard extends Reader {
 	@ExposedToLua(value = false)
 	@Override
 	public void close() throws IOException { }
-	
-	@ExposedToLua(value = false)
+
 	@Override
-	public int read(char[] arg0, int arg1, int arg2) throws IOException {
-		if (keyBuffer.size() <= 0) {
-			return -1;
-		}
-		int i = arg1;
-		for (; i < arg2; i++) {
-			int code = 0x0;
-			if (!Character.isDefined(code = popKey()))
-				continue;
-			arg0[i] = (char) code;
-			if (arg0[i] == '\0') {
-				break;
-			}
-		}
-		return i - arg1;
+	public int read() throws IOException {
+		return waitForKey();
 	}
 }

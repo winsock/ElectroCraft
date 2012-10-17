@@ -67,7 +67,8 @@ public class UniversialPacketHandler implements IPacketHandler {
 				} else if (ecPacket.getType() == Type.GUI) {
 					GuiPacket guiPacket = (GuiPacket)ecPacket;
 					if (guiPacket.getGui() == Gui.COMPUTER_SCREEN) {
-						ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).removeActivePlayer((EntityPlayer) player);
+						if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null)
+							ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).removeActivePlayer((EntityPlayer) player);
 					}
 				} else if (ecPacket.getType() == Type.CUSTOM) {
 	            	CustomPacket customPacket = (CustomPacket)ecPacket;

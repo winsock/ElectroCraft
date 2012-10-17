@@ -20,12 +20,16 @@ import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
+import info.cerios.electrocraft.entites.ModelDrone;
+import info.cerios.electrocraft.entites.RenderDrone;
 import info.cerios.electrocraft.gui.GuiComputerScreen;
 import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.GuiScreen;
+import net.minecraft.src.RenderLiving;
 import net.minecraft.src.TileEntity;
 import net.minecraftforge.client.MinecraftForgeClient;
 
@@ -64,6 +68,7 @@ public class ElectroCraftClient implements IElectroCraftSided {
 				if (renderer.getTileClass() != null)
 					ClientRegistry.bindTileEntitySpecialRenderer(renderer.getTileClass(), renderer.getSpecialRenderer());
 		}
+		RenderingRegistry.registerEntityRenderingHandler(EntityDrone.class, new RenderDrone(new ModelDrone(), 0.5f));
 	}
 
 	@Override

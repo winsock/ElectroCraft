@@ -2,6 +2,7 @@ package info.cerios.electrocraft.core.blocks.tileentities;
 
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.core.IComputer;
 import info.cerios.electrocraft.core.computer.ExposedToLua;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.computer.Computer;
@@ -31,7 +32,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Side;
 
 @ExposedToLua
-public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock {
+public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock, IComputer {
 
     private Computer computer;
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();
@@ -156,13 +157,14 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     		computer.tick();
     }
     
+    @Override
     public Computer getComputer() {
     	return computer;
     }
     
     public void createComputer() {
     	if (worldObj == null || worldObj.isRemote) {
-			computer = new Computer(activePlayers, "", baseDirectory, true, 320, 240, 15, 50);
+			computer = new Computer(activePlayers, "", baseDirectory, false, 320, 240, 15, 50);
 			return;
     	}
     	if (this.baseDirectory.isEmpty()) {
@@ -211,6 +213,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     	}
     }
     
+    @Override
     public void removeActivePlayer(EntityPlayer player) {
     	this.activePlayers.remove(player);
     	if (this.computer != null) {

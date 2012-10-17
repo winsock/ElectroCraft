@@ -1,6 +1,7 @@
 package info.cerios.electrocraft.core.network;
 
 import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.core.IComputer;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.utils.Utils;
 import info.cerios.electrocraft.core.utils.Utils.ChangedBytes;
@@ -29,7 +30,7 @@ public class ComputerServerClient implements Runnable {
 	private OutputStream out;
 	private DataOutputStream dos;
 	private byte[] lastVGAData;
-	private TileEntityComputer computer;
+	private IComputer computer;
 	private ComputerServer server;
 	private Object syncObject = new Object();
 	
@@ -46,12 +47,12 @@ public class ComputerServerClient implements Runnable {
 		}
 	}
 	
-	public void setComputer(TileEntityComputer pc) {
+	public void setComputer(IComputer pc) {
 		this.computer = pc;
 		lastVGAData = null;
 	}
 	
-	public TileEntityComputer getComputer() {
+	public IComputer getComputer() {
 		return computer;
 	}
 	

@@ -31,7 +31,9 @@ function os.waitForEvent(...)
 				return event, param1, param2, param3, param4, param5
 			end
 		end
-		table.insert(events, { event, param1, param2, param3, param4, param5 })
+		if event ~= "resume" then
+			table.insert(events, { event, param1, param2, param3, param4, param5 })
+		end
 		event, param1, param2, param3, param4, param5 = nativeYield("safe")
 		if event == "kill" then
 			print("Killed!")

@@ -9,6 +9,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.network.NetworkMod;
 import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.common.registry.TickRegistry;
 import info.cerios.electrocraft.core.blocks.BlockHandler;
@@ -18,6 +19,7 @@ import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
 import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import info.cerios.electrocraft.core.computer.IMCRunnable;
+import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.items.ElectroItems;
 import info.cerios.electrocraft.core.items.ItemHandler;
 import info.cerios.electrocraft.core.network.*;
@@ -62,7 +64,7 @@ public class ElectroCraft {
     public static ElectroCraft instance;
     @SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
     public static IElectroCraftSided electroCraftSided;
-    private Map<EntityPlayer, TileEntityComputer> nonCustomServerComputerMap = new HashMap<EntityPlayer, TileEntityComputer>();
+    private Map<EntityPlayer, IComputer> nonCustomServerComputerMap = new HashMap<EntityPlayer, IComputer>();
     private List<IMCRunnable> mainThreadFunctions = new ArrayList<IMCRunnable>();
     private Object mainThreadLock = new Object();
 
@@ -109,6 +111,10 @@ public class ElectroCraft {
         
         // Register our renderers
         electroCraftSided.registerRenderers();
+        
+        // Register the drone entity
+        EntityRegistry.registerGlobalEntityID(EntityDrone.class, "ecdrone", EntityRegistry.findGlobalUniqueEntityId());
+        EntityRegistry.registerModEntity(EntityDrone.class, "ecdrone", 0, this, 128, 1, false);
         
         // Register our world generator
         GameRegistry.registerWorldGenerator(new WorldGenerator());
@@ -172,7 +178,7 @@ public class ElectroCraft {
     	return server;
     }
     
-    public TileEntityComputer getComputerForPlayer(EntityPlayer player) {
+    public IComputer getComputerForPlayer(EntityPlayer player) {
     	if (ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false).getBoolean(false)) {
     		return this.nonCustomServerComputerMap.get(player);
     	} else {
@@ -180,7 +186,7 @@ public class ElectroCraft {
     	}
     }
     
-    public void setComputerForPlayer(EntityPlayer player, TileEntityComputer computer) {
+    public void setComputerForPlayer(EntityPlayer player, IComputer computer) {
     	if (ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false).getBoolean(false)) {
     		this.nonCustomServerComputerMap.put(player, computer);
     	} else {
