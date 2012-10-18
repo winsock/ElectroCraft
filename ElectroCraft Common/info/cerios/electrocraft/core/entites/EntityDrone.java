@@ -44,6 +44,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	public void readEntityFromNBT(NBTTagCompound var1) {
 		super.readEntityFromNBT(var1);
 		id = var1.getString("cid");
+		createDrone();
 	}
 
 	@Override
@@ -53,8 +54,45 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	}
 
 	@Override
-	protected void entityInit() {
-		super.entityInit();
+	public void onEntityUpdate() {
+		super.onEntityUpdate();
+		if (!worldObj.isRemote && drone != null && drone.isRunning())
+			drone.tick();
+	}
+
+	@Override
+	protected boolean isAIEnabled() {
+		return true;
+	}
+
+	public boolean interact(EntityPlayer player) {
+		if (player instanceof EntityPlayerMP) {
+			if (drone == null)
+				createDrone();
+			if (drone.getLuaState() == null || !drone.getLuaState().isOpen()) {
+				drone.loadLuaDefaults();
+			}
+			ElectroCraft.instance.setComputerForPlayer(player, this);
+			GuiPacket guiPacket = new GuiPacket();
+			guiPacket.setCloseWindow(false);
+			guiPacket.setGui(Gui.COMPUTER_SCREEN);
+			try {
+				PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
+			} catch (IOException e) {
+				ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
+			}
+			if (!drone.isRunning()) {
+				drone.setRunning(true);
+				drone.loadBios();
+				drone.postEvent("resume");
+			}
+			drone.addClient(player);
+			return true;
+		}
+		return true;
+	}
+	
+	public void createDrone() {
 		if (!worldObj.isRemote) {
 			String worldDir = "";
 			if (FMLCommonHandler.instance().getSide() == Side.SERVER || FMLCommonHandler.instance().getSide() == Side.BUKKIT) {
@@ -77,43 +115,6 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			drone = new Drone(new ArrayList<EntityPlayer>(), "", dir, true, 320, 240, 15, 50);
 			drone.setDrone(this);
 		}
-	}
-
-	@Override
-	public void onEntityUpdate() {
-		super.onEntityUpdate();
-		if (!worldObj.isRemote && drone != null && drone.isRunning())
-			drone.tick();
-	}
-
-	@Override
-	protected boolean isAIEnabled() {
-		return true;
-	}
-
-	public boolean interact(EntityPlayer player) {
-		if (player instanceof EntityPlayerMP) {
-			if (drone.getLuaState() == null || !drone.getLuaState().isOpen()) {
-				drone.loadLuaDefaults();
-			}
-			ElectroCraft.instance.setComputerForPlayer(player, this);
-			GuiPacket guiPacket = new GuiPacket();
-			guiPacket.setCloseWindow(false);
-			guiPacket.setGui(Gui.COMPUTER_SCREEN);
-			try {
-				PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
-			} catch (IOException e) {
-				ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
-			}
-			if (!drone.isRunning()) {
-				drone.setRunning(true);
-				drone.loadBios();
-				drone.postEvent("resume");
-			}
-			drone.addClient(player);
-			return true;
-		}
-		return true;
 	}
 
 	protected boolean canDespawn() {
