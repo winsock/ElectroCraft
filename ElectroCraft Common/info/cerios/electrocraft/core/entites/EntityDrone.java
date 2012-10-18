@@ -26,20 +26,24 @@ import net.minecraft.src.World;
 public class EntityDrone extends EntityLiving implements IComputer {
 
 	private Drone drone;
+	private String id = "";
 
 	public EntityDrone(World par1World) {
 		super(par1World);
 		texture = "/info/cerios/electrocraft/gfx/Drone.png";
+		this.height = 0.8F;
 	}
 
 	@Override
 	public void readEntityFromNBT(NBTTagCompound var1) {
 		super.readEntityFromNBT(var1);
+		id = var1.getString("cid");
 	}
 
 	@Override
 	public void writeEntityToNBT(NBTTagCompound var1) {
 		super.writeEntityToNBT(var1);
+		var1.setString("cid", id);
 	}
 
 	@Override
@@ -52,23 +56,32 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			} else {
 				worldDir = "saves" + File.separator + worldObj.getWorldInfo().getWorldName();
 			}
-			String id = String.valueOf(Calendar.getInstance().getTime().getTime());
 			String dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
-			File file = new File(dir);
-			while (file.exists()) {
+			if (id == null || id.isEmpty()) {
 				id = String.valueOf(Calendar.getInstance().getTime().getTime());
 				dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
-				file = new File(dir);
+				File file = new File(dir);
+				while (file.exists()) {
+					id = String.valueOf(Calendar.getInstance().getTime().getTime());
+					dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
+					file = new File(dir);
+				}
 			}
 			drone = new Drone(new ArrayList<EntityPlayer>(), "", dir, true, 320, 240, 15, 50);
+			drone.setDrone(this);
 		}
 	}
-	
+
 	@Override
 	public void onEntityUpdate() {
 		super.onEntityUpdate();
 		if (!worldObj.isRemote && drone != null && drone.isRunning())
 			drone.tick();
+	}
+
+	@Override
+	protected boolean isAIEnabled() {
+		return true;
 	}
 
 	public boolean interact(EntityPlayer player) {
