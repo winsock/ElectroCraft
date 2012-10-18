@@ -22,27 +22,26 @@ public class ModelDrone extends ModelBase
 		textureHeight = 64;
 
 		DroneBody = new ModelRenderer(this, 0, 3);
-		DroneBody.addBox(-7F, 0F, -3F, 14, 14, 6);
-		DroneBody.setRotationPoint(-4F, 10F, 0F);
+		DroneBody.addBox(-7F, -7F, -7F, 14, 14, 6);
+		DroneBody.setRotationPoint(0F, 17F, 0F);
 		DroneBody.setTextureSize(64, 64);
 		DroneBody.mirror = true;
-		setRotation(DroneBody, 0F, 1.570796F, 0F);
+		setRotation(DroneBody, 0F, -1.570796F, 0F);
 		DroneBody1 = new ModelRenderer(this, 0, 3);
-		DroneBody1.addBox(-7F, 0F, -3F, 14, 14, 6);
-		DroneBody1.setRotationPoint(4F, 10F, 0F);
+		DroneBody1.addBox(-7F, -7F, 1F, 14, 14, 6);
+		DroneBody1.setRotationPoint(0F, 17F, 0F);
 		DroneBody1.setTextureSize(64, 64);
 		DroneBody1.mirror = true;
-		setRotation(DroneBody1, 0F, 1.570796F, 0F);
+		setRotation(DroneBody1, 0F, -1.570796F, 0F);
 		BodyConnector = new ModelRenderer(this, 0, 0);
-		BodyConnector.addBox(-7F, 0F, -1F, 14, 1, 2);
-		BodyConnector.setRotationPoint(0F, 23F, 0F);
+		BodyConnector.addBox(-7F, 6F, -1F, 14, 1, 2);
+		BodyConnector.setRotationPoint(0F, 17F, 0F);
 		BodyConnector.setTextureSize(64, 64);
 		BodyConnector.mirror = true;
-		setRotation(BodyConnector, 0F, 1.570796F, 0F);
+		setRotation(BodyConnector, 0F, -1.570796F, 0F);
 	}
 
 	public void render(Entity entity, float f, float f1, float f2, float f3, float f4, float f5) {
-		super.render(entity, f, f1, f2, f3, f4, f5);
 		setRotationAngles(f, f1, f2, f3, f4, f5);
 		DroneBody.render(f5);
 		DroneBody1.render(f5);
@@ -56,6 +55,11 @@ public class ModelDrone extends ModelBase
 	}
 
 	public void setRotationAngles(float f, float f1, float f2, float f3, float f4, float f5) {
-		super.setRotationAngles(f, f1, f2, f3, f4, f5);
+		DroneBody.rotateAngleY = f3 / (180F / (float)Math.PI);
+		DroneBody.rotateAngleX = f4 / (180F / (float)Math.PI);
+		DroneBody1.rotateAngleY = DroneBody.rotateAngleY;
+		DroneBody1.rotateAngleX = DroneBody.rotateAngleX;
+		BodyConnector.rotateAngleY = DroneBody.rotateAngleY;
+		BodyConnector.rotateAngleX = DroneBody.rotateAngleX;
 	}
 }

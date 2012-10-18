@@ -6,9 +6,14 @@ if #tArgs > 0 then
 		print("Usage: ls <optional path>")
 		return
 	end
-	folder = file.createNewFileHandle(shell.path() .. tArgs[1])
+	local startChar = tArgs[1]:sub(1, 1)
+	if startChar == "/" then
+		folder = file.createNewFileHandle(tArgs[1])
+	else
+		folder = file.createNewFileHandle(shell.getPath() .. "/" .. tArgs[1])
+	end
 else
-	folder = file.createNewFileHandle(shell.path())
+	folder = file.createNewFileHandle(shell.getPath())
 end
 
 local files = folder:listFiles()

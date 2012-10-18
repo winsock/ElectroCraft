@@ -6,6 +6,9 @@ import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
 
 import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.MathHelper;
+import net.minecraft.src.Vec3;
+import net.minecraftforge.common.ForgeDirection;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 
@@ -45,9 +48,84 @@ public class Drone extends Computer {
 						return "move";
 					}
 				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						ForgeDirection dir = ForgeDirection.getOrientation(MathHelper.floor_double((double)(drone.drone.rotationYawHead * 4.0F / 360.0F) + 0.5D) & 3);
+						luaState.pushInteger(drone.drone.worldObj.getBlockId((int)(dir.offsetX + drone.drone.posX), (int)(dir.offsetY + drone.drone.posY), (int)(dir.offsetZ + drone.drone.posZ)));
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "sampleFront";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushNumber(MathHelper.floor_double((double)(drone.drone.rotationYawHead * 4.0F / 360.0F) + 0.5D) & 3);
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "getDir";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushNumber(drone.drone.rotationYawHead);
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "getRotation";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						drone.drone.rotationYawHead = (float) luaState.checkNumber(-1);
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "rotate";
+					}
+				}.init(this),
 		};
 		this.getLuaState().register("drone", droneAPI);
 	}
-	
-	
 }

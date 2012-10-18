@@ -18,6 +18,7 @@ import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import net.minecraft.src.Entity;
 import net.minecraft.src.EntityLiving;
+import net.minecraft.src.EntityLookHelper;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.NBTTagCompound;
@@ -32,6 +33,11 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		super(par1World);
 		texture = "/info/cerios/electrocraft/gfx/Drone.png";
 		this.height = 0.8F;
+	}
+	
+	@Override
+    public EntityLookHelper getLookHelper() {
+		return super.getLookHelper();
 	}
 
 	@Override
@@ -56,7 +62,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			} else {
 				worldDir = "saves" + File.separator + worldObj.getWorldInfo().getWorldName();
 			}
-			String dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
+			String dir = "";
 			if (id == null || id.isEmpty()) {
 				id = String.valueOf(Calendar.getInstance().getTime().getTime());
 				dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
@@ -67,6 +73,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 					file = new File(dir);
 				}
 			}
+			dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
 			drone = new Drone(new ArrayList<EntityPlayer>(), "", dir, true, 320, 240, 15, 50);
 			drone.setDrone(this);
 		}
@@ -109,8 +116,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		return true;
 	}
 
-	protected boolean canDespawn()
-	{
+	protected boolean canDespawn() {
 		return false;
 	}
 

@@ -16,7 +16,7 @@ local startChar = tArgs[1]:sub(1, 1)
 if startChar == "/" then
 	fileHandle = file.createNewFileHandle(tArgs[1])
 else
-	fileHandle = file.createNewFileHandle(shell.path() .. tArgs[1])
+	fileHandle = file.createNewFileHandle(shell.getPath() .. "/" .. tArgs[1])
 end
 
 if not fileHandle then

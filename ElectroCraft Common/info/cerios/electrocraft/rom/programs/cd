@@ -1,0 +1,32 @@
+local tArgs = {...}
+
+if #tArgs <= 0 or type(tArgs[1]) ~= "string" then
+	print("Usage: cd <folder name>")
+	return
+end
+
+local fileHandle
+local startChar = tArgs[1]:sub(1, 1)
+
+if startChar == "/" then
+	fileHandle = file.createNewFileHandle(tArgs[1])
+else
+	fileHandle = file.createNewFileHandle(shell.getPath() .. "/" .. tArgs[1])
+end
+
+if not fileHandle then
+	print("Error checking for folder!")
+	return
+end
+
+if not fileHandle:exists() then
+	print("Error the requested folder does not exist!")
+	return
+end
+
+if not fileHandle:isDirectory() then
+	print("Error the requested folder is not a folder!")
+	return
+end
+
+shell.setPath(shell.getPath() .. "/" .. tArgs[1])
