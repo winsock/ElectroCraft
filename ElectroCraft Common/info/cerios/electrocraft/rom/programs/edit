@@ -176,7 +176,7 @@ while running do
 			else
 				row = row + 1
 			end
-		elseif term:isCharVisible(key) then
+		elseif term:isCharVisible(key) or key == "\t" then
 			local front = ""
 			local back = ""
 			if col >= 1 and data[row + rowOffset] then
@@ -185,8 +185,13 @@ while running do
 			if data[row + rowOffset] and data[row + rowOffset]:len() >= col + 1 then
 				back = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
 			end
+			if key == "\t" then
+				key = "    "
+				col = col + 4
+			else
+				col = col + 1
+			end
 			data[row + rowOffset] = front .. key .. back
-			col = col + 1
 			term:clearLine()
 			write(data[row + rowOffset])
 			term:setPosition(row - 1, col)

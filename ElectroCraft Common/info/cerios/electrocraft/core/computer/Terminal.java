@@ -45,7 +45,12 @@ public class Terminal extends Writer {
 				for (int i = columnOffset; i < columns + columnOffset; i++) {
 					if (getRow(row).get(i) != null) {
 						if (!Character.isIdentifierIgnorable(getRow(row).get(i))) {
-							output += getRow(row).get(i);
+							if (getRow(row).get(i) == '\t') {
+								getRow(row).put(i, ' ');
+								output += " ";
+							} else {
+								output += getRow(row).get(i);
+							}
 						}
 					}
 				}
