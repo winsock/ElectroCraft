@@ -20,6 +20,7 @@ import info.cerios.electrocraft.core.drone.InventoryDrone;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
+import net.minecraft.src.Block;
 import net.minecraft.src.Entity;
 import net.minecraft.src.EntityLiving;
 import net.minecraft.src.EntityLookHelper;
@@ -27,9 +28,11 @@ import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.Item;
 import net.minecraft.src.ItemStack;
+import net.minecraft.src.MathHelper;
 import net.minecraft.src.NBTBase;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.World;
+import net.minecraftforge.common.ForgeDirection;
 
 public class EntityDrone extends EntityLiving implements IComputer {
 
@@ -37,6 +40,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	private String id = "";
 	private InventoryDrone inventory;
 	private boolean firstTick = true;
+	private int rotationTicks = 0;
 
 	public EntityDrone(World par1World) {
 		super(par1World);
@@ -85,13 +89,62 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		}
 		if (!worldObj.isRemote && drone != null && drone.isRunning())
 			drone.tick();
+		if (rotationTicks > 0) {
+			rotationTicks--;
+			if (rotationTicks <= 0) {
+				doToolAction();
+			}
+		}
 	}
+	
+	public void doToolAction() {
+		ForgeDirection dir = ForgeDirection.getOrientation(MathHelper.floor_double((double)(rotationYawHead * 4.0F / 360.0F) + 0.5D) & 3);
+		for (ItemStack item : getBlockDropped(worldObj, (int)(posX + dir.offsetX), (int)(posY + dir.offsetY), (int)(posZ + dir.offsetZ))) {
+			addToInventory(item);
+		}
+		worldObj.setBlockWithNotify((int)(posX + dir.offsetX), (int)(posY + dir.offsetY), (int)(posZ + dir.offsetZ), 0);
+	}
+	
+	private void addToInventory(ItemStack item) {
+		for (int i = 0; i < 36; i++) {
+			if (inventory.getStackInSlot(i) != null && inventory.getStackInSlot(i).itemID == item.itemID) {
+				if (inventory.getStackInSlot(i).stackSize + item.stackSize > item.getMaxStackSize()) {
+					int totalAmount = inventory.getStackInSlot(i).stackSize + item.stackSize;
+					item.stackSize = item.getMaxStackSize();
+					totalAmount -= item.stackSize;
+					inventory.setInventorySlotContents(i, item);
+					item.stackSize = totalAmount;
+				} else {
+					inventory.setInventorySlotContents(i, item);
+					return;
+				}
+			} else if (inventory.getStackInSlot(i) == null) {
+				inventory.setInventorySlotContents(i, item);
+				return;
+			}
+		}
+	}
+	
+	private ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
+		int id = world.getBlockId(x, y, z);
+    	Block block = Block.blocksList[id];
+    	int metadata = world.getBlockMetadata(x, y, z);
+    	return block.getBlockDropped(world, x, y, z, metadata, 0);
+    }
 	
 	@Override
 	public ItemStack getHeldItem() {
 		return inventory.tools[1];
 	}
 
+	public int getRotationTicks() {
+		return rotationTicks;
+	}
+	
+	public void setRotationTicks(int ticks) {
+		this.rotationTicks = ticks;
+	}
+	
 	@Override
 	protected boolean isAIEnabled() {
 		return true;

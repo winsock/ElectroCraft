@@ -2,6 +2,7 @@ package info.cerios.electrocraft.entites;
 
 import static net.minecraftforge.client.IItemRenderer.ItemRenderType.EQUIPPED;
 import static net.minecraftforge.client.IItemRenderer.ItemRendererHelper.BLOCK_3D;
+import info.cerios.electrocraft.core.entites.EntityDrone;
 
 import org.lwjgl.opengl.GL11;
 
@@ -33,7 +34,7 @@ public class RenderDrone extends RenderLiving {
             // Item render code *Copied from RenderPlayer*
         	IItemRenderer customRenderer = MinecraftForgeClient.getItemRenderer(par1EntityLiving.getHeldItem(), EQUIPPED);
         	GL11.glRotatef(180, 1, 0, 0);
-        	GL11.glRotatef(30, 0, 0, 1);
+        	GL11.glRotatef(30 + ((EntityDrone)par1EntityLiving).getRotationTicks(), 0, 0, 1);
         	GL11.glRotatef(-50, 0, 1, 0);
         	GL11.glTranslatef(0.0625f, -1f, 0);
 

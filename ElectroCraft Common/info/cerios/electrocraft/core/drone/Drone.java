@@ -1,13 +1,17 @@
 package info.cerios.electrocraft.core.drone;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
 
+import net.minecraft.src.Block;
 import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.ItemStack;
 import net.minecraft.src.MathHelper;
 import net.minecraft.src.Vec3;
+import net.minecraft.src.World;
 import net.minecraftforge.common.ForgeDirection;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.entites.EntityDrone;
@@ -46,6 +50,25 @@ public class Drone extends Computer {
 					@Override
 					public String getName() {
 						return "move";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						drone.drone.setRotationTicks(50);
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "useTool";
 					}
 				}.init(this),
 				new NamedJavaFunction() {
