@@ -28,30 +28,33 @@ public class RenderDrone extends RenderLiving {
 		this.loadTexture("/info/cerios/electrocraft/gfx/Drone.png");
         GL11.glScalef(1.0f, 1.0F, 1.0F);
         this.mainModel.render(par1EntityLiving, par2, par3, par4, par5, par6, par7);
-        // Item render code *Copied from RenderPlayer*
-        IItemRenderer customRenderer = MinecraftForgeClient.getItemRenderer(par1EntityLiving.getHeldItem(), EQUIPPED);
-        GL11.glRotatef(180, 1, 0, 0);
-        GL11.glRotatef(30, 0, 0, 1);
-        GL11.glRotatef(-50, 0, 1, 0);
-        GL11.glTranslatef(0.0625f, -1f, 0);
         
+        if (par1EntityLiving.getHeldItem() != null) {
+            // Item render code *Copied from RenderPlayer*
+        	IItemRenderer customRenderer = MinecraftForgeClient.getItemRenderer(par1EntityLiving.getHeldItem(), EQUIPPED);
+        	GL11.glRotatef(180, 1, 0, 0);
+        	GL11.glRotatef(30, 0, 0, 1);
+        	GL11.glRotatef(-50, 0, 1, 0);
+        	GL11.glTranslatef(0.0625f, -1f, 0);
 
-        if (par1EntityLiving.getHeldItem().getItem().requiresMultipleRenderPasses())
-        {
-            for (int var25 = 0; var25 < par1EntityLiving.getHeldItem().getItem().getRenderPasses(par1EntityLiving.getHeldItem().getItemDamage()); ++var25)
-            {
-                int var24 = par1EntityLiving.getHeldItem().getItem().getColorFromDamage(par1EntityLiving.getHeldItem().getItemDamage(), var25);
-                float var26 = (float)(var24 >> 16 & 255) / 255.0F;
-                float var9 = (float)(var24 >> 8 & 255) / 255.0F;
-                float var10 = (float)(var24 & 255) / 255.0F;
-                GL11.glColor4f(var26, var9, var10, 1.0F);
-                this.renderManager.itemRenderer.renderItem(par1EntityLiving, par1EntityLiving.getHeldItem(), var25);
-            }
+        	if (par1EntityLiving.getHeldItem().getItem().requiresMultipleRenderPasses())
+        	{
+        		for (int var25 = 0; var25 < par1EntityLiving.getHeldItem().getItem().getRenderPasses(par1EntityLiving.getHeldItem().getItemDamage()); ++var25)
+        		{
+        			int var24 = par1EntityLiving.getHeldItem().getItem().getColorFromDamage(par1EntityLiving.getHeldItem().getItemDamage(), var25);
+        			float var26 = (float)(var24 >> 16 & 255) / 255.0F;
+        			float var9 = (float)(var24 >> 8 & 255) / 255.0F;
+        			float var10 = (float)(var24 & 255) / 255.0F;
+        			GL11.glColor4f(var26, var9, var10, 1.0F);
+        			this.renderManager.itemRenderer.renderItem(par1EntityLiving, par1EntityLiving.getHeldItem(), var25);
+        		}
+        	}
+        	else
+        	{
+        		this.renderManager.itemRenderer.renderItem(par1EntityLiving, par1EntityLiving.getHeldItem(), 0);
+        	}
         }
-        else
-        {
-            this.renderManager.itemRenderer.renderItem(par1EntityLiving, par1EntityLiving.getHeldItem(), 0);
-        }
+        
         GL11.glPopMatrix();
     }
 }

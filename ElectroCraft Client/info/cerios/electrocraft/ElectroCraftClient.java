@@ -20,12 +20,15 @@ import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.core.container.ContainerDrone;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.CustomPacket;
+import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import info.cerios.electrocraft.entites.ModelDrone;
 import info.cerios.electrocraft.entites.RenderDrone;
 import info.cerios.electrocraft.gui.GuiComputerScreen;
+import info.cerios.electrocraft.gui.GuiDroneInventory;
 import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.GuiScreen;
@@ -127,5 +130,13 @@ public class ElectroCraftClient implements IElectroCraftSided {
 			GuiComputerScreen computerScreen = (GuiComputerScreen)currentScreen;
 			computerScreen.handleCustomPacket(packet);
 		}
+	}
+
+	@Override
+	public Object getClientGuiFor(Gui gui, Object... args) {
+		if (gui == Gui.DRONE_INVENTORY) {
+			return new GuiDroneInventory((ContainerDrone)args[0]);
+		}
+		return null;
 	}
 }

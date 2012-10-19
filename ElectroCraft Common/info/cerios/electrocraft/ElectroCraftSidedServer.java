@@ -18,6 +18,7 @@ import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.CustomPacket;
+import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 
 public class ElectroCraftSidedServer implements IElectroCraftSided {
@@ -67,4 +68,7 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 
 	@Override
 	public void handleClientCustomPacket(CustomPacket packet) { }
+
+	@Override
+	public Object getClientGuiFor(Gui gui, Object... args) { return null; }
 }

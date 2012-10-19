@@ -4,9 +4,7 @@ import java.io.IOException;
 
 public class GuiPacket extends ElectroPacket {
 
-    public enum Gui {COMPUTER_SCREEN, ADDRESS_SCREEN}
-
-    ;
+    public enum Gui { COMPUTER_SCREEN, ADDRESS_SCREEN, DRONE_INVENTORY };
 
     private Gui windowId;
     private boolean closeWindow = false; // When set it closes the current window

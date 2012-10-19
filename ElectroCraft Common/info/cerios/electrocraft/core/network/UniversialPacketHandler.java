@@ -4,6 +4,7 @@ import info.cerios.electrocraft.ElectroCraftSidedServer;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.NetworkBlock;
+import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.ElectroPacket.Type;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.utils.Utils;
@@ -19,15 +20,19 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.src.Entity;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.ModLoader;
+import net.minecraft.src.NBTBase;
+import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NetworkManager;
 import net.minecraft.src.Packet250CustomPayload;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.IPacketHandler;
+import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
 public class UniversialPacketHandler implements IPacketHandler {
@@ -151,6 +156,28 @@ public class UniversialPacketHandler implements IPacketHandler {
 	            				ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().setRunning(false);
 	            			}
 	            		}
+	            	} else if (customPacket.id == 4) {
+	            		ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
+	                    DataInputStream dis = new DataInputStream(bis);
+	                    int entity = dis.readInt();
+	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
+	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
+	                    	EntityDrone drone = (EntityDrone)possibleEntity;
+	                    	CustomPacket response = new CustomPacket();
+	            			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	            	        DataOutputStream dos = new DataOutputStream(bos);
+	            	        NBTTagCompound inventory = new NBTTagCompound();
+	            	        drone.getInventory().writeToNBT(inventory);
+	            	        try {
+	            		        dos.writeInt(drone.entityId);
+	            				NBTBase.writeNamedTag(inventory, dos);
+	            				response.id = 4;
+	            				response.data = bos.toByteArray();
+	            		        manager.addToSendQueue(response.getMCPacket());
+	            			} catch (IOException e) {
+	            				ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
+	            			}
+	                    }
 	            	}
 				}
 			} catch (Exception e) {
@@ -176,7 +203,18 @@ public class UniversialPacketHandler implements IPacketHandler {
                     ElectroCraft.electroCraftSided.startComputerClient(portPacket.getPort(), manager.getSocketAddress());
 	            } else if (ecPacket.getType() == Type.CUSTOM) {
 	            	CustomPacket customPacket = (CustomPacket)ecPacket;
-	            	ElectroCraft.electroCraftSided.handleClientCustomPacket(customPacket);
+	            	if (customPacket.id == 4) {
+	            		ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
+	                    DataInputStream dis = new DataInputStream(bis);
+	                    int entity = dis.readInt();
+	                    NBTTagCompound inventory = (NBTTagCompound) NBTBase.readNamedTag(dis);
+	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
+	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
+	                    	((EntityDrone) possibleEntity).getInventory().readFromNBT(inventory);
+	                    }
+	            	} else {
+	            		ElectroCraft.electroCraftSided.handleClientCustomPacket(customPacket);
+	            	}
 	            }
 	        } catch (Exception e) {
 	            ElectroCraft.instance.getLogger().severe("Unable to read packet sent on our channel!");

@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.entites;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +16,8 @@ import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.IComputer;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.drone.Drone;
+import info.cerios.electrocraft.core.drone.InventoryDrone;
+import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import net.minecraft.src.Entity;
@@ -23,6 +27,7 @@ import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.Item;
 import net.minecraft.src.ItemStack;
+import net.minecraft.src.NBTBase;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.World;
 
@@ -30,41 +35,61 @@ public class EntityDrone extends EntityLiving implements IComputer {
 
 	private Drone drone;
 	private String id = "";
+	private InventoryDrone inventory;
+	private boolean firstTick = true;
 
 	public EntityDrone(World par1World) {
 		super(par1World);
 		texture = "/info/cerios/electrocraft/gfx/Drone.png";
 		this.height = 0.8F;
-	}
-	
-	@Override
-    public EntityLookHelper getLookHelper() {
-		return super.getLookHelper();
+		inventory = new InventoryDrone(this);
 	}
 
 	@Override
-	public void readEntityFromNBT(NBTTagCompound var1) {
-		super.readEntityFromNBT(var1);
-		id = var1.getString("cid");
+	public void readEntityFromNBT(NBTTagCompound nbt) {
+		super.readEntityFromNBT(nbt);
+		inventory.readFromNBT(nbt);
+		id = nbt.getString("cid");
 		createDrone();
 	}
 
 	@Override
-	public void writeEntityToNBT(NBTTagCompound var1) {
-		super.writeEntityToNBT(var1);
-		var1.setString("cid", id);
+	public void writeEntityToNBT(NBTTagCompound nbt) {
+		super.writeEntityToNBT(nbt);
+		inventory.writeToNBT(nbt);
+		nbt.setString("cid", id);
+	}
+	
+	public InventoryDrone getInventory() {
+		return inventory;
 	}
 
 	@Override
 	public void onEntityUpdate() {
 		super.onEntityUpdate();
+		if (firstTick) {
+			if (worldObj.isRemote) {
+				CustomPacket packet = new CustomPacket();
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		        DataOutputStream dos = new DataOutputStream(bos);
+		        try {
+			        dos.writeInt(entityId);
+					packet.id = 4;
+			        packet.data = bos.toByteArray();
+			        PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+				} catch (IOException e) {
+					ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
+				}
+			}
+			firstTick = false;
+		}
 		if (!worldObj.isRemote && drone != null && drone.isRunning())
 			drone.tick();
 	}
 	
 	@Override
 	public ItemStack getHeldItem() {
-		return new ItemStack(Item.pickaxeDiamond, 1);
+		return inventory.tools[1];
 	}
 
 	@Override
@@ -74,26 +99,30 @@ public class EntityDrone extends EntityLiving implements IComputer {
 
 	public boolean interact(EntityPlayer player) {
 		if (player instanceof EntityPlayerMP) {
-			if (drone == null)
-				createDrone();
-			if (drone.getLuaState() == null || !drone.getLuaState().isOpen()) {
-				drone.loadLuaDefaults();
-			}
 			ElectroCraft.instance.setComputerForPlayer(player, this);
-			GuiPacket guiPacket = new GuiPacket();
-			guiPacket.setCloseWindow(false);
-			guiPacket.setGui(Gui.COMPUTER_SCREEN);
-			try {
-				PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
-			} catch (IOException e) {
-				ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
+			if (player.isSneaking()) {
+				player.openGui(ElectroCraft.instance, this.entityId, worldObj, (int)posX, (int)posY, (int)posZ);
+			} else {
+				if (drone == null)
+					createDrone();
+				if (drone.getLuaState() == null || !drone.getLuaState().isOpen()) {
+					drone.loadLuaDefaults();
+				}
+				GuiPacket guiPacket = new GuiPacket();
+				guiPacket.setCloseWindow(false);
+				guiPacket.setGui(Gui.COMPUTER_SCREEN);
+				try {
+					PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
+				} catch (IOException e) {
+					ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
+				}
+				if (!drone.isRunning()) {
+					drone.setRunning(true);
+					drone.loadBios();
+					drone.postEvent("resume");
+				}
+				drone.addClient(player);
 			}
-			if (!drone.isRunning()) {
-				drone.setRunning(true);
-				drone.loadBios();
-				drone.postEvent("resume");
-			}
-			drone.addClient(player);
 			return true;
 		}
 		return true;
@@ -136,6 +165,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void removeActivePlayer(EntityPlayer player) {
 		drone.removeClient(player);
+    	ElectroCraft.instance.setComputerForPlayer(player, null);
 	}
 
 	@Override

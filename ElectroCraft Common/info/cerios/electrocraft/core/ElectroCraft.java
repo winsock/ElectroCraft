@@ -7,6 +7,7 @@ import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.network.IGuiHandler;
 import cpw.mods.fml.common.network.NetworkMod;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.EntityRegistry;
@@ -19,6 +20,8 @@ import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
 import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import info.cerios.electrocraft.core.computer.IMCRunnable;
+import info.cerios.electrocraft.core.container.ContainerDrone;
+import info.cerios.electrocraft.core.drone.InventoryDrone;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.items.ElectroItems;
 import info.cerios.electrocraft.core.items.ItemHandler;
@@ -147,12 +150,44 @@ public class ElectroCraft {
         // Register the tick handler for delegating back to the main thread
         UniversialTickHandler tickHandler = new UniversialTickHandler();
         TickRegistry.registerScheduledTickHandler(tickHandler, Side.SERVER);
+        
+        // Register our GUI handler
+        NetworkRegistry.instance().registerGuiHandler(this, guiHandler);
 		
 		// Create out computer socket connection manager
 		computerSocketManager = new ComputerSocketManager();
 		
 		// Log that we are done loading
     	ecLogger.info("Done loading version: " + FMLCommonHandler.instance().findContainerFor(this).getDisplayVersion());
+    }
+    
+    private IGuiHandler guiHandler = new IGuiHandler() {
+		@Override
+		public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
+			Entity entity = null;
+			if ((entity = getEntityByID(ID, world)) != null && entity instanceof EntityDrone)
+				return new ContainerDrone(((EntityDrone) entity).getInventory(), player.inventory);
+			return null;
+		}
+
+		@Override
+		public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
+			Entity entity = null;
+			if ((entity = getEntityByID(ID, world)) != null && entity instanceof EntityDrone)
+				return electroCraftSided.getClientGuiFor(Gui.DRONE_INVENTORY, new ContainerDrone(((EntityDrone) entity).getInventory(), player.inventory));
+			return null;
+		}
+    };
+    
+    public Entity getEntityByID(int entityID, World world) {
+    	for (Object o: world.getLoadedEntityList()) {
+    		if (!(o instanceof Entity))
+    			continue;
+    		if (((Entity)o).entityId == entityID) {
+    			return ((Entity)o);
+    		}
+    	}
+    	return null;
     }
     
     @Mod.ServerStarting
@@ -216,7 +251,9 @@ public class ElectroCraft {
     
     public List<IMCRunnable> getAndClearTasks() {
     	synchronized(mainThreadLock) {
-    		return new ArrayList<IMCRunnable>(mainThreadFunctions);
+    		List<IMCRunnable> tasks = new ArrayList<IMCRunnable>(mainThreadFunctions);
+    		mainThreadFunctions.clear();
+    		return tasks;
     	}
     }
     
