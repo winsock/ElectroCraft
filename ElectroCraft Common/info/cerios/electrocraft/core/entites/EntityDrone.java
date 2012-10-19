@@ -21,6 +21,8 @@ import net.minecraft.src.EntityLiving;
 import net.minecraft.src.EntityLookHelper;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
+import net.minecraft.src.Item;
+import net.minecraft.src.ItemStack;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.World;
 
@@ -58,6 +60,11 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		super.onEntityUpdate();
 		if (!worldObj.isRemote && drone != null && drone.isRunning())
 			drone.tick();
+	}
+	
+	@Override
+	public ItemStack getHeldItem() {
+		return new ItemStack(Item.pickaxeDiamond, 1);
 	}
 
 	@Override

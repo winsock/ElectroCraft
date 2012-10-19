@@ -78,6 +78,26 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
+						ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+						luaState.pushInteger(drone.drone.worldObj.getBlockId((int)(dir.offsetX + drone.drone.posX), (int)(dir.offsetY + drone.drone.posY), (int)(dir.offsetZ + drone.drone.posZ)));
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "sample";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
 						luaState.pushNumber(MathHelper.floor_double((double)(drone.drone.rotationYawHead * 4.0F / 360.0F) + 0.5D) & 3);
 						return 1;
 					}
