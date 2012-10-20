@@ -107,22 +107,21 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	}
 
 	public void doToolAction() {
-		ForgeDirection dir = drone.getDirection(rotationYawHead);
+		ForgeDirection dir = drone.getDirection(rotationYaw);
 		if (digDirection != ForgeDirection.UNKNOWN) {
 			dir = digDirection;
 			digDirection = ForgeDirection.UNKNOWN;
 		}
 		
-		int x = (int)(posX + dir.offsetX);
-		int y = (int)(posY + dir.offsetY);
-		int z = (int)(posZ + dir.offsetZ);
+		int x = (int)(Math.floor(posX) + dir.offsetX);
+		int y = (int)(Math.floor(posY) + dir.offsetY);
+		int z = (int)(Math.floor(posZ) + dir.offsetZ);
 
-		if (defaultTool.breakBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
+		if (defaultTool.appliesToBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
 			for (ItemStack item : defaultTool.preformAction(this, worldObj, x, y, z)) {
 				addToInventory(item);
 			}
 			defaultTool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
-			worldObj.setBlockWithNotify((int)(posX + dir.offsetX), (int)(posY + dir.offsetY), (int)(posZ + dir.offsetZ), 0);
 		}
 	}
 
@@ -243,7 +242,8 @@ public class EntityDrone extends EntityLiving implements IComputer {
 
 	@Override
 	public void removeActivePlayer(EntityPlayer player) {
-		drone.removeClient(player);
+		if (drone != null)
+			drone.removeClient(player);
 		ElectroCraft.instance.setComputerForPlayer(player, null);
 	}
 

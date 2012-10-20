@@ -15,6 +15,7 @@ import net.minecraft.src.Block;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.ItemStack;
 import net.minecraft.src.MathHelper;
+import net.minecraft.src.Packet32EntityLook;
 import net.minecraft.src.Vec3;
 import net.minecraft.src.World;
 import net.minecraftforge.common.ForgeDirection;
@@ -120,7 +121,7 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						ForgeDirection dir = getDirection(drone.drone.rotationYawHead);
+						ForgeDirection dir = getDirection(drone.drone.rotationYaw);
 						luaState.pushInteger(drone.drone.worldObj.getBlockId((int)(dir.offsetX + drone.drone.posX), (int)(dir.offsetY + drone.drone.posY), (int)(dir.offsetZ + drone.drone.posZ)));
 						return 1;
 					}
@@ -140,7 +141,7 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						ForgeDirection dir = getDirection(drone.drone.rotationYawHead);
+						ForgeDirection dir = getDirection(drone.drone.rotationYaw);
 						luaState.pushInteger(dir.ordinal());
 						return 1;
 					}
@@ -161,8 +162,12 @@ public class Drone extends Computer {
 					@Override
 					public int invoke(LuaState luaState) {
 						ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
-						luaState.pushInteger(drone.drone.worldObj.getBlockId((int)(dir.offsetX + drone.drone.posX), (int)(dir.offsetY + drone.drone.posY), (int)(dir.offsetZ + drone.drone.posZ)));
-						return 1;
+						int x = (int)(Math.floor(drone.drone.posX) + dir.offsetX);
+						int y = (int)(Math.floor(drone.drone.posY) + dir.offsetY);
+						int z = (int)(Math.floor(drone.drone.posZ) + dir.offsetZ);
+						luaState.pushInteger(drone.drone.worldObj.getBlockId(x, y, z));
+						luaState.pushInteger(drone.drone.worldObj.getBlockMetadata(x, y, z));
+						return 2;
 					}
 
 					@Override
@@ -180,7 +185,7 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						luaState.pushNumber(drone.drone.rotationYawHead);
+						luaState.pushNumber(drone.drone.rotationYaw);
 						return 1;
 					}
 
@@ -199,7 +204,7 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						drone.drone.rotationYawHead = (float) luaState.checkNumber(-1);
+						drone.drone.setPositionAndRotation2(drone.drone.posX, drone.drone.posY, drone.drone.posZ, (float) luaState.checkNumber(-1), drone.drone.rotationPitch, 10);
 						return 0;
 					}
 
@@ -214,19 +219,19 @@ public class Drone extends Computer {
 	}
 	
 	public ForgeDirection getDirection(float rotation) {
-		return getDirection(MathHelper.floor_double((double)(rotation * 4.0F / 360.0F) + 0.5D) & 3);
+		return getDirection((MathHelper.floor_double((double)(rotation * 4.0F / 360.0F) + 0.5D) & 3));
 	}
 	
 	public ForgeDirection getDirection(int direction) {
 		switch (direction) {
 		case 0:
-			return ForgeDirection.SOUTH;
-		case 1:
 			return ForgeDirection.WEST;
-		case 2:
+		case 1:
 			return ForgeDirection.NORTH;
-		case 3:
+		case 2:
 			return ForgeDirection.EAST;
+		case 3:
+			return ForgeDirection.SOUTH;
 		default:
 			return ForgeDirection.UNKNOWN;
 		}

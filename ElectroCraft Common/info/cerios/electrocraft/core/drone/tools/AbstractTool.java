@@ -12,7 +12,7 @@ import net.minecraftforge.common.ForgeHooks;
 public class AbstractTool implements IDroneTool {
 	
 	@Override
-	public boolean breakBlock(ItemStack item, Block block, int metadata) {
+	public boolean appliesToBlock(ItemStack item, Block block, int metadata) {
 		return ForgeHooks.isToolEffective(item, block, metadata);
 	}
 

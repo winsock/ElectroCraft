@@ -6,6 +6,7 @@
 
 package info.cerios.electrocraft.entites;
 
+import info.cerios.electrocraft.core.entites.EntityDrone;
 import net.minecraft.src.Entity;
 import net.minecraft.src.ModelBase;
 import net.minecraft.src.ModelRenderer;
@@ -42,7 +43,7 @@ public class ModelDrone extends ModelBase
 	}
 
 	public void render(Entity entity, float f, float f1, float f2, float f3, float f4, float f5) {
-		setRotationAngles(f, f1, f2, f3, f4, f5);
+		setRotationAngles(entity.rotationYaw, ((EntityDrone)entity).renderYawOffset, f2, f3, f4, f5);
 		DroneBody.render(f5);
 		DroneBody1.render(f5);
 		BodyConnector.render(f5);
@@ -55,11 +56,11 @@ public class ModelDrone extends ModelBase
 	}
 
 	public void setRotationAngles(float f, float f1, float f2, float f3, float f4, float f5) {
-		DroneBody.rotateAngleY = f3 / (180F / (float)Math.PI);
-		DroneBody.rotateAngleX = f4 / (180F / (float)Math.PI);
-		DroneBody1.rotateAngleY = DroneBody.rotateAngleY;
-		DroneBody1.rotateAngleX = DroneBody.rotateAngleX;
-		BodyConnector.rotateAngleY = DroneBody.rotateAngleY;
-		BodyConnector.rotateAngleX = DroneBody.rotateAngleX;
+		DroneBody.rotateAngleY = (f - f1) * ((float)Math.PI / 180f);
+		DroneBody.rotateAngleX = 0;
+		DroneBody1.rotateAngleY = (f - f1) * ((float)Math.PI / 180f);
+		DroneBody1.rotateAngleX = 0;
+		BodyConnector.rotateAngleY = (f - f1) * ((float)Math.PI / 180f);
+		BodyConnector.rotateAngleX = 0;
 	}
 }
