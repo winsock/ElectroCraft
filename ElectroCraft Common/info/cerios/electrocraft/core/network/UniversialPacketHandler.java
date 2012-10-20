@@ -67,7 +67,8 @@ public class UniversialPacketHandler implements IPacketHandler {
 				} else if (ecPacket.getType() == Type.INPUT) {
 					ComputerInputPacket inputPacket = (ComputerInputPacket)ecPacket;
 					if (inputPacket.wasKeyDown()) {
-						ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getKeyboard().onKeyPress(inputPacket);
+						if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null)
+							ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getKeyboard().onKeyPress(inputPacket);
 					}
 				} else if (ecPacket.getType() == Type.GUI) {
 					GuiPacket guiPacket = (GuiPacket)ecPacket;
@@ -211,6 +212,15 @@ public class UniversialPacketHandler implements IPacketHandler {
 	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
 	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
 	                    	((EntityDrone) possibleEntity).getInventory().readFromNBT(inventory);
+	                    }
+	            	} else if (customPacket.id == 5) {
+	            		ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
+	                    DataInputStream dis = new DataInputStream(bis);
+	                    int entity = dis.readInt();
+	                    int rotationTicks = dis.readInt();
+	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
+	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
+	                    	((EntityDrone) possibleEntity).setRotationTicks(rotationTicks);
 	                    }
 	            	} else {
 	            		ElectroCraft.electroCraftSided.handleClientCustomPacket(customPacket);

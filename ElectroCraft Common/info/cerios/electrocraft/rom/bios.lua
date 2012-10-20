@@ -18,11 +18,11 @@ function os.waitForEvent(...)
 		end
 	end
 	local event, param1, param2, param3, param4, param5 = nativeYield("safe")
-	if event == "kill" then
+	if event and event == "kill" then
 		print("Killed!")
 		error()
 	end
-	if #eventTypes <= 0 then
+	if (#eventTypes <= 0) and event then
 		return event, param1, param2, param3, param4, param5
 	end
 	while true do
@@ -31,7 +31,7 @@ function os.waitForEvent(...)
 				return event, param1, param2, param3, param4, param5
 			end
 		end
-		if event ~= "resume" then
+		if event and (event ~= "resume" or event ~= "killyield" or event ~= "start") then
 			table.insert(events, { event, param1, param2, param3, param4, param5 })
 		end
 		event, param1, param2, param3, param4, param5 = nativeYield("safe")

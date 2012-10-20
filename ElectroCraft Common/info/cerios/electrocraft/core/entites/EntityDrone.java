@@ -17,6 +17,7 @@ import info.cerios.electrocraft.core.IComputer;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.drone.Drone;
 import info.cerios.electrocraft.core.drone.InventoryDrone;
+import info.cerios.electrocraft.core.drone.tools.AbstractTool;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
@@ -41,6 +42,8 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	private InventoryDrone inventory;
 	private boolean firstTick = true;
 	private int rotationTicks = 0;
+	private ForgeDirection digDirection = ForgeDirection.UNKNOWN;
+	private AbstractTool defaultTool = new AbstractTool();
 
 	public EntityDrone(World par1World) {
 		super(par1World);
@@ -63,7 +66,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		inventory.writeToNBT(nbt);
 		nbt.setString("cid", id);
 	}
-	
+
 	public InventoryDrone getInventory() {
 		return inventory;
 	}
@@ -75,19 +78,25 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			if (worldObj.isRemote) {
 				CustomPacket packet = new CustomPacket();
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		        DataOutputStream dos = new DataOutputStream(bos);
-		        try {
-			        dos.writeInt(entityId);
+				DataOutputStream dos = new DataOutputStream(bos);
+				try {
+					dos.writeInt(entityId);
 					packet.id = 4;
-			        packet.data = bos.toByteArray();
-			        PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+					packet.data = bos.toByteArray();
+					PacketDispatcher.sendPacketToServer(packet.getMCPacket());
 				} catch (IOException e) {
 					ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
 				}
 			}
 			firstTick = false;
 		}
-		if (!worldObj.isRemote && drone != null && drone.isRunning())
+		if (worldObj.isRemote) {
+			if (rotationTicks > 0) {
+				rotationTicks--;
+			}
+			return;
+		}
+		if (drone != null && drone.isRunning())
 			drone.tick();
 		if (rotationTicks > 0) {
 			rotationTicks--;
@@ -96,15 +105,27 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			}
 		}
 	}
-	
+
 	public void doToolAction() {
-		ForgeDirection dir = ForgeDirection.getOrientation(MathHelper.floor_double((double)(rotationYawHead * 4.0F / 360.0F) + 0.5D) & 3);
-		for (ItemStack item : getBlockDropped(worldObj, (int)(posX + dir.offsetX), (int)(posY + dir.offsetY), (int)(posZ + dir.offsetZ))) {
-			addToInventory(item);
+		ForgeDirection dir = drone.getDirection(rotationYawHead);
+		if (digDirection != ForgeDirection.UNKNOWN) {
+			dir = digDirection;
+			digDirection = ForgeDirection.UNKNOWN;
 		}
-		worldObj.setBlockWithNotify((int)(posX + dir.offsetX), (int)(posY + dir.offsetY), (int)(posZ + dir.offsetZ), 0);
+		
+		int x = (int)(posX + dir.offsetX);
+		int y = (int)(posY + dir.offsetY);
+		int z = (int)(posZ + dir.offsetZ);
+
+		if (defaultTool.breakBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
+			for (ItemStack item : defaultTool.preformAction(this, worldObj, x, y, z)) {
+				addToInventory(item);
+			}
+			defaultTool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
+			worldObj.setBlockWithNotify((int)(posX + dir.offsetX), (int)(posY + dir.offsetY), (int)(posZ + dir.offsetZ), 0);
+		}
 	}
-	
+
 	private void addToInventory(ItemStack item) {
 		for (int i = 0; i < 36; i++) {
 			if (inventory.getStackInSlot(i) != null && inventory.getStackInSlot(i).itemID == item.itemID) {
@@ -115,6 +136,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 					inventory.setInventorySlotContents(i, item);
 					item.stackSize = totalAmount;
 				} else {
+					item.stackSize += inventory.getStackInSlot(i).stackSize;
 					inventory.setInventorySlotContents(i, item);
 					return;
 				}
@@ -124,14 +146,14 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			}
 		}
 	}
-	
-	private ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
+
+	public ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
 		int id = world.getBlockId(x, y, z);
-    	Block block = Block.blocksList[id];
-    	int metadata = world.getBlockMetadata(x, y, z);
-    	return block.getBlockDropped(world, x, y, z, metadata, 0);
-    }
-	
+		Block block = Block.blocksList[id];
+		int metadata = world.getBlockMetadata(x, y, z);
+		return block.getBlockDropped(world, x, y, z, metadata, 0);
+	}
+
 	@Override
 	public ItemStack getHeldItem() {
 		return inventory.tools[1];
@@ -140,11 +162,15 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	public int getRotationTicks() {
 		return rotationTicks;
 	}
-	
+
 	public void setRotationTicks(int ticks) {
 		this.rotationTicks = ticks;
 	}
 	
+	public void setDigDirection(ForgeDirection dir) {
+		this.digDirection = dir;
+	}
+
 	@Override
 	protected boolean isAIEnabled() {
 		return true;
@@ -172,7 +198,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 				if (!drone.isRunning()) {
 					drone.setRunning(true);
 					drone.loadBios();
-					drone.postEvent("resume");
+					drone.postEvent("start");
 				}
 				drone.addClient(player);
 			}
@@ -180,7 +206,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		}
 		return true;
 	}
-	
+
 	public void createDrone() {
 		if (!worldObj.isRemote) {
 			String worldDir = "";
@@ -218,7 +244,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void removeActivePlayer(EntityPlayer player) {
 		drone.removeClient(player);
-    	ElectroCraft.instance.setComputerForPlayer(player, null);
+		ElectroCraft.instance.setComputerForPlayer(player, null);
 	}
 
 	@Override

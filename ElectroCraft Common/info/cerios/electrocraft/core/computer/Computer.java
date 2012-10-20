@@ -68,9 +68,9 @@ public class Computer {
 	private String currentDirectory = "";
 	private String currentProgram = null;
 	private int openFileHandles = 0;
-	private LuaState luaState;
+	protected LuaState luaState;
 	private Set<LuaAPI> apis = new HashSet<LuaAPI>();
-	public static final Object luaStateLock = new Object();
+	protected final Object luaStateLock = new Object();
 	private List<String> previousCommands = new ArrayList<String>();
 	private volatile boolean wasResumed = false;
 	private NBTTagCompound programStorage;
@@ -333,7 +333,7 @@ public class Computer {
 	@ExposedToLua(value = false)
 	public void tick() {
 		if (killYielded)
-			postEvent("resume");
+			postEvent("killyield");
 
 		if (getKeyboard().getKeysInBuffer() > 0) {
 			if (getKeyboard().peak() > Character.MAX_VALUE)
@@ -362,18 +362,52 @@ public class Computer {
 				luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
 				luaState.getField(-1, "resume");
 				luaState.remove(-2);
-				luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
-				if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
-					luaState.pop(luaState.getTop());
+				int argSize = 0;
+				boolean drone = false;
+				// Should we even try to load the drone BIOS
+				if (eventName == "start" || eventName == "resume") {
+					// Check to see if the drone coroutine exists
+					luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine_drone");
+					if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
+						// Nope it doesn't exist or its dead, pop the value
+						luaState.pop(1);
+					} else {
+						argSize += 1;
+						drone = true;
+					}
+				}
+				// Lets see if we should push the main coroutine
+				if (!drone || (eventName == "start" || eventName == "resume")) {
+					// Its either not a drone or its the start of a drone
+					luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+					if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
+						// Oops we must of shutdown or something
+						luaState.pop(luaState.getTop());
+						return;
+					} else {
+						// Its a valid thread
+						argSize += 1;
+					}
+				}
+				if (argSize <= 0) {
+					// Both of the threads are non existent
 					return;
 				}
-				luaState.pushString(eventName);
-				for (Object arg : args) {
-					luaState.pushJavaObject(arg);
+				// Lets check if we should push arguments
+				if (eventName != "start" && eventName != "resume" && eventName != "killyield") {
+					// Its not a blacklisted event name lets push the arguments
+					luaState.pushString(eventName);
+					for (Object arg : args) {
+						luaState.pushJavaObject(arg);
+					}
+					argSize += 1 + args.length;
 				}
-				luaState.call(2 + args.length, LuaState.MULTRET);
+				// Lets call the coroutine
+				luaState.call(argSize, LuaState.MULTRET);
+				// Reset the yield kill line counter to 100 lines
 				luaState.reset_kill(100);
 
+				// Check the results
 				if (luaState.isBoolean(1))
 					if (!luaState.checkBoolean(1, true))
 						throw new LuaRuntimeException("Runtime error!");
@@ -405,6 +439,7 @@ public class Computer {
 			this.setRunning(false);
 			return;
 		}
+		// Lets make sure the stack is clean
 		luaState.pop(luaState.getTop());
 	}
 
@@ -600,6 +635,7 @@ public class Computer {
 				}.init(this)
 		};
 		luaState.register("os", osFunctions);
+		luaState.pop(1);
 
 		// Load ElectroCraft default libraries
 		loadAPI(new ComputerFile());
@@ -618,7 +654,7 @@ public class Computer {
 			@Override
 			public void run() {
 				while (computer.isRunning()) {
-					synchronized(Computer.luaStateLock) {
+					synchronized(luaStateLock) {
 						if (!computer.getLuaState().isOpen())
 							break;
 						// System memory check

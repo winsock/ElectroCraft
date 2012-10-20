@@ -117,7 +117,7 @@ public class ElectroCraft {
         
         // Register the drone entity
         EntityRegistry.registerGlobalEntityID(EntityDrone.class, "ecdrone", EntityRegistry.findGlobalUniqueEntityId(), 0xFFFFFF, 0x000000);
-        EntityRegistry.registerModEntity(EntityDrone.class, "ecdrone", 0, this, 128, 1, false);
+        EntityRegistry.registerModEntity(EntityDrone.class, "ecdrone", 0, this, 128, 1, true);
         
         // Register our world generator
         GameRegistry.registerWorldGenerator(new WorldGenerator());

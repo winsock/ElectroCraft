@@ -189,7 +189,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
 	    		computer.registerNetworkBlock(ioPort);
 	    	}
 	    	computer.loadBios();
-	    	computer.postEvent("startup");
+	    	computer.postEvent("start");
     	}
     }
     
