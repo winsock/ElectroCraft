@@ -114,8 +114,9 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			}
 			return;
 		}
-		if (drone != null && drone.isRunning())
+		if (drone != null && drone.isRunning()) {
 			drone.tick();
+		}
 		if (rotationTicks > 0) {
 			rotationTicks--;
 			if (rotationTicks <= 0) {

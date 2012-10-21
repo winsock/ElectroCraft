@@ -186,7 +186,7 @@ public class ElectroCraft implements IElectroCraft {
     };
     
     public Entity getEntityByID(int entityID, World world) {
-    	for (Object o: world.getLoadedEntityList()) {
+    	for (Object o: world.loadedEntityList) {
     		if (!(o instanceof Entity))
     			continue;
     		if (((Entity)o).entityId == entityID) {

@@ -473,11 +473,58 @@ public class Computer {
 						luaState.getGlobal(m);
 						if (luaState.type(-1) != LuaType.FUNCTION) {
 							onSaveMethods.remove(m);
+							luaState.pop(1);
 							getTerminal().print("Invalid save method: " + m);
 							continue;
 						}
-						luaState.pushJavaObject(programStorage);
-						luaState.call(1, 0);
+						luaState.newThread();
+						luaState.setField(LuaState.REGISTRYINDEX, "save_thread");
+						
+						try {
+							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+							luaState.getField(-1, "resume");
+							luaState.remove(-2);
+							luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+							luaState.pushJavaObject(programStorage);
+							luaState.call(2, 0);
+							luaState.reset_kill(1000);
+							if (luaState.isBoolean(1))
+								if (!luaState.checkBoolean(1, true))
+									throw new LuaRuntimeException("Runtime error!");
+							luaState.pop(luaState.getTop());
+
+							luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+							while (luaState.status(-1) == LuaState.YIELD) {
+								luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+								luaState.getField(-1, "resume");
+								luaState.remove(-2);
+								luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+								luaState.call(1, 0);
+								luaState.reset_kill(1000);
+								if (luaState.isBoolean(1))
+									if (!luaState.checkBoolean(1, true))
+										throw new LuaRuntimeException("Runtime error!");
+								if (luaState.getTop() == 1) {
+									break;
+								}
+								luaState.pop(luaState.getTop());
+								luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+							}
+							luaState.pop(luaState.getTop());
+						} catch (LuaSyntaxException e) {
+							getTerminal().print("Syntax Error!");
+							e.printStackTrace(new PrintWriter(getTerminal()));
+						} catch (LuaRuntimeException e) {
+							getTerminal().print("Runtime Error!");
+							if (luaState.isString(-1))
+								getTerminal().print(luaState.checkString(-1));
+							else {
+								e.printLuaStackTrace(new PrintWriter(getTerminal()));
+								e.printLuaStackTrace();
+							}
+							this.setRunning(false);
+							return;
+						}
 					} catch (LuaSyntaxException e) {
 						System.out.println("Error running lua script: Syntax Error!");
 						System.out.println(e.getLocalizedMessage());
@@ -489,6 +536,7 @@ public class Computer {
 				}
 			}
 		}
+		luaState.reset_kill(100);
 	}
 
 	@ExposedToLua(value = false)
