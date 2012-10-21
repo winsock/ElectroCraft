@@ -99,7 +99,7 @@ public class ElectroCraft implements IElectroCraft {
     public void preInit(FMLPreInitializationEvent event) {
         // Create and load the config
         ConfigHandler.loadOrCreateConfigFile("default.cfg");
-        ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false);
+        ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", true);
     	ConfigHandler.getCurrentConfig().save();
     }
 

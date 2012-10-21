@@ -332,6 +332,10 @@ public class Terminal extends Writer {
 		}
 		newTerminal.put(rows.size(), new TreeMap<Integer, Character>());
 		terminal = newTerminal;
+		int[] updateRows = new int[this.rows];
+		for (int i = row; i < this.rows; i++)
+			updateRows[i] = i;
+		sendUpdate(updateRows);
 	}
 	
 	@ExposedToLua
@@ -344,12 +348,16 @@ public class Terminal extends Writer {
 			if (j == row) {
 				newTerminal.put(j, new TreeMap<Integer, Character>());
 			} else if (j > row) {
-				newTerminal.put(j + 1, terminal.get(rows.get(j - 1)));
+				newTerminal.put(j, terminal.get(rows.get(j - 1)));
 			} else {
 				newTerminal.put(j, terminal.get(rows.get(j)));
 			}
 		}
 		terminal = newTerminal;
+		int[] updateRows = new int[this.rows];
+		for (int i = row; i < this.rows; i++)
+			updateRows[i] = i;
+		sendUpdate(updateRows);
 	}
 	
 	@ExposedToLua
@@ -440,15 +448,18 @@ public class Terminal extends Writer {
 							if (j == currentRow || rows.size() <= j) {
 								newTerminal.put(j, new TreeMap<Integer, Character>());
 							} else if (j > currentRow) {
-								newTerminal.put(j + 1, terminal.get(rows.get(j - 1)));
+								newTerminal.put(j, terminal.get(rows.get(j - 1)));
 							} else {
 								newTerminal.put(j, terminal.get(rows.get(j)));
 							}
 						}
 						currentColumn = 0;
 						columnOffset = 0;
-						sendUpdate(currentRow, currentRow - 1);
 						terminal = newTerminal;
+						int[] updateRows = new int[this.rows];
+						for (int j = currentRow; j < this.rows; j++)
+							updateRows[j] = j;
+						sendUpdate(updateRows);
 					}
 				} else {
 					setChar(currentRow, currentColumn, arg0[i]);

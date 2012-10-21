@@ -150,8 +150,8 @@ while running do
 		end
 	elseif event == "key" then
 		if key == "\n" then
-			if data[row + rowOffset] and data[row + rowOffset]:len() > col + 1 then
-				local part = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
+			if data[row + rowOffset] and data[row + rowOffset]:len() > col then
+				local part = data[row + rowOffset]:sub(col, data[row + rowOffset]:len())
 				data[row + rowOffset] = data[row + rowOffset]:sub(0, col)
 				term:clearLine()
 				write(data[row + rowOffset])
@@ -164,8 +164,7 @@ while running do
 						write("\n" .. data[i])
 					end
 				end
-				col = 0
-				term:setPosition(row - 1, col)
+				col = 0	
 			else
 				col = 0
 				table.insert(data, row + rowOffset + 1, "")
@@ -176,6 +175,7 @@ while running do
 			else
 				row = row + 1
 			end
+			term:setPosition(row - 1, col)
 		elseif term:isCharVisible(key) or key == "\t" then
 			local front = ""
 			local back = ""
@@ -217,12 +217,13 @@ while running do
 					local part = data[row + rowOffset]:sub(0, data[row + rowOffset]:len())
 					if not data[row + rowOffset - 1] then
 						data[row + rowOffset - 1] = part
+						col = 0
 					else
+						col = data[row + rowOffset - 1]:len()
 						data[row + rowOffset - 1] = data[row + rowOffset - 1] .. part
 					end
 					term:setPosition(row - 2, data[row + rowOffset - 1]:len())
 					write(part)
-					col = data[row + rowOffset]:len()
 				end
 				table.remove(data, row + rowOffset)
 				term:deleteRow(row - 1)
