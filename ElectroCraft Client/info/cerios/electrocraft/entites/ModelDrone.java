@@ -56,11 +56,11 @@ public class ModelDrone extends ModelBase
 	}
 
 	public void setRotationAngles(float f, float f1, float f2, float f3, float f4, float f5) {
-		DroneBody.rotateAngleY = (f - f1) * ((float)Math.PI / 180f);
+		DroneBody.rotateAngleY = ((f - f1) - 90) * ((float)Math.PI / 180f);
 		DroneBody.rotateAngleX = 0;
-		DroneBody1.rotateAngleY = (f - f1) * ((float)Math.PI / 180f);
+		DroneBody1.rotateAngleY = ((f - f1) - 90) * ((float)Math.PI / 180f);
 		DroneBody1.rotateAngleX = 0;
-		BodyConnector.rotateAngleY = (f - f1) * ((float)Math.PI / 180f);
+		BodyConnector.rotateAngleY = ((f - f1) - 90) * ((float)Math.PI / 180f);
 		BodyConnector.rotateAngleX = 0;
 	}
 }

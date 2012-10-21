@@ -1,7 +1,11 @@
 local tArgs = {...}
 
-drone.dir = {
+drone.forgeDir = {
 	up = 1, down = 0, north = 2, south = 3, east = 5, west = 4, unknown = 6
+}
+
+drone.dir = {
+	north = 0, west = 1, south = 2, east = 3, unknown = 4
 }
 
 if (#tArgs > 0) then

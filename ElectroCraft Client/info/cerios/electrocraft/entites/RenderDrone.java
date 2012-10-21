@@ -36,9 +36,10 @@ public class RenderDrone extends RenderLiving {
             // Item render code *Copied from RenderPlayer*
     		GL11.glRotatef(180, 1, 0, 0);
     		GL11.glRotatef(-50f, 0, 1, 0);
+    		GL11.glRotatef(90, 0, 1, 0);
     		GL11.glTranslatef(0, -1, 0);
         	GL11.glRotatef(10 - ((EntityDrone)par1EntityLiving).getRotationTicks(), 1, 0, 1);
-        	GL11.glTranslatef(0.0575f, 0, 0);
+        	GL11.glTranslatef(0.0625f, 0, 0);
 
         	if (par1EntityLiving.getHeldItem().getItem().requiresMultipleRenderPasses())
         	{

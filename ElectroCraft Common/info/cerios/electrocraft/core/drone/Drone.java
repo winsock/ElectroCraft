@@ -65,13 +65,36 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						luaState.pushBoolean(drone.drone.getNavigator().tryMoveToXYZ(luaState.checkNumber(-4), luaState.checkNumber(-3), luaState.checkNumber(-2), (float) luaState.checkNumber(-1)));
+						ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+						int x = (int)(Math.ceil(drone.drone.posX) + dir.offsetX);
+						int y = (int)(Math.floor(drone.drone.posY) + dir.offsetY);
+						int z = (int)(Math.ceil(drone.drone.posZ) + dir.offsetZ);
+						luaState.pushBoolean(drone.drone.getNavigator().tryMoveToXYZ(x, y, z, 0.2f));
 						return 1;
 					}
 
 					@Override
 					public String getName() {
 						return "move";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushBoolean(drone.drone.getNavigator().tryMoveToXYZ(luaState.checkNumber(-4), luaState.checkNumber(-3), luaState.checkNumber(-2), (float) luaState.checkNumber(-1)));
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "moveTo";
 					}
 				}.init(this),
 				new NamedJavaFunction() {
@@ -148,6 +171,25 @@ public class Drone extends Computer {
 
 					@Override
 					public String getName() {
+						return "getForgeDir";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushInteger(getDir(drone.drone.rotationYaw));
+						return 1;
+					}
+
+					@Override
+					public String getName() {
 						return "getDir";
 					}
 				}.init(this),
@@ -162,9 +204,9 @@ public class Drone extends Computer {
 					@Override
 					public int invoke(LuaState luaState) {
 						ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
-						int x = (int)(Math.floor(drone.drone.posX) + dir.offsetX);
+						int x = (int)(Math.ceil(drone.drone.posX) + dir.offsetX);
 						int y = (int)(Math.floor(drone.drone.posY) + dir.offsetY);
-						int z = (int)(Math.floor(drone.drone.posZ) + dir.offsetZ);
+						int z = (int)(Math.ceil(drone.drone.posZ) + dir.offsetZ);
 						luaState.pushInteger(drone.drone.worldObj.getBlockId(x, y, z));
 						luaState.pushInteger(drone.drone.worldObj.getBlockMetadata(x, y, z));
 						return 2;
@@ -213,27 +255,69 @@ public class Drone extends Computer {
 						return "rotate";
 					}
 				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						if (luaState.isBoolean(-1) && luaState.checkBoolean(-1, false)) {
+							drone.drone.setPositionAndRotation2(drone.drone.posX, drone.drone.posY, drone.drone.posZ, getRotation(ForgeDirection.getOrientation(luaState.checkInteger(-2))), drone.drone.rotationPitch, 10);
+						} else {
+							drone.drone.setPositionAndRotation2(drone.drone.posX, drone.drone.posY, drone.drone.posZ, getRotation(getDirection(luaState.checkInteger(-1))), drone.drone.rotationPitch, 10);
+						}
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "face";
+					}
+				}.init(this),
 		};
 		this.getLuaState().register("drone", droneAPI);
 		luaState.pop(1);
 	}
 	
+	public int getDir(float rotation) {
+		return MathHelper.floor_double((double)((rotation <= 0 ? (Math.abs(rotation) + 180) : (rotation)) * 4.0F / 360.0F) + 0.5D) & 3;
+	}
+	
 	public ForgeDirection getDirection(float rotation) {
-		return getDirection((MathHelper.floor_double((double)(rotation * 4.0F / 360.0F) + 0.5D) & 3));
+		return getDirection(getDir(rotation));
 	}
 	
 	public ForgeDirection getDirection(int direction) {
 		switch (direction) {
 		case 0:
-			return ForgeDirection.WEST;
-		case 1:
 			return ForgeDirection.NORTH;
+		case 1:
+			return ForgeDirection.WEST;
 		case 2:
-			return ForgeDirection.EAST;
-		case 3:
 			return ForgeDirection.SOUTH;
+		case 3:
+			return ForgeDirection.EAST;
 		default:
 			return ForgeDirection.UNKNOWN;
+		}
+	}
+	
+	public float getRotation(ForgeDirection direction) {
+		switch (direction) {
+		case NORTH:
+			return 0f;
+		case WEST:
+			return 90f;
+		case SOUTH:
+			return 180f;
+		case EAST:
+			return 270f;
+		default:
+			return 0f;
 		}
 	}
 }
