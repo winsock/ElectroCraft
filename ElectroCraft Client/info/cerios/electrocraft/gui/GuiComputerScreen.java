@@ -180,21 +180,21 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 							PacketDispatcher.sendPacketToServer(packet.getMCPacket());
 						}
 						shouldAskForScreenPacket = false;
-					} else {
-						for (int i = 0; i < rows; i++) {
-							if (ElectroCraftClient.instance.usingComputerClient()) {
-								ElectroCraftClient.instance.getComputerClient().sendTerminalPacket(i);
-							} else {
-								CustomPacket packet = new CustomPacket();
-								packet.id = 2;
-								ByteArrayOutputStream out = new ByteArrayOutputStream();
-								DataOutputStream dos = new DataOutputStream(out);
-								dos.writeInt(i);
-								packet.data = out.toByteArray();
-								PacketDispatcher.sendPacketToServer(packet.getMCPacket());
-							}
-							shouldAskForScreenPacket = false;
-						}
+//					} else {
+//						for (int i = 0; i < rows; i++) {
+//							if (ElectroCraftClient.instance.usingComputerClient()) {
+//								ElectroCraftClient.instance.getComputerClient().sendTerminalPacket(i);
+//							} else {
+//								CustomPacket packet = new CustomPacket();
+//								packet.id = 2;
+//								ByteArrayOutputStream out = new ByteArrayOutputStream();
+//								DataOutputStream dos = new DataOutputStream(out);
+//								dos.writeInt(i);
+//								packet.data = out.toByteArray();
+//								PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+//							}
+//							shouldAskForScreenPacket = false;
+//						}
 					}
 				} catch (IOException e) {
 					ElectroCraft.instance.getLogger().severe("Unable to send screen update packet!");
@@ -380,15 +380,16 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 						terminalList.put(row, "");
 					}
 				} else if (transmissionType == 1) {
-					boolean shiftRowsUp = in.read() == 0 ? false : true;
-					int numberOfChangedRows = dis.readInt();
-
-					ObjectPair<Integer, String>[] changedRows = new ObjectPair[numberOfChangedRows];
-					for (int i = 0; i < numberOfChangedRows; i++) {
-						int rowNumber = dis.readInt();
-						terminalList.put(rowNumber, dis.readUTF());
-					}
-				}
+                	int numberOfChangedRows = dis.readInt();
+                	for (int i = 0; i < numberOfChangedRows; i++) {
+                		int rowNumber = dis.readInt();
+                		if (dis.readBoolean()) {
+                    		terminalList.put(rowNumber, dis.readUTF());
+                    	} else {
+                    		terminalList.put(rowNumber, "");
+                    	}
+                	}
+                }
 				shouldAskForScreenPacket = true;
 			}
 		} catch (IOException e) {
@@ -429,6 +430,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 						displayBuffer.put(blue);
 					}
 					displayBuffer.rewind();
+					shouldAskForScreenPacket = true;
 				} else if (type == ComputerProtocol.TERMINAL) {
 					rows = (Integer) objects[2];
 					columns = (Integer) objects[3];
@@ -449,7 +451,6 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 						}
 					}
 				}
-				shouldAskForScreenPacket = true;
 			}
 			return null;
 		}

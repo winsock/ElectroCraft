@@ -1,15 +1,29 @@
 package info.cerios.electrocraft.core.computer;
 
 import info.cerios.electrocraft.api.computer.ExposedToLua;
+import info.cerios.electrocraft.core.ConfigHandler;
+import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.core.network.CustomPacket;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.common.network.Player;
+
+import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.EntityPlayerMP;
 
 @ExposedToLua
 public class Terminal extends Writer {
@@ -19,29 +33,128 @@ public class Terminal extends Writer {
 	private int currentColumn, currentRow;
 	private int columnOffset = 0;
 	private Object syncObject = new Object();
+	private Computer computer;
 	private volatile boolean editing = false;
+	private List<int[]> queuedUpdates = new ArrayList<int[]>();
+	private Map<EntityPlayer, List<int[]>> queuedPlayerUpdates = new HashMap<EntityPlayer, List<int[]>>();
 
 	@ExposedToLua(value = false)
-	public Terminal(int rows, int columns) {
+	public Terminal(int rows, int columns, Computer computer) {
 		this.columns = columns;
 		this.rows = rows;
+		this.computer = computer;
 		terminal = new TreeMap<Integer, Map<Integer, Character>>();
+	}
+	
+	@ExposedToLua(value = false)
+	public void updateTick() {
+		if (!editing && (queuedUpdates.size() > 0 || queuedPlayerUpdates.size() > 0)) {
+			for (int[] rows : queuedUpdates) {
+				sendUpdate(rows);
+			}
+			queuedUpdates.clear();
+			for (EntityPlayer key : queuedPlayerUpdates.keySet()) {
+				for (int[] rows : queuedPlayerUpdates.get(key)) {
+					sendUpdate(key, rows);
+				}
+			}
+			queuedPlayerUpdates.clear();
+		}
+	}
+	
+	@ExposedToLua(value = false)
+	public void sendUpdate(EntityPlayer player, int... rows) {
+		if (editing) {
+			if (queuedPlayerUpdates.containsKey(player)) {
+				List<int[]> queue = queuedPlayerUpdates.get(player);
+				queue.add(rows);
+				queuedPlayerUpdates.put(player, queue);
+			} else {
+				List<int[]> queue = new ArrayList<int[]>();
+				queue.add(rows);
+				queuedPlayerUpdates.put(player, queue);
+			}
+		} else if (ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false)) {
+			sendPacketUpdate(player, rows);
+		} else {
+			sendCustomServerUpdate(rows);
+		}
+	}
+	
+	@ExposedToLua(value = false)
+	public void sendUpdate(int... rows) {
+		if (editing) {
+			queuedUpdates.add(rows);
+		} else if (ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false)) {
+			sendPacketUpdate(null, rows);
+		} else {
+			sendCustomServerUpdate(rows);
+		}
+	}
+	
+	@ExposedToLua(value = false)
+	public void sendPacketUpdate(EntityPlayer player, int... rows) {
+		try {
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			DataOutputStream dos = new DataOutputStream(out);
+			dos.writeInt(getColumns());
+			dos.writeInt(getRows());
+			dos.writeInt(getCurrentColumn());
+			dos.writeInt(getCurrentRow());
+			if (rows.length == 1) {
+				out.write(0); // Terminal packet type 0
+				dos.writeInt(rows[0]);
+				String rowData = getLine(rows[0]);
+				if (!rowData.isEmpty()) {
+					dos.writeBoolean(true);
+					dos.writeUTF(rowData);
+				} else {
+					dos.writeBoolean(false);
+				}
+			} else {
+				out.write(1); // Terminal packet type 1
+				dos.writeInt(rows.length);
+				for (int row : rows) {
+					dos.writeInt(row);
+					String rowData = getLine(row);
+					if (!rowData.isEmpty()) {
+						dos.writeBoolean(true);
+						dos.writeUTF(rowData);
+					} else {
+						dos.writeBoolean(false);
+					}
+				}
+			}
+			CustomPacket returnPacket = new CustomPacket();
+			returnPacket.id = 2;
+			returnPacket.data = out.toByteArray();
+			if (player != null) {
+				PacketDispatcher.sendPacketToPlayer(returnPacket.getMCPacket(), (Player) player);
+			} else {
+				for (EntityPlayer e : computer.getClients()) {
+					PacketDispatcher.sendPacketToPlayer(returnPacket.getMCPacket(), (Player) e);
+				}
+			}
+		} catch (IOException e) {
+			ElectroCraft.instance.getLogger().fine("Error sending screen update packet");
+		}
+	}
+	
+	@ExposedToLua(value = false)
+	public void sendCustomServerUpdate(int... rows) {
+		for (EntityPlayer e : computer.getClients()) {
+			ElectroCraft.instance.getServer().getClient((EntityPlayerMP) e).sendScreenUpdate(rows);
+		}
+	}
+	
+	@ExposedToLua(value = false)
+	public void sendCustomServerUpdate(EntityPlayer player, int... rows) {
+		ElectroCraft.instance.getServer().getClient((EntityPlayerMP) player).sendScreenUpdate(rows);
 	}
 	
 	@ExposedToLua(value = false)
 	public String getLine(int row) {
 		String output = "";
-		int timeWaited = 0;
-		while (editing) {
-			if (timeWaited > 1000) {
-				editing = false;
-			}
-			try {
-				Thread.sleep(1);
-				timeWaited += 1;
-			} catch (InterruptedException e) {
-			}
-		}
 		synchronized(syncObject) {
 			if (getRow(row) != null) {
 				for (int i = columnOffset; i < columns + columnOffset; i++) {
@@ -101,13 +214,19 @@ public class Terminal extends Writer {
 			currentColumn = 0;
 			columnOffset = 0;
 		}
+		int[] updateRows = new int[rows];
+		for (int i = 0; i < rows; i++)
+			updateRows[i] = i;
+		sendUpdate(updateRows);
 	}
 	
 	@ExposedToLua
 	public void clearLine() {
 		synchronized(syncObject) {
-			if (getRow(currentRow) != null)
+			if (getRow(currentRow) != null) {
 				getRow(currentRow).clear();
+				sendUpdate(currentRow);
+			}
 			currentColumn = 0;
 			columnOffset = 0;
 		}
@@ -176,7 +295,7 @@ public class Terminal extends Writer {
 			} else {
 				columnOffset = 0;
 			}
-			
+			int oldRow = this.currentRow;
 			this.currentRow = row;
 			Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 			List<Integer> rows = new ArrayList<Integer>();
@@ -190,6 +309,7 @@ public class Terminal extends Writer {
 			}
 			terminal = newTerminal;
 			this.currentColumn = column;
+			sendUpdate(currentRow, oldRow);
 		}
 	}
 	
@@ -259,6 +379,7 @@ public class Terminal extends Writer {
 					}
 					terminal.put(currentRow, newRow);
 				}
+				sendUpdate(currentRow);
 			} else if ((currentRow > 0) && canDeleteLine) {
 				Map<Integer, Character> oldRow = terminal.get(currentRow);
 				currentRow--;
@@ -273,6 +394,7 @@ public class Terminal extends Writer {
 					columnOffset = currentColumn - columns;
 					currentColumn = columns;
 				}
+				sendUpdate(currentRow, currentRow + 1);
 			}
 		}
 	}
@@ -303,6 +425,12 @@ public class Terminal extends Writer {
 						}
 						terminal = newTerminal;
 						currentRow = this.rows - 1;
+						currentColumn = 0;
+						columnOffset = 0;
+						int[] updateRows = new int[this.rows];
+						for (int j = 0; j < this.rows; j++)
+							updateRows[j] = j;
+						sendUpdate(updateRows);
 					} else {
 						Map<Integer, Map<Integer, Character>> newTerminal = new TreeMap<Integer, Map<Integer, Character>>();
 						List<Integer> rows = new ArrayList<Integer>();
@@ -317,16 +445,18 @@ public class Terminal extends Writer {
 								newTerminal.put(j, terminal.get(rows.get(j)));
 							}
 						}
+						currentColumn = 0;
+						columnOffset = 0;
+						sendUpdate(currentRow, currentRow - 1);
 						terminal = newTerminal;
 					}
-					currentColumn = 0;
-					columnOffset = 0;
 				} else {
 					setChar(currentRow, currentColumn, arg0[i]);
 					if (++currentColumn > columns) {
 						columnOffset++;
 						currentColumn = columns;
 					}
+					sendUpdate(currentRow);
 				}
 			}
 		}

@@ -62,6 +62,43 @@ public class ComputerServerClient implements Runnable {
 		}
 	}
 	
+	public void sendScreenUpdate(int... rows) {
+		synchronized (syncObject) {
+			try {
+				out.write(ComputerProtocol.TERMINAL.ordinal());
+				dos.writeInt(computer.getComputer().getTerminal().getColumns());
+				dos.writeInt(computer.getComputer().getTerminal().getRows());
+				dos.writeInt(computer.getComputer().getTerminal().getCurrentColumn());
+				dos.writeInt(computer.getComputer().getTerminal().getCurrentRow());
+				if (rows.length == 1) {
+					out.write(0); // Terminal packet type 0
+					dos.writeInt(rows[0]); // Resend the row number
+					String rowData = computer.getComputer().getTerminal().getLine(rows[0]);
+					if (!rowData.isEmpty()) {
+						dos.writeBoolean(true);
+						dos.writeUTF(rowData);
+					} else {
+						dos.writeBoolean(false);
+					}
+				} else {
+					out.write(1); // Terminal packet type 0
+					dos.writeInt(rows.length);
+					for (int row : rows) {
+						String rowData = computer.getComputer().getTerminal().getLine(row);
+						if (!rowData.isEmpty()) {
+							dos.writeBoolean(true);
+							dos.writeUTF(rowData);
+						} else {
+							dos.writeBoolean(false);
+						}
+					}
+				}
+			} catch (IOException e) {
+
+			}
+		}
+	}
+	
 	@Override
 	public void run() {
 		while (server.getRunning() && socket.isConnected()) {

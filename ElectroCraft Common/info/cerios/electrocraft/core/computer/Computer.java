@@ -87,7 +87,7 @@ public class Computer {
 		this.isInternal = isInternal;
 		this.soundCard = new SoundCard();
 		this.videoCard = new VideoCard(width, height);
-		this.terminal = new Terminal(rows, columns);
+		this.terminal = new Terminal(rows, columns, this);
 		this.keyboard = new Keyboard(terminal);
 		this.clients = clients;
 		this.bootScript = script;
@@ -122,6 +122,10 @@ public class Computer {
 			} catch (IOException e) {
 			}
 		}
+		int[] rows = new int[terminal.getRows()];
+		for (int i = 0; i < terminal.getRows(); i++)
+			rows[i] = i;
+		terminal.sendUpdate(client, rows);
 	}
 
 	@ExposedToLua(value = false)
@@ -334,6 +338,9 @@ public class Computer {
 
 	@ExposedToLua(value = false)
 	public void tick() {
+		// Update the terminal to send any pending terminal packets
+		terminal.updateTick();
+		
 		if (killYielded)
 			postEvent("killyield");
 

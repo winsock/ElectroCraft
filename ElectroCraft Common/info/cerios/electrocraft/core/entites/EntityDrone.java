@@ -128,7 +128,16 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	public void setClientFlying(boolean fly) {
 		this.clientFlying = fly;
 	}
-		
+	
+	public void rotate(float yaw, int ticks) {
+		this.newPosX = this.posX;
+		this.newPosY = this.posY;
+		this.newPosZ = this.posZ;
+		this.newPosRotationIncrements = ticks;
+		this.newRotationYaw = yaw;
+		this.newRotationPitch = 0f;
+	}
+	
 	@Override
 	protected void fall(float par1) {
 		if (worldObj.isRemote) {

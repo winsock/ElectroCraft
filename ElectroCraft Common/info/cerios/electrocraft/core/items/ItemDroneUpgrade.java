@@ -127,7 +127,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							drone.getDrone().setPositionAndRotation2(drone.getDrone().posX, drone.getDrone().posY, drone.getDrone().posZ, (float) luaState.checkNumber(-1), drone.getDrone().rotationPitch, 10);
+							drone.getDrone().rotate((float) luaState.checkNumber(-1), 10);
 							return 0;
 						}
 

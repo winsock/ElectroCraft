@@ -165,13 +165,16 @@ public class ComputerClient implements Runnable {
                     		returnData = new Object[] {row, ""};
                     	}
                     } else if (transmissionType == 1) {
-                    	boolean shiftRowsUp = in.read() == 0 ? false : true;
                     	int numberOfChangedRows = dis.readInt();
                     	
                     	ObjectPair<Integer, String>[] changedRows = new ObjectPair[numberOfChangedRows];
                     	for (int i = 0; i < numberOfChangedRows; i++) {
                     		int rowNumber = dis.readInt();
-                    		changedRows[i] = new ObjectPair<Integer, String>(rowNumber, dis.readUTF());
+                    		if (dis.readBoolean()) {
+                        		changedRows[i] = new ObjectPair<Integer, String>(rowNumber, dis.readUTF());
+                        	} else {
+                        		returnData = new ObjectPair<Integer, String>(rowNumber, "");
+                        	}
                     	}
                     	
                     	returnData = new Object[] {numberOfChangedRows, changedRows};

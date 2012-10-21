@@ -45,7 +45,9 @@ end
 if (#tArgs > 0) and (type(tArgs[1]) == "userdata") then
 	path = tArgs[1]:getString("path")
 	currentFile = tArgs[1]:getString("currentFile")
-	shell.run(currentFile, tArgs[1])
+	if currentFile and currentFile:len() > 0 then
+		shell.run(currentFile, tArgs[1])
+	end
 end
 
 local history = {}
