@@ -38,7 +38,7 @@ function shell.setPath(newPath)
 	path = newPath
 end
 
-if #tArgs == 1 then
+if (#tArgs > 0) and (type(tArgs[1]) == "userdata") then
 	path = tArgs[1]:getString("path")
 	currentFile = tArgs[1]:getString("currentFile")
 	shell.run(currentFile, tArgs[1])

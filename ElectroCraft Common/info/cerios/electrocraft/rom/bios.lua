@@ -142,8 +142,8 @@ if err then
 	error(err)
 end
 
-if #tArgs > 1 then
-	local ok, err = os.run(func, tArgs[2])
+if #tArgs > 0 then
+	local ok, err = os.run(func, tArgs[1])
 	if not ok and err then
 		print(err)
 	end

@@ -23,6 +23,7 @@ import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.drone.tools.SwordTool;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.CustomPacket;
 
@@ -162,7 +163,7 @@ public class Drone extends Computer {
 		if ((leftCard == null || (card != leftCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
 			synchronized(luaStateLock) {
 				luaState.register(card.getName(stack), card.getFunctions(stack, this));
-				luaState.pop(1);
+				luaState.setGlobal(card.getName(stack));
 			}
 		}
 		this.leftCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
@@ -178,7 +179,7 @@ public class Drone extends Computer {
 		if ((rightCard == null || (card != rightCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
 			synchronized(luaStateLock) {
 				luaState.register(card.getName(stack), card.getFunctions(stack, this));
-				luaState.pop(1);
+				luaState.setGlobal(card.getName(stack));
 			}
 		}
 		this.rightCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
@@ -189,6 +190,21 @@ public class Drone extends Computer {
 	}
 	
 	public void setFlying(boolean fly) {
+		if (fly != flying) {
+			CustomPacket packet = new CustomPacket();
+			packet.id = 6;
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			DataOutputStream dos = new DataOutputStream(bos);
+			try {
+				dos.writeInt(drone.entityId);
+				dos.writeBoolean(fly);
+				packet.id = 6;
+				packet.data = bos.toByteArray();
+				PacketDispatcher.sendPacketToAllAround(drone.posX, drone.posY, drone.posZ, 20, drone.worldObj.provider.dimensionId, packet.getMCPacket());
+			} catch (IOException e) {
+				ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
+			}
+		}
 		this.flying = fly;
 	}
 	
@@ -228,5 +244,10 @@ public class Drone extends Computer {
 		default:
 			return 0f;
 		}
+	}
+	
+	// Register tools
+	static {
+		ElectroCraft.instance.registerDroneTool(new SwordTool());
 	}
 }

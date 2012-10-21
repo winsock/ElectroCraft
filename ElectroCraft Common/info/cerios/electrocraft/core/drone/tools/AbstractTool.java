@@ -25,7 +25,7 @@ public class AbstractTool implements IDroneTool {
 	}
 	
 	@Override
-	public List<ItemStack> preformAction(EntityDrone drone, World world, int x, int y, int z) {
+	public List<ItemStack> preformAction(ItemStack item, EntityDrone drone, World world, int x, int y, int z) {
 		List<ItemStack> stacks = drone.getBlockDropped(world, x, y, z);
 		world.setBlockWithNotify(x, y, z, 0);
 		return stacks;

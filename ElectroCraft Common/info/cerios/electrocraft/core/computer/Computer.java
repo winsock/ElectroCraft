@@ -403,7 +403,12 @@ public class Computer {
 						luaState.pushJavaObject(arg);
 					}
 					argSize += 1 + args.length;
+				} else if (eventName == "resume" && args.length > 0) {
+					// If we are resuming push the program storage
+					luaState.pushJavaObject(args[0]);
+					argSize += 1;
 				}
+				
 				// Lets call the coroutine
 				luaState.call(argSize, LuaState.MULTRET);
 				// Reset the yield kill line counter to 100 lines
@@ -460,7 +465,7 @@ public class Computer {
 
 	@ExposedToLua(value = false)
 	public void callSave() {
-		if (running && currentProgram != null) {
+		if (running) {
 			programStorage = new NBTTagCompound(currentProgram);
 			for (String m : onSaveMethods) {
 				synchronized(luaStateLock) {
@@ -500,7 +505,7 @@ public class Computer {
 		apis.add(api);
 		synchronized(luaStateLock) {
 			getLuaState().register(api.getNamespace(), api.getGlobalFunctions(this));
-			luaState.pop(1);
+			luaState.setGlobal(api.getNamespace());
 		}
 	}
 

@@ -10,6 +10,6 @@ import net.minecraft.src.World;
 public interface IDroneTool {
 	public boolean isRightTool(ItemStack item);
 	public boolean appliesToBlock(ItemStack item, Block block, int metadata);
-	public List<ItemStack> preformAction(EntityDrone drone, World world, int x, int y, int z);
+	public List<ItemStack> preformAction(ItemStack item, EntityDrone drone, World world, int x, int y, int z);
 	public void damageItem(EntityDrone drone, ItemStack item, Block block, int metadata);
 }

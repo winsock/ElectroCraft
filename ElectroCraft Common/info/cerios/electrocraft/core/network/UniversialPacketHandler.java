@@ -174,6 +174,29 @@ public class UniversialPacketHandler implements IPacketHandler {
 	            				ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
 	            			}
 	                    }
+	            	} else if (customPacket.id == 7) {
+	            		ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
+	                    DataInputStream dis = new DataInputStream(bis);
+	                    int entity = dis.readInt();
+	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
+	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
+	                    	EntityDrone drone = (EntityDrone)possibleEntity;
+	                    	CustomPacket response = new CustomPacket();
+	            			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	            	        DataOutputStream dos = new DataOutputStream(bos);
+	            	        NBTTagCompound inventory = new NBTTagCompound();
+	            	        drone.getInventory().writeToNBT(inventory);
+	            	        try {
+	            		        dos.writeInt(drone.entityId);
+	            		        dos.writeBoolean(((drone.getDrone() == null) ? false : drone.getDrone().getFlying()));
+	            				NBTBase.writeNamedTag(inventory, dos);
+	            				response.id = 7;
+	            				response.data = bos.toByteArray();
+	            		        manager.addToSendQueue(response.getMCPacket());
+	            			} catch (IOException e) {
+	            				ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
+	            			}
+	                    }
 	            	}
 				}
 			} catch (Exception e) {
@@ -216,6 +239,26 @@ public class UniversialPacketHandler implements IPacketHandler {
 	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
 	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
 	                    	((EntityDrone) possibleEntity).setRotationTicks(rotationTicks);
+	                    }
+	            	} else if (customPacket.id == 6) {
+	            		ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
+	                    DataInputStream dis = new DataInputStream(bis);
+	                    int entity = dis.readInt();
+	                    boolean flying = dis.readBoolean();
+	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
+	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
+	                    	((EntityDrone) possibleEntity).setClientFlying(flying);
+	                    }
+	            	} else if (customPacket.id == 7) {
+	            		ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
+	                    DataInputStream dis = new DataInputStream(bis);
+	                    int entity = dis.readInt();
+	                    boolean flying = dis.readBoolean();
+	                    NBTTagCompound inventory = (NBTTagCompound) NBTBase.readNamedTag(dis);
+	                    Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer)player).worldObj);
+	                    if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
+	                    	((EntityDrone) possibleEntity).getInventory().readFromNBT(inventory);
+	                    	((EntityDrone) possibleEntity).setClientFlying(flying);
 	                    }
 	            	} else {
 	            		ElectroCraft.electroCraftSided.handleClientCustomPacket(customPacket);

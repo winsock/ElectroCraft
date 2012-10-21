@@ -45,6 +45,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	private int rotationTicks = 0;
 	private ForgeDirection digDirection = ForgeDirection.UNKNOWN;
 	private AbstractTool defaultTool = new AbstractTool();
+	private boolean clientFlying = false;
 
 	public EntityDrone(World par1World) {
 		super(par1World);
@@ -59,6 +60,14 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		id = nbt.getString("cid");
 		createDrone();
 		inventory.readFromNBT(nbt);
+		if (drone != null) {
+			drone.setFlying(nbt.getBoolean("flying"));
+			if (nbt.getBoolean("isOn")) {
+				drone.setProgramStorage(nbt.getCompoundTag("programStorage"));
+				drone.setRunning(true);
+				drone.callLoad();
+			}
+		}
 	}
 
 	@Override
@@ -66,6 +75,14 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		super.writeEntityToNBT(nbt);
 		inventory.writeToNBT(nbt);
 		nbt.setString("cid", id);
+		if (drone != null) {
+			nbt.setBoolean("flying", drone.getFlying());
+			nbt.setBoolean("isOn", drone.isRunning());
+			
+			drone.callSave();
+            if (drone.getProgramStorage() != null)
+            	nbt.setTag("programStorage", drone.getProgramStorage());
+		}
 	}
 
 	public InventoryDrone getInventory() {
@@ -82,7 +99,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 				DataOutputStream dos = new DataOutputStream(bos);
 				try {
 					dos.writeInt(entityId);
-					packet.id = 4;
+					packet.id = 7;
 					packet.data = bos.toByteArray();
 					PacketDispatcher.sendPacketToServer(packet.getMCPacket());
 				} catch (IOException e) {
@@ -107,9 +124,17 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		}
 	}
 	
+	public void setClientFlying(boolean fly) {
+		this.clientFlying = fly;
+	}
+		
 	@Override
 	protected void fall(float par1) {
-		if (drone != null && !drone.getFlying()) {
+		if (worldObj.isRemote) {
+			if (!clientFlying) {
+				super.fall(par1);
+			}
+		} else if (drone == null || !drone.getFlying()) {
 			super.fall(par1);
 		}
 	}
@@ -121,10 +146,16 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	
 	@Override
 	public void moveEntityWithHeading(float par1, float par2) {
-		if (drone != null && !drone.getFlying()) {
+		if (worldObj.isRemote) {
+			if (!clientFlying) {
+				super.moveEntityWithHeading(par1, par2);
+				return;
+			}
+		} else if (drone == null || !drone.getFlying()) {
 			super.moveEntityWithHeading(par1, par2);
 			return;
 		}
+		// Flying code from EntityFlying
         if (this.isInWater()) {
             this.moveFlying(par1, par2, 0.02F);
             this.moveEntity(this.motionX, this.motionY, this.motionZ);
@@ -209,7 +240,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		}
 		
 		if (tool.appliesToBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
-			for (ItemStack item : tool.preformAction(this, worldObj, x, y, z)) {
+			for (ItemStack item : tool.preformAction(getHeldItem(), this, worldObj, x, y, z)) {
 				addToInventory(item);
 			}
 			tool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));

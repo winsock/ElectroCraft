@@ -6,6 +6,7 @@ import info.cerios.electrocraft.api.computer.IMCRunnable;
 import info.cerios.electrocraft.api.drone.tools.IDroneTool;
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.core.blocks.BlockHandler;
+import info.cerios.electrocraft.core.blocks.ElectroBlock;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
 import info.cerios.electrocraft.core.container.ContainerDrone;
@@ -242,6 +243,12 @@ public class ElectroCraft implements IElectroCraft {
     	GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ElectroItems.ELECTRO_DUST.getItem(), 4), Item.redstone, "magnetiteDust", "magnetiteDust", "magnetiteDust"));
     	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.COMPUTER.getBlock()), "III", "ICI", "IEI", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'I', Item.ingotIron, 'C', Item.compass);
     	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.REDSTONE_ADAPTER.getBlock()), "III", "ICI", "IRI", 'R', Item.redstone, 'I', Item.ingotIron, 'C', Block.thinGlass);
+    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 0), "EDE", "PGP", "DPD", 'E', Item.emerald, 'D', ElectroItems.ELECTRO_DUST.getItem(), 'G', Item.ghastTear);
+    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 1), "RDR", "PGP", "ETE", 'E', Item.emerald, 'D', ElectroItems.ELECTRO_DUST.getItem(), 'R', Item.redstone, 'D', Block.torchRedstoneActive, 'P', Item.enderPearl, 'G', Item.ghastTear);
+    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 2), "RDR", "EGE", "CPC", 'E', Block.oreEmerald, 'D', Block.oreDiamond, 'P', Item.enderPearl, 'R', Block.oreRedstone, 'G', Item.ghastTear, 'C', Block.oreCoal);
+    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 3), "EPE", "PGP", "EPE", 'E', Item.emerald, 'P', Item.enderPearl, 'G', Item.ghastTear);
+    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 4), "RPR", "GEG", "BPB", 'E', Item.emerald, 'B', Item.bone, 'P', Item.enderPearl, 'R', Item.rottenFlesh, 'G', Item.ghastTear);
+    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE.getItem(), 1), "E E", "CIC", "PPP", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'C', ElectroBlocks.COMPUTER.getBlock(), 'I', Item.ingotIron, 'P', Item.enderPearl);
     }
     
     public boolean isShiftHeld() {
