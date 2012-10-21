@@ -49,6 +49,7 @@ public class BlockComputer extends BlockNetwork {
 			default:
 				return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
 			}
+		default:
 		case 2:
 			switch (side) {
 			case 3:
@@ -79,8 +80,6 @@ public class BlockComputer extends BlockNetwork {
 			default:
 				return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
 			}
-		default:
-			return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
 		}
 	}
 

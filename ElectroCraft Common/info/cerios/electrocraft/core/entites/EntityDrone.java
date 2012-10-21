@@ -28,6 +28,7 @@ import net.minecraft.src.EntityLiving;
 import net.minecraft.src.EntityLookHelper;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
+import net.minecraft.src.IInventory;
 import net.minecraft.src.Item;
 import net.minecraft.src.ItemStack;
 import net.minecraft.src.MathHelper;
@@ -251,33 +252,12 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		
 		if (tool.appliesToBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
 			for (ItemStack item : tool.preformAction(getHeldItem(), this, worldObj, x, y, z)) {
-				addToInventory(item);
+				drone.addToInventory(inventory, 0, 36, item);
 			}
 			tool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
 		}
 	}
-
-	private void addToInventory(ItemStack item) {
-		for (int i = 0; i < 36; i++) {
-			if (inventory.getStackInSlot(i) != null && inventory.getStackInSlot(i).itemID == item.itemID) {
-				if (inventory.getStackInSlot(i).stackSize + item.stackSize > item.getMaxStackSize()) {
-					int totalAmount = inventory.getStackInSlot(i).stackSize + item.stackSize;
-					item.stackSize = item.getMaxStackSize();
-					totalAmount -= item.stackSize;
-					inventory.setInventorySlotContents(i, item);
-					item.stackSize = totalAmount;
-				} else {
-					item.stackSize += inventory.getStackInSlot(i).stackSize;
-					inventory.setInventorySlotContents(i, item);
-					return;
-				}
-			} else if (inventory.getStackInSlot(i) == null) {
-				inventory.setInventorySlotContents(i, item);
-				return;
-			}
-		}
-	}
-
+	
 	public ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
 		int id = world.getBlockId(x, y, z);
 		Block block = Block.blocksList[id];

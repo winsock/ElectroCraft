@@ -13,12 +13,14 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 
 import net.minecraft.src.Block;
 import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.IInventory;
 import net.minecraft.src.ItemStack;
 import net.minecraft.src.MathHelper;
 import net.minecraft.src.Packet32EntityLook;
 import net.minecraft.src.Vec3;
 import net.minecraft.src.World;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.common.ISidedInventory;
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.core.ElectroCraft;
@@ -136,6 +138,133 @@ public class Drone extends Computer {
 						return "useTool";
 					}
 				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						if (drone.drone.getInventory().getStackInSlot(-1) == null) {
+							drone.drone.getInventory().setInventorySlotContents(luaState.checkInteger(-1), drone.drone.getInventory().getStackInSlot(luaState.checkInteger(-2)));
+							drone.drone.getInventory().setInventorySlotContents(luaState.checkInteger(-2), null);
+							luaState.pushBoolean(true);
+						} else {
+							luaState.pushBoolean(false);
+						}
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "moveStack";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						ItemStack stack = drone.drone.getInventory().getStackInSlot(luaState.checkInteger(-2));
+						int remainder = 0;
+						if (stack.stackSize <= luaState.checkInteger(-1)) {
+							remainder = stack.stackSize - luaState.checkInteger(-1);
+							stack.stackSize = luaState.checkInteger(-1);
+						} else {
+							stack.stackSize = 0;
+							remainder = luaState.checkInteger(-1);
+						}
+						if (drone.drone.getInventory().getStackInSlot(-2) == null) {
+							drone.drone.getInventory().setInventorySlotContents(luaState.checkInteger(-2), stack);
+							if (remainder > 0) {
+								ItemStack newStack = stack.copy();
+								newStack.stackSize = remainder;
+								drone.drone.getInventory().setInventorySlotContents(luaState.checkInteger(-3), newStack);
+							} else {
+								drone.drone.getInventory().setInventorySlotContents(luaState.checkInteger(-3), null);
+							}
+							luaState.pushBoolean(true);
+						} else {
+							luaState.pushBoolean(false);
+						}
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "moveItems";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						ForgeDirection dir;
+						if (luaState.getTop() >= 2) {
+							dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+						} else {
+							dir = getDirection(drone.drone.rotationYaw);
+						}
+						
+						int amount = 0;
+						ItemStack stack = null;
+						if (luaState.getTop() >= 3) {
+							amount = luaState.checkInteger(-2);
+							stack = drone.drone.getInventory().getStackInSlot(luaState.checkInteger(-2));
+						} else {
+							stack = drone.drone.getInventory().getStackInSlot(luaState.checkInteger(-2));
+							if (stack != null) {
+								amount = stack.stackSize;
+							}
+						}
+						
+						if (stack == null || amount <= 0) {
+							luaState.pushBoolean(false);
+							return 1;
+						}
+						
+						int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+						int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+						int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+						if (drone.drone.worldObj.getBlockTileEntity(x, y, z) != null && drone.drone.worldObj.getBlockTileEntity(x, y, z) instanceof IInventory) {
+							IInventory inv = (IInventory) drone.drone.worldObj.getBlockTileEntity(x, y, z);
+							if (inv instanceof ISidedInventory) {
+								ISidedInventory sidedInv = (ISidedInventory) inv;
+								if (!addToInventory(sidedInv, sidedInv.getStartInventorySide(dir.getOpposite()), sidedInv.getSizeInventorySide(dir.getOpposite()), stack)) {
+									drone.drone.entityDropItem(stack, 0f);
+								}
+							} else {
+								if (!addToInventory(inv, 0, inv.getSizeInventory(), stack)) {
+									drone.drone.entityDropItem(stack, 0f);
+								}
+							}
+						} else {
+							drone.drone.entityDropItem(stack, 0f);
+						}
+						
+						luaState.pushBoolean(true);
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "drop";
+					}
+				}.init(this),
 		};
 		this.getLuaState().register("drone", droneAPI);
 		luaState.pop(1);
@@ -206,6 +335,28 @@ public class Drone extends Computer {
 			}
 		}
 		this.flying = fly;
+	}
+	
+	public boolean addToInventory(IInventory inventory, int startIndex, int endIndex, ItemStack item) {
+		for (int i = startIndex; i < endIndex; i++) {
+			if (inventory.getStackInSlot(i) != null && inventory.getStackInSlot(i).itemID == item.itemID) {
+				if (inventory.getStackInSlot(i).stackSize + item.stackSize > item.getMaxStackSize()) {
+					int totalAmount = inventory.getStackInSlot(i).stackSize + item.stackSize;
+					item.stackSize = item.getMaxStackSize();
+					totalAmount -= item.stackSize;
+					inventory.setInventorySlotContents(i, item);
+					item.stackSize = totalAmount;
+				} else {
+					item.stackSize += inventory.getStackInSlot(i).stackSize;
+					inventory.setInventorySlotContents(i, item);
+					return true;
+				}
+			} else if (inventory.getStackInSlot(i) == null) {
+				inventory.setInventorySlotContents(i, item);
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	public int getDir(float rotation) {
