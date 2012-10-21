@@ -27,6 +27,7 @@ import info.cerios.electrocraft.core.network.CustomPacket;
 public class Drone extends Computer {
 	
 	private EntityDrone drone;
+	private boolean flying = false;
 	
 	public Drone(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
 		super(clients, script, baseDirectory, isInternal, width, height, rows, columns);
@@ -65,17 +66,60 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
-						int x = (int)(Math.ceil(drone.drone.posX) + dir.offsetX);
-						int y = (int)(Math.floor(drone.drone.posY) + dir.offsetY);
-						int z = (int)(Math.ceil(drone.drone.posZ) + dir.offsetZ);
-						luaState.pushBoolean(drone.drone.getNavigator().tryMoveToXYZ(x, y, z, 0.2f));
-						return 1;
+						ForgeDirection dir;
+						if (luaState.isNumber(-1)) {
+							dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+						} else {
+							dir = getDirection(drone.drone.rotationYaw);
+						}
+						drone.drone.moveEntity(dir.offsetX, dir.offsetY, dir.offsetZ);
+						return 0;
 					}
 
 					@Override
 					public String getName() {
 						return "move";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						double dx = luaState.checkNumber(-3) - drone.drone.posX;
+						double dy = luaState.checkNumber(-2) - drone.drone.posY;
+						double dz = luaState.checkNumber(-1) - drone.drone.posZ;
+						drone.drone.moveEntity(dx, dy, dz);
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "moveTo";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						flying = luaState.checkBoolean(-1);
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "fly";
 					}
 				}.init(this),
 				new NamedJavaFunction() {
@@ -94,7 +138,7 @@ public class Drone extends Computer {
 
 					@Override
 					public String getName() {
-						return "moveTo";
+						return "aiMove";
 					}
 				}.init(this),
 				new NamedJavaFunction() {
@@ -310,8 +354,8 @@ public class Drone extends Computer {
 					@Override
 					public int invoke(LuaState luaState) {
 						luaState.pushNumber(drone.drone.posX - Math.floor(drone.drone.posX));
-						luaState.pushNumber(drone.drone.posX - Math.floor(drone.drone.posX));
-						luaState.pushNumber(drone.drone.posX - Math.floor(drone.drone.posX));
+						luaState.pushNumber(drone.drone.posY - Math.floor(drone.drone.posY));
+						luaState.pushNumber(drone.drone.posZ - Math.floor(drone.drone.posZ));
 						return 3;
 					}
 
@@ -323,6 +367,10 @@ public class Drone extends Computer {
 		};
 		this.getLuaState().register("drone", droneAPI);
 		luaState.pop(1);
+	}
+	
+	public boolean getFlying() {
+		return flying;
 	}
 	
 	public int getDir(float rotation) {
