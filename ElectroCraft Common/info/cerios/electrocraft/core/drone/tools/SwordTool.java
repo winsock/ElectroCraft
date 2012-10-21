@@ -34,6 +34,8 @@ public class SwordTool implements IDroneTool {
 
 	@Override
 	public List<ItemStack> preformAction(ItemStack item, EntityDrone drone, World world, int x, int y, int z) {
+		List<ItemStack> itemsDropped = new ArrayList<ItemStack>();
+		
 		Vec3 look = drone.getLookVec();
 		Vec3 pos = Vec3.getVec3Pool().getVecFromPool(drone.posX, drone.posY, drone.posZ);
 		Vec3 vector = pos.addVector(look.xCoord * 4, look.yCoord * 4, look.zCoord * 4);
@@ -55,23 +57,23 @@ public class SwordTool implements IDroneTool {
                 }
             }
         }
-        MovingObjectPosition rayTrace = new MovingObjectPosition(entity);
-        
-		List<ItemStack> itemsDropped = new ArrayList<ItemStack>();
-		if (rayTrace != null && rayTrace.typeOfHit == EnumMovingObjectType.ENTITY && rayTrace.entityHit != null) {
-			rayTrace.entityHit.captureDrops = true;
-			rayTrace.entityHit.capturedDrops.clear();
-			rayTrace.entityHit.attackEntityFrom(DamageSource.causeMobDamage(drone), item.getDamageVsEntity(rayTrace.entityHit));
-			item.damageItem(1, drone);
-			if (rayTrace.entityHit.capturedDrops.size() > 0) {
-				for (EntityItem i : rayTrace.entityHit.capturedDrops) {
-					itemsDropped.add(i.item);
-					i.setDead();
-				}
-			}
-			rayTrace.entityHit.captureDrops = false;
-		}
-		return itemsDropped;
+        if (entity != null) {
+        	MovingObjectPosition rayTrace = new MovingObjectPosition(entity);
+        	if (rayTrace != null && rayTrace.typeOfHit == EnumMovingObjectType.ENTITY && rayTrace.entityHit != null) {
+        		rayTrace.entityHit.captureDrops = true;
+        		rayTrace.entityHit.capturedDrops.clear();
+        		rayTrace.entityHit.attackEntityFrom(DamageSource.causeMobDamage(drone), item.getDamageVsEntity(rayTrace.entityHit));
+        		item.damageItem(1, drone);
+        		if (rayTrace.entityHit.capturedDrops.size() > 0) {
+        			for (EntityItem i : rayTrace.entityHit.capturedDrops) {
+        				itemsDropped.add(i.item);
+        				i.setDead();
+        			}
+        		}
+        		rayTrace.entityHit.captureDrops = false;
+        	}
+        }
+        return itemsDropped;
 	}
 
 	@Override

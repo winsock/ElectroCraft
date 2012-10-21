@@ -5,8 +5,12 @@ local shell = {}
 local programEnv = {}
 
 function saveShell(nbttagcompound)
-	nbttagcompound:setString("path", path)
-	nbttagcompound:setString("currentFile", currentFile)
+	if path:len() > 0 then
+		nbttagcompound:setString("path", path)
+	end
+	if currentFile and currentFile:len() > 0 then
+		nbttagcompound:setString("currentFile", currentFile)
+	end
 end
 
 os.registerSaveHandler(saveShell)
