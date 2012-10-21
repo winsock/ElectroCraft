@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;

@@ -1,9 +1,10 @@
 package info.cerios.electrocraft.core.computer.luaapi;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
+import info.cerios.electrocraft.api.computer.luaapi.LuaAPI;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
-import info.cerios.electrocraft.core.computer.ExposedToLua;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager.Mode;
 
 import java.io.ByteArrayOutputStream;

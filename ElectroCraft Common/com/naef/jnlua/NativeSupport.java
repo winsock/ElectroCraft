@@ -5,8 +5,8 @@
 
 package com.naef.jnlua;
 
+import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;

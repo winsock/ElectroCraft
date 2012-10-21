@@ -2,8 +2,8 @@ package info.cerios.electrocraft.gui;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
+import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.GuiTextField;

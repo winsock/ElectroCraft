@@ -14,11 +14,6 @@ public class WorldGenerator implements IWorldGenerator {
 	public void generate(Random random, int chunkX, int chunkZ, World world, IChunkProvider chunkGenerator, IChunkProvider chunkProvider) {
 		if (!world.provider.isHellWorld) {
 			for (int i = 0; i < 20; i++) { // Rarity
-//				// Copper
-//				int randPosX = chunkX * 16 + random.nextInt(16);
-//				int randPosY = random.nextInt(48); // Min Height
-//				int randPosZ = chunkZ * 16 + random.nextInt(16);
-//				new WorldGenMinable(ElectroBlocks.COPPER_ORE.getBlock().blockID, 10/* Vein Size */).generate(world, random, randPosX, randPosY, randPosZ);
 				// Magnetite
 				int randPosX = chunkX * 16 + random.nextInt(16);
 				int randPosY = random.nextInt(128); // Min Height

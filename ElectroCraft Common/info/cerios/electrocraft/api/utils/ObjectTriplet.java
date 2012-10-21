@@ -1,4 +1,4 @@
-package info.cerios.electrocraft.core.utils;
+package info.cerios.electrocraft.api.utils;
 
 public class ObjectTriplet<T1, T2, T3> {
     private T1 object1;

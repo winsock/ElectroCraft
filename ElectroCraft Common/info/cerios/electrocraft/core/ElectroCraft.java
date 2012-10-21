@@ -1,7 +1,54 @@
 package info.cerios.electrocraft.core;
 
+import info.cerios.electrocraft.api.IComputer;
+import info.cerios.electrocraft.api.IElectroCraft;
+import info.cerios.electrocraft.api.computer.IMCRunnable;
+import info.cerios.electrocraft.api.drone.tools.IDroneTool;
+import info.cerios.electrocraft.api.drone.upgrade.ICard;
+import info.cerios.electrocraft.core.blocks.BlockHandler;
+import info.cerios.electrocraft.core.blocks.ElectroBlocks;
+import info.cerios.electrocraft.core.computer.ComputerSocketManager;
+import info.cerios.electrocraft.core.container.ContainerDrone;
+import info.cerios.electrocraft.core.entites.EntityDrone;
+import info.cerios.electrocraft.core.items.ElectroItems;
+import info.cerios.electrocraft.core.items.ItemHandler;
+import info.cerios.electrocraft.core.network.ComputerServer;
+import info.cerios.electrocraft.core.network.ConnectionHandler;
+import info.cerios.electrocraft.core.network.GuiPacket.Gui;
+import info.cerios.electrocraft.core.network.UniversialPacketHandler;
+
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.ErrorManager;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+
+import net.minecraft.src.Block;
+import net.minecraft.src.Entity;
+import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.EntityPlayerMP;
+import net.minecraft.src.Item;
+import net.minecraft.src.ItemStack;
+import net.minecraft.src.World;
+import net.minecraftforge.common.Configuration;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.oredict.ShapelessOreRecipe;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.Side;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -13,55 +60,10 @@ import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.common.registry.TickRegistry;
-import info.cerios.electrocraft.core.blocks.BlockHandler;
-import info.cerios.electrocraft.core.blocks.ElectroBlocks;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.computer.Computer;
-import info.cerios.electrocraft.core.computer.ComputerSocketManager;
-import info.cerios.electrocraft.core.computer.IComputerRunnable;
-import info.cerios.electrocraft.core.computer.IMCRunnable;
-import info.cerios.electrocraft.core.container.ContainerDrone;
-import info.cerios.electrocraft.core.drone.InventoryDrone;
-import info.cerios.electrocraft.core.entites.EntityDrone;
-import info.cerios.electrocraft.core.items.ElectroItems;
-import info.cerios.electrocraft.core.items.ItemHandler;
-import info.cerios.electrocraft.core.network.*;
-import info.cerios.electrocraft.core.network.ElectroPacket.Type;
-import info.cerios.electrocraft.core.network.GuiPacket.Gui;
-import info.cerios.electrocraft.core.utils.Utils;
-import net.minecraft.src.*;
-import net.minecraftforge.common.Configuration;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.oredict.OreDictionary;
-import net.minecraftforge.oredict.ShapelessOreRecipe;
-
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.ErrorManager;
-import java.util.logging.Formatter;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 @Mod(modid = "electrocraft", name = "ElectroCraft", version = "Beta 0.2.0")
 @NetworkMod(channels = {"electrocraft"}, clientSideRequired = true, serverSideRequired = false, packetHandler=UniversialPacketHandler.class, connectionHandler = ConnectionHandler.class)
-public class ElectroCraft {
+public class ElectroCraft implements IElectroCraft {
 
 	@Mod.Instance
     public static ElectroCraft instance;
@@ -69,6 +71,9 @@ public class ElectroCraft {
     public static IElectroCraftSided electroCraftSided;
     private Map<EntityPlayer, IComputer> nonCustomServerComputerMap = new HashMap<EntityPlayer, IComputer>();
     private List<IMCRunnable> mainThreadFunctions = new ArrayList<IMCRunnable>();
+    private List<ModContainer> addons = new ArrayList<ModContainer>();
+    private List<ICard> droneUpgradeCards = new ArrayList<ICard>();
+    private List<IDroneTool> droneTools = new ArrayList<IDroneTool>();
     private Object mainThreadLock = new Object();
 
     // The Mod's color palette
@@ -243,6 +248,7 @@ public class ElectroCraft {
         return electroCraftSided.isShiftHeld();
     }
     
+    @Override
     public void registerRunnable(IMCRunnable runnable) {
     	synchronized(mainThreadLock) {
     		mainThreadFunctions.add(runnable);
@@ -256,6 +262,29 @@ public class ElectroCraft {
     		return tasks;
     	}
     }
+    
+    public List<ICard> getUpgradeCards() {
+    	return this.droneUpgradeCards;
+    }
+    
+    public List<IDroneTool> getDroneTools() {
+    	return this.droneTools;
+    }
+
+	@Override
+	public void registerAddon(Object mod) {
+		this.addons.add(FMLCommonHandler.instance().findContainerFor(mod));
+	}
+
+	@Override
+	public void regsiterCard(ICard card) {
+		this.droneUpgradeCards.add(card);
+	}
+
+	@Override
+	public void registerDroneTool(IDroneTool tool) {
+		this.droneTools.add(tool);
+	}
     
     public Logger getLogger() {
     	return ecLogger;

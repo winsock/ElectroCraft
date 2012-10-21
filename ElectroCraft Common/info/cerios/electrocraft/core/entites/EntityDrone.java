@@ -12,8 +12,9 @@ import cpw.mods.fml.common.Side;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
+import info.cerios.electrocraft.api.IComputer;
+import info.cerios.electrocraft.api.drone.tools.IDroneTool;
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.IComputer;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.drone.Drone;
 import info.cerios.electrocraft.core.drone.InventoryDrone;
@@ -55,9 +56,9 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void readEntityFromNBT(NBTTagCompound nbt) {
 		super.readEntityFromNBT(nbt);
-		inventory.readFromNBT(nbt);
 		id = nbt.getString("cid");
 		createDrone();
+		inventory.readFromNBT(nbt);
 	}
 
 	@Override
@@ -183,6 +184,10 @@ public class EntityDrone extends EntityLiving implements IComputer {
         this.legSwing += this.legYaw;
     }
 
+	public Drone getDrone() {
+		return drone;
+	}
+	
 	public void doToolAction() {
 		ForgeDirection dir = drone.getDirection(rotationYaw);
 		if (digDirection != ForgeDirection.UNKNOWN) {
@@ -194,11 +199,20 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		int y = (int)(Math.floor(posY) + dir.offsetY);
 		int z = (int)(Math.floor(posZ) + dir.offsetZ);
 
-		if (defaultTool.appliesToBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
-			for (ItemStack item : defaultTool.preformAction(this, worldObj, x, y, z)) {
+		IDroneTool tool = defaultTool;
+		
+		for (IDroneTool t : ElectroCraft.instance.getDroneTools()) {
+			if (t.isRightTool(getHeldItem())) {
+				tool = t;
+				break;
+			}
+		}
+		
+		if (tool.appliesToBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
+			for (ItemStack item : tool.preformAction(this, worldObj, x, y, z)) {
 				addToInventory(item);
 			}
-			defaultTool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
+			tool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
 		}
 	}
 

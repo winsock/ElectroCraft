@@ -5,7 +5,7 @@
 
 package com.naef.jnlua;
 
-import info.cerios.electrocraft.core.computer.ExposedToLua;
+import info.cerios.electrocraft.api.computer.ExposedToLua;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;

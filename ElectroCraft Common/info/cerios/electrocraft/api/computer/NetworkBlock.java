@@ -1,15 +1,17 @@
-package info.cerios.electrocraft.core.computer;
+package info.cerios.electrocraft.api.computer;
 
+import info.cerios.electrocraft.api.utils.ObjectTriplet;
 import info.cerios.electrocraft.core.blocks.tileentities.ElectroTileEntity;
-import info.cerios.electrocraft.core.utils.ObjectTriplet;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraftforge.common.ForgeDirection;
+import info.cerios.electrocraft.core.computer.Computer;
+import info.cerios.electrocraft.core.computer.ComputerNetwork;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class NetworkBlock extends ElectroTileEntity {
+import net.minecraft.src.NBTTagCompound;
+import net.minecraftforge.common.ForgeDirection;
 
+public abstract class NetworkBlock extends ElectroTileEntity {
     protected boolean hasBeenNetworkProbed = false;
     protected Map<Integer, ObjectTriplet<Integer, Integer, Integer>> connectedDevices = new HashMap<Integer, ObjectTriplet<Integer, Integer, Integer>>();
     protected ComputerNetwork network;
@@ -45,6 +47,10 @@ public abstract class NetworkBlock extends ElectroTileEntity {
                 return true;
         }
         return false;
+    }
+    
+    public Map<Integer, ObjectTriplet<Integer, Integer, Integer>> getConnectedDevices() {
+    	return connectedDevices;
     }
 
     public void update(NetworkBlock block) {

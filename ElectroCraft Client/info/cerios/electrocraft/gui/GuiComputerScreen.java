@@ -1,25 +1,15 @@
 package info.cerios.electrocraft.gui;
 
-import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.network.PacketDispatcher;
 import info.cerios.electrocraft.ElectroCraftClient;
+import info.cerios.electrocraft.api.computer.IComputerCallback;
+import info.cerios.electrocraft.api.utils.ObjectPair;
+import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.computer.*;
 import info.cerios.electrocraft.core.network.ComputerInputPacket;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
-import info.cerios.electrocraft.core.utils.ObjectPair;
-import info.cerios.electrocraft.core.utils.Utils;
-import net.minecraft.src.GuiButton;
-import net.minecraft.src.GuiScreen;
-import net.minecraft.src.ModLoader;
-import net.minecraft.src.Tessellator;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,6 +20,17 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.DataFormatException;
+
+import net.minecraft.src.GuiButton;
+import net.minecraft.src.GuiScreen;
+import net.minecraft.src.Tessellator;
+
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
+
+import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.common.network.PacketDispatcher;
 
 public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 

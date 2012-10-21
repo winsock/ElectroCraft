@@ -11,12 +11,6 @@ import net.minecraft.src.TileEntity;
 
 public enum ElectroBlocks {
     // TODO XXX FIXME Remember to credit billythegoat101 for textures of the blocks
-
-    COPPER_ORE(true,
-            "copperOre", "Copper Ore",
-            new CopperOre(ConfigHandler.getCurrentConfig().getBlock("copperOre", 3974).getInt(3974)).setBlockName("copperOre").setCreativeTab(CreativeTabs.tabMaterials),
-            null, null,
-            3),
     MAGNETITE_ORE(true,
             "magnetiteOre", "Magnetite Ore",
             new MagnetiteOre(ConfigHandler.getCurrentConfig().getBlock("magnetiteOre", 3976).getInt(3976)).setBlockName("magnetiteOre").setCreativeTab(CreativeTabs.tabMaterials),

@@ -1,12 +1,9 @@
 package info.cerios.electrocraft.core.computer;
 
-import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.api.computer.NetworkBlock;
+import info.cerios.electrocraft.api.utils.ObjectTriplet;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
-import info.cerios.electrocraft.core.utils.ObjectTriplet;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.NBTTagList;
-import net.minecraft.src.TileEntity;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -14,6 +11,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import net.minecraft.src.NBTTagCompound;
+import net.minecraft.src.NBTTagList;
+import net.minecraft.src.TileEntity;
 import cpw.mods.fml.common.FMLCommonHandler;
 
 public class ComputerNetwork {
@@ -125,7 +125,7 @@ public class ComputerNetwork {
         if (!(netBlock instanceof TileEntitySerialCable)) {
             connections.add(block);
         }
-        for (ObjectTriplet<Integer, Integer, Integer> connection : netBlock.connectedDevices.values()) {
+        for (ObjectTriplet<Integer, Integer, Integer> connection : netBlock.getConnectedDevices().values()) {
             if (!(getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3(), d) instanceof TileEntitySerialCable))
                 connections.add(connection);
             connections.addAll(getDevicesInChain(connection, d));

@@ -1,10 +1,12 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
+import info.cerios.electrocraft.api.computer.NetworkBlock;
+import info.cerios.electrocraft.api.computer.luaapi.LuaAPI;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
 import info.cerios.electrocraft.core.computer.luaapi.ComputerSocket;
-import info.cerios.electrocraft.core.computer.luaapi.LuaAPI;
 import info.cerios.electrocraft.core.computer.luaapi.MinecraftInterface;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
 import info.cerios.electrocraft.core.network.CustomPacket;

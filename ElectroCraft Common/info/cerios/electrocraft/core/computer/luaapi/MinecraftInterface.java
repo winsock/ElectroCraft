@@ -3,9 +3,10 @@ package info.cerios.electrocraft.core.computer.luaapi;
 import java.util.HashMap;
 import java.util.Map;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
+import info.cerios.electrocraft.api.computer.NetworkBlock;
+import info.cerios.electrocraft.api.computer.luaapi.LuaAPI;
 import info.cerios.electrocraft.core.computer.Computer;
-import info.cerios.electrocraft.core.computer.ExposedToLua;
-import info.cerios.electrocraft.core.computer.NetworkBlock;
 
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;

@@ -1,4 +1,4 @@
-package info.cerios.electrocraft.core.computer.luaapi;
+package info.cerios.electrocraft.api.computer.luaapi;
 
 import info.cerios.electrocraft.core.computer.Computer;
 

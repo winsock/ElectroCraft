@@ -1,9 +1,10 @@
 package info.cerios.electrocraft.core.computer.luaapi;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
+import info.cerios.electrocraft.api.computer.luaapi.LuaAPI;
+import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.computer.Computer;
-import info.cerios.electrocraft.core.computer.ExposedToLua;
-import info.cerios.electrocraft.core.utils.Utils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -11,7 +12,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -21,8 +21,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;

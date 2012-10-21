@@ -19,6 +19,8 @@ import net.minecraft.src.Packet32EntityLook;
 import net.minecraft.src.Vec3;
 import net.minecraft.src.World;
 import net.minecraftforge.common.ForgeDirection;
+import info.cerios.electrocraft.api.drone.upgrade.ICard;
+import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.entites.EntityDrone;
@@ -28,13 +30,28 @@ public class Drone extends Computer {
 	
 	private EntityDrone drone;
 	private boolean flying = false;
+	private ObjectPair<ICard, ItemStack> leftCard;
+	private ObjectPair<ICard, ItemStack> rightCard;
 	
 	public Drone(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
 		super(clients, script, baseDirectory, isInternal, width, height, rows, columns);
 	}
 	
+	@Override
+	public void tick() {
+		super.tick();
+		if (leftCard != null)
+			leftCard.getValue1().passiveFunctionTick(leftCard.getValue2());
+		if (rightCard != null)
+			rightCard.getValue1().passiveFunctionTick(rightCard.getValue2());
+	}
+	
 	public void setDrone(EntityDrone drone) {
 		this.drone = drone;
+	}
+	
+	public EntityDrone getDrone() {
+		return drone;
 	}
 	
 	@Override
@@ -91,66 +108,6 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						double dx = luaState.checkNumber(-3) - drone.drone.posX;
-						double dy = luaState.checkNumber(-2) - drone.drone.posY;
-						double dz = luaState.checkNumber(-1) - drone.drone.posZ;
-						drone.drone.moveEntity(dx, dy, dz);
-						return 0;
-					}
-
-					@Override
-					public String getName() {
-						return "moveTo";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						flying = luaState.checkBoolean(-1);
-						return 0;
-					}
-
-					@Override
-					public String getName() {
-						return "fly";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						luaState.pushBoolean(drone.drone.getNavigator().tryMoveToXYZ(luaState.checkNumber(-4), luaState.checkNumber(-3), luaState.checkNumber(-2), MathHelper.clamp_float((float) luaState.checkNumber(-1), 0f, 1f)));
-						return 1;
-					}
-
-					@Override
-					public String getName() {
-						return "aiMove";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
 						if (drone.drone.getRotationTicks() <= 0) {
 							if (luaState.isNumber(-1)) {
 								drone.drone.setDigDirection(ForgeDirection.getOrientation(luaState.checkInteger(-1)));
@@ -178,199 +135,61 @@ public class Drone extends Computer {
 						return "useTool";
 					}
 				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						ForgeDirection dir = getDirection(drone.drone.rotationYaw);
-						luaState.pushInteger(drone.drone.worldObj.getBlockId((int)(dir.offsetX + drone.drone.posX), (int)(dir.offsetY + drone.drone.posY), (int)(dir.offsetZ + drone.drone.posZ)));
-						return 1;
-					}
-
-					@Override
-					public String getName() {
-						return "sampleFront";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						ForgeDirection dir = getDirection(drone.drone.rotationYaw);
-						luaState.pushInteger(dir.ordinal());
-						return 1;
-					}
-
-					@Override
-					public String getName() {
-						return "getForgeDir";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						luaState.pushInteger(getDir(drone.drone.rotationYaw));
-						return 1;
-					}
-
-					@Override
-					public String getName() {
-						return "getDir";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
-						int x = (int)(Math.floor(drone.drone.posX) + dir.offsetX);
-						int y = (int)(Math.floor(drone.drone.posY) + dir.offsetY);
-						int z = (int)(Math.floor(drone.drone.posZ) + dir.offsetZ);
-						luaState.pushInteger(drone.drone.worldObj.getBlockId(x, y, z));
-						luaState.pushInteger(drone.drone.worldObj.getBlockMetadata(x, y, z));
-						return 2;
-					}
-
-					@Override
-					public String getName() {
-						return "sample";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						luaState.pushNumber(drone.drone.rotationYaw);
-						return 1;
-					}
-
-					@Override
-					public String getName() {
-						return "getRotation";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						drone.drone.setPositionAndRotation2(drone.drone.posX, drone.drone.posY, drone.drone.posZ, (float) luaState.checkNumber(-1), drone.drone.rotationPitch, 10);
-						return 0;
-					}
-
-					@Override
-					public String getName() {
-						return "rotate";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						if (luaState.isBoolean(-1) && luaState.checkBoolean(-1, false)) {
-							drone.drone.setPositionAndRotation2(drone.drone.posX, drone.drone.posY, drone.drone.posZ, getRotation(ForgeDirection.getOrientation(luaState.checkInteger(-2))), drone.drone.rotationPitch, 10);
-						} else {
-							drone.drone.setPositionAndRotation2(drone.drone.posX, drone.drone.posY, drone.drone.posZ, getRotation(getDirection(luaState.checkInteger(-1))), drone.drone.rotationPitch, 10);
-						}
-						return 0;
-					}
-
-					@Override
-					public String getName() {
-						return "face";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						luaState.pushNumber(Math.floor(drone.drone.posX));
-						luaState.pushNumber(Math.floor(drone.drone.posY));
-						luaState.pushNumber(Math.floor(drone.drone.posZ));
-						return 3;
-					}
-
-					@Override
-					public String getName() {
-						return "getLocation";
-					}
-				}.init(this),
-				new NamedJavaFunction() {
-					Drone drone;
-
-					public NamedJavaFunction init(Drone drone) {
-						this.drone = drone;
-						return this;
-					}
-
-					@Override
-					public int invoke(LuaState luaState) {
-						luaState.pushNumber(drone.drone.posX - Math.floor(drone.drone.posX));
-						luaState.pushNumber(drone.drone.posY - Math.floor(drone.drone.posY));
-						luaState.pushNumber(drone.drone.posZ - Math.floor(drone.drone.posZ));
-						return 3;
-					}
-
-					@Override
-					public String getName() {
-						return "getOffset";
-					}
-				}.init(this),
 		};
 		this.getLuaState().register("drone", droneAPI);
 		luaState.pop(1);
+		if (luaState != null && luaState.isOpen() && leftCard != null) {
+			synchronized(luaStateLock) {
+				luaState.register(leftCard.getValue1().getName(leftCard.getValue2()), leftCard.getValue1().getFunctions(leftCard.getValue2(), this));
+				luaState.pop(1);
+			}
+		}
+		if (luaState != null && luaState.isOpen() && rightCard != null) {
+			synchronized(luaStateLock) {
+				luaState.register(rightCard.getValue1().getName(rightCard.getValue2()), rightCard.getValue1().getFunctions(rightCard.getValue2(), this));
+				luaState.pop(1);
+			}
+		}
+	}
+	
+	public void setLeftCard(ICard card, ItemStack stack) {
+		if (luaState != null && luaState.isOpen() && card == null && this.leftCard != null && (this.rightCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
+			synchronized(luaStateLock) {
+				luaState.pushNil();
+				luaState.setGlobal(leftCard.getValue1().getName(leftCard.getValue2()));
+			}
+		}
+		if ((leftCard == null || (card != leftCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
+			synchronized(luaStateLock) {
+				luaState.register(card.getName(stack), card.getFunctions(stack, this));
+				luaState.pop(1);
+			}
+		}
+		this.leftCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
+	}
+	
+	public void setRightCard(ICard card, ItemStack stack) {
+		if (luaState != null && luaState.isOpen() && card == null && this.rightCard != null && (this.leftCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
+			synchronized(luaStateLock) {
+				luaState.pushNil();
+				luaState.setGlobal(rightCard.getValue1().getName(rightCard.getValue2()));
+			}
+		}
+		if ((rightCard == null || (card != rightCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
+			synchronized(luaStateLock) {
+				luaState.register(card.getName(stack), card.getFunctions(stack, this));
+				luaState.pop(1);
+			}
+		}
+		this.rightCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
 	}
 	
 	public boolean getFlying() {
 		return flying;
+	}
+	
+	public void setFlying(boolean fly) {
+		this.flying = fly;
 	}
 	
 	public int getDir(float rotation) {

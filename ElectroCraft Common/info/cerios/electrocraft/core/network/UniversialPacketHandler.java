@@ -1,29 +1,25 @@
 package info.cerios.electrocraft.core.network;
 
 import info.cerios.electrocraft.ElectroCraftSidedServer;
-import info.cerios.electrocraft.core.ConfigHandler;
+import info.cerios.electrocraft.api.computer.NetworkBlock;
+import info.cerios.electrocraft.api.utils.Utils;
+import info.cerios.electrocraft.api.utils.Utils.ChangedBytes;
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.ElectroPacket.Type;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
-import info.cerios.electrocraft.core.utils.Utils;
-import info.cerios.electrocraft.core.utils.Utils.ChangedBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.src.Entity;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
-import net.minecraft.src.ModLoader;
 import net.minecraft.src.NBTBase;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NetworkManager;
@@ -32,7 +28,6 @@ import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.IPacketHandler;
-import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
 public class UniversialPacketHandler implements IPacketHandler {
@@ -228,6 +223,7 @@ public class UniversialPacketHandler implements IPacketHandler {
 	            }
 	        } catch (Exception e) {
 	            ElectroCraft.instance.getLogger().severe("Unable to read packet sent on our channel!");
+	            e.printStackTrace();
 	        }
 		}
 	}

@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
+
 @ExposedToLua
 public class VideoCard {
 	

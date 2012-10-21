@@ -1,4 +1,4 @@
-package info.cerios.electrocraft.core;
+package info.cerios.electrocraft.api;
 
 import net.minecraft.src.EntityPlayer;
 import info.cerios.electrocraft.core.computer.Computer;

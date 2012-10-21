@@ -6,10 +6,10 @@ import net.minecraft.src.Item;
 
 public enum ElectroItems {
     // Defaults
-    COPPOR_INGOT(true, "ingotCopper", new CopperIngot(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("ingotCopper", "item", 30078).getInt(30078)).setIconIndex(1).setItemName("ingotCopper").setCreativeTab(CreativeTabs.tabMaterials), "Copper Ingot"),
-    MAGNETITE_DUST(true, "magnetiteDust", new MagnetiteDust(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("magnetiteDust", "item", 30080).getInt(30080)).setIconIndex(3).setItemName("magnetiteDust").setCreativeTab(CreativeTabs.tabMaterials), "Magnetite Dust"),
-    ELECTRO_DUST(false, "electroDust", new ElectroDust(ConfigHandler.getCurrentConfig().getOrCreateIntProperty("electroDust", "item", 30081).getInt(30081)).setIconIndex(4).setItemName("electroDust").setCreativeTab(CreativeTabs.tabRedstone), "Electrodust");
-
+    MAGNETITE_DUST(true, "magnetiteDust", new MagnetiteDust(ConfigHandler.getCurrentConfig().get("item", "magnetiteDust", 30080).getInt(30080)).setIconIndex(3).setItemName("magnetiteDust").setCreativeTab(CreativeTabs.tabMaterials), "Magnetite Dust"),
+    ELECTRO_DUST(false, "electroDust", new ElectroDust(ConfigHandler.getCurrentConfig().get("item", "electroDust", 30081).getInt(30081)).setIconIndex(4).setItemName("electroDust").setCreativeTab(CreativeTabs.tabRedstone), "Electrodust"),
+    DRONE_UPGRADES(false, "droneUpgrades", new ItemDroneUpgrade(ConfigHandler.getCurrentConfig().get("item", "droneUpgrades", 30082).getInt(30082)).setIconIndex(5).setItemName("droneUpgrades").setCreativeTab(CreativeTabs.tabRedstone), "Drone Gyroscope Card", "Drone GPS Card", "Drone Analyzer Card", "Drone Engine Card", "Drone AI Card");
+    
     private boolean isOreDicItem;
     private String name;
     private String[] humanNames;

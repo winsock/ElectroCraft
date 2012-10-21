@@ -1,4 +1,4 @@
-package info.cerios.electrocraft.core.computer;
+package info.cerios.electrocraft.api.computer;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

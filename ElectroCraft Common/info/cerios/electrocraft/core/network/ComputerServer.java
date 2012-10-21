@@ -1,33 +1,16 @@
 package info.cerios.electrocraft.core.network;
 
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.utils.ObjectTriplet;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import net.minecraft.src.EntityPlayerMP;
-import net.minecraft.src.ModLoader;
-import net.minecraft.src.NetServerHandler;
-import net.minecraft.src.NetworkListenThread;
-import net.minecraft.src.NetworkManager;
-import net.minecraft.src.Packet1Login;
-import net.minecraft.src.World;
-
 import cpw.mods.fml.common.FMLCommonHandler;
 
 public class ComputerServer implements Runnable {

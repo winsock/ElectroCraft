@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
 import info.cerios.electrocraft.core.network.ComputerInputPacket;
 import info.cerios.electrocraft.core.network.ModifierPacket;
 

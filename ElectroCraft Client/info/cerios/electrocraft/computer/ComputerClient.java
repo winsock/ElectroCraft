@@ -1,14 +1,16 @@
 package info.cerios.electrocraft.computer;
 
-import cpw.mods.fml.common.FMLCommonHandler;
+import info.cerios.electrocraft.api.computer.IComputerCallback;
+import info.cerios.electrocraft.api.utils.ObjectPair;
+import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ElectroCraft;
-import info.cerios.electrocraft.core.computer.IComputerCallback;
-import info.cerios.electrocraft.core.computer.IComputerRunnable;
 import info.cerios.electrocraft.core.network.ComputerProtocol;
-import info.cerios.electrocraft.core.utils.ObjectPair;
-import info.cerios.electrocraft.core.utils.Utils;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -18,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.zip.DataFormatException;
 
 public class ComputerClient implements Runnable {

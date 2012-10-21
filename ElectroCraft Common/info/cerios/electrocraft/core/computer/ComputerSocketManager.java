@@ -1,11 +1,9 @@
 package info.cerios.electrocraft.core.computer;
 
+import info.cerios.electrocraft.api.utils.ObjectPair;
+import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.computer.luaapi.ComputerSocket;
-import info.cerios.electrocraft.core.utils.ObjectPair;
-import info.cerios.electrocraft.core.utils.Utils;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

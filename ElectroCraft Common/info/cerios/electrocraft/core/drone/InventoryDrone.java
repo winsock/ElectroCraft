@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import cpw.mods.fml.common.network.PacketDispatcher;
 
+import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.CustomPacket;
@@ -17,16 +18,16 @@ import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
 
 public class InventoryDrone implements IInventory {
-	
-    public ItemStack[] mainInventory = new ItemStack[36];
-    public ItemStack[] tools = new ItemStack[3];
-    public ItemStack fuel;
-    private EntityDrone drone;
-    
-    public InventoryDrone(EntityDrone drone) {
-    	this.drone = drone;
-    }
-    
+
+	public ItemStack[] mainInventory = new ItemStack[36];
+	public ItemStack[] tools = new ItemStack[3];
+	public ItemStack fuel;
+	private EntityDrone drone;
+
+	public InventoryDrone(EntityDrone drone) {
+		this.drone = drone;
+	}
+
 	@Override
 	public int getSizeInventory() {
 		return mainInventory.length + tools.length + 1;
@@ -48,7 +49,7 @@ public class InventoryDrone implements IInventory {
 	public ItemStack decrStackSize(int var1, int var2) {
 		ItemStack returnStack = null;
 		ItemStack[] slots;
-		
+
 		if (var1 >= 36) {
 			var1 -= 36;
 			if (var1 >= 3) {
@@ -59,7 +60,7 @@ public class InventoryDrone implements IInventory {
 		} else {
 			slots = mainInventory;
 		}
-		
+
 		if (slots[var1] == null)
 			return null;
 		if (var2 >= slots[var1].stackSize) {
@@ -71,7 +72,7 @@ public class InventoryDrone implements IInventory {
 		}
 		if (slots[var1] != null && slots[var1].stackSize <= 0)
 			slots[var1] = null;
-		
+
 		if (slots.length == 36) {
 			mainInventory = slots;
 		} else if (slots.length == 3) {
@@ -79,7 +80,7 @@ public class InventoryDrone implements IInventory {
 		} else if (slots.length == 1) {
 			fuel = slots[0];
 		}
-		
+
 		return returnStack;
 	}
 
@@ -91,7 +92,7 @@ public class InventoryDrone implements IInventory {
 	@Override
 	public void setInventorySlotContents(int var1, ItemStack var2) {
 		ItemStack[] slots;
-		
+
 		if (var1 >= 36) {
 			var1 -= 36;
 			if (var1 >= 3) {
@@ -125,17 +126,29 @@ public class InventoryDrone implements IInventory {
 	@Override
 	public void onInventoryChanged() {
 		if (!drone.worldObj.isRemote) {
+			if (drone.getDrone() != null) {
+				if (tools[0] == null) {
+					drone.getDrone().setLeftCard(null, null);
+				} else if (tools[0].getItem() instanceof ICard) {
+					drone.getDrone().setLeftCard((ICard) tools[0].getItem(), tools[0]);
+				}
+				if (tools[2] == null) {
+					drone.getDrone().setRightCard(null, null);
+				} else if (tools[2].getItem() instanceof ICard) {
+					drone.getDrone().setRightCard((ICard) tools[2].getItem(), tools[2]);
+				}
+			}
 			CustomPacket packet = new CustomPacket();
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	        DataOutputStream dos = new DataOutputStream(bos);
-	        NBTTagCompound inventory = new NBTTagCompound();
-	        writeToNBT(inventory);
-	        try {
-		        dos.writeInt(drone.entityId);
+			DataOutputStream dos = new DataOutputStream(bos);
+			NBTTagCompound inventory = new NBTTagCompound();
+			writeToNBT(inventory);
+			try {
+				dos.writeInt(drone.entityId);
 				NBTBase.writeNamedTag(inventory, dos);
 				packet.id = 4;
-		        packet.data = bos.toByteArray();
-		        PacketDispatcher.sendPacketToAllInDimension(packet.getMCPacket(), drone.worldObj.provider.dimensionId);
+				packet.data = bos.toByteArray();
+				PacketDispatcher.sendPacketToAllInDimension(packet.getMCPacket(), drone.worldObj.provider.dimensionId);
 			} catch (IOException e) {
 				ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
 			}
@@ -152,7 +165,7 @@ public class InventoryDrone implements IInventory {
 
 	@Override
 	public void closeChest() { }
-	
+
 	public void readFromNBT(NBTTagCompound tagCompound) {
 		NBTTagList tagList = tagCompound.getTagList("inventory");
 		for (int i = 0; i < tagList.tagCount(); i++) {
@@ -160,6 +173,18 @@ public class InventoryDrone implements IInventory {
 			byte slot = tag.getByte("slot");
 			if (slot >= 0 && slot < getSizeInventory()) {
 				setInventorySlotContents(slot, ItemStack.loadItemStackFromNBT(tag));
+			}
+		}
+		if (!drone.worldObj.isRemote) {
+			if (tools[0] == null) {
+				drone.getDrone().setLeftCard(null, null);
+			} else if (tools[0].getItem() instanceof ICard) {
+				drone.getDrone().setLeftCard((ICard) tools[0].getItem(), tools[0]);
+			}
+			if (tools[2] == null) {
+				drone.getDrone().setRightCard(null, null);
+			} else if (tools[2].getItem() instanceof ICard) {
+				drone.getDrone().setRightCard((ICard) tools[2].getItem(), tools[2]);
 			}
 		}
 	}

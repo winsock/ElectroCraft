@@ -1,4 +1,4 @@
-package info.cerios.electrocraft.core.utils;
+package info.cerios.electrocraft.api.utils;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 

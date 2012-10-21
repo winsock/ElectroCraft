@@ -2,6 +2,7 @@ package info.cerios.electrocraft.core.drone.tools;
 
 import java.util.List;
 
+import info.cerios.electrocraft.api.drone.tools.IDroneTool;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import net.minecraft.src.Block;
 import net.minecraft.src.ItemPickaxe;
@@ -28,5 +29,10 @@ public class AbstractTool implements IDroneTool {
 		List<ItemStack> stacks = drone.getBlockDropped(world, x, y, z);
 		world.setBlockWithNotify(x, y, z, 0);
 		return stacks;
+	}
+
+	@Override
+	public boolean isRightTool(ItemStack item) {
+		return true;
 	}
 }

@@ -10,12 +10,12 @@ import cpw.mods.fml.common.Side;
 import cpw.mods.fml.common.TickType;
 import cpw.mods.fml.common.registry.TickRegistry;
 
+import info.cerios.electrocraft.api.computer.ExposedToLua;
+import info.cerios.electrocraft.api.computer.IMCRunnable;
+import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.Computer;
-import info.cerios.electrocraft.core.computer.ExposedToLua;
-import info.cerios.electrocraft.core.computer.IMCRunnable;
-import info.cerios.electrocraft.core.computer.NetworkBlock;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.World;
 

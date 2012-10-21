@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core;
 
-import info.cerios.electrocraft.core.computer.IMCRunnable;
+import info.cerios.electrocraft.api.computer.IMCRunnable;
 
 import java.util.EnumSet;
 import java.util.List;

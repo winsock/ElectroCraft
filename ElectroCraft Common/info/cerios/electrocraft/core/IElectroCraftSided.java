@@ -3,8 +3,8 @@ package info.cerios.electrocraft.core;
 import java.io.File;
 import java.net.SocketAddress;
 
+import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
-import info.cerios.electrocraft.core.computer.NetworkBlock;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
