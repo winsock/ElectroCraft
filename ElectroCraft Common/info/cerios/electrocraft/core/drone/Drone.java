@@ -88,7 +88,7 @@ public class Drone extends Computer {
 
 					@Override
 					public int invoke(LuaState luaState) {
-						luaState.pushBoolean(drone.drone.getNavigator().tryMoveToXYZ(luaState.checkNumber(-4), luaState.checkNumber(-3), luaState.checkNumber(-2), (float) luaState.checkNumber(-1)));
+						luaState.pushBoolean(drone.drone.getNavigator().tryMoveToXYZ(luaState.checkNumber(-4), luaState.checkNumber(-3), luaState.checkNumber(-2), MathHelper.clamp_float((float) luaState.checkNumber(-1), 0f, 1f)));
 						return 1;
 					}
 
@@ -204,9 +204,9 @@ public class Drone extends Computer {
 					@Override
 					public int invoke(LuaState luaState) {
 						ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
-						int x = (int)(Math.ceil(drone.drone.posX) + dir.offsetX);
+						int x = (int)(Math.floor(drone.drone.posX) + dir.offsetX);
 						int y = (int)(Math.floor(drone.drone.posY) + dir.offsetY);
-						int z = (int)(Math.ceil(drone.drone.posZ) + dir.offsetZ);
+						int z = (int)(Math.floor(drone.drone.posZ) + dir.offsetZ);
 						luaState.pushInteger(drone.drone.worldObj.getBlockId(x, y, z));
 						luaState.pushInteger(drone.drone.worldObj.getBlockMetadata(x, y, z));
 						return 2;
@@ -276,6 +276,48 @@ public class Drone extends Computer {
 					@Override
 					public String getName() {
 						return "face";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushNumber(Math.floor(drone.drone.posX));
+						luaState.pushNumber(Math.floor(drone.drone.posY));
+						luaState.pushNumber(Math.floor(drone.drone.posZ));
+						return 3;
+					}
+
+					@Override
+					public String getName() {
+						return "getLocation";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						luaState.pushNumber(drone.drone.posX - Math.floor(drone.drone.posX));
+						luaState.pushNumber(drone.drone.posX - Math.floor(drone.drone.posX));
+						luaState.pushNumber(drone.drone.posX - Math.floor(drone.drone.posX));
+						return 3;
+					}
+
+					@Override
+					public String getName() {
+						return "getOffset";
 					}
 				}.init(this),
 		};

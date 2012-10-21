@@ -82,8 +82,11 @@ function write(string)
 	os.getTerminal():print(string)
 end
 
-function print(string)
-	os.getTerminal():printLine(string)
+function print(...)
+	local strings = {...}
+	for i=1,#strings do
+		os.getTerminal():printLine(strings[i])
+	end
 end
 
 local saveFuncs = {}
