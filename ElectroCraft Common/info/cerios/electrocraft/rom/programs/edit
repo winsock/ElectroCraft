@@ -151,7 +151,7 @@ while running do
 	elseif event == "key" then
 		if key == "\n" then
 			if data[row + rowOffset] and data[row + rowOffset]:len() > col then
-				local part = data[row + rowOffset]:sub(col, data[row + rowOffset]:len())
+				local part = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
 				data[row + rowOffset] = data[row + rowOffset]:sub(0, col)
 				term:clearLine()
 				write(data[row + rowOffset])
@@ -213,21 +213,23 @@ while running do
 				col = col - 1
 				term:setPosition(row - 1, col)
 			elseif #data > 1 and row > 1 then
+				local part = ""
 				if data[row + rowOffset] and data[row + rowOffset]:len() > 0 then
-					local part = data[row + rowOffset]:sub(0, data[row + rowOffset]:len())
-					if not data[row + rowOffset - 1] then
-						data[row + rowOffset - 1] = part
-						col = 0
-					else
-						col = data[row + rowOffset - 1]:len()
-						data[row + rowOffset - 1] = data[row + rowOffset - 1] .. part
-					end
+					part = data[row + rowOffset]:sub(0, data[row + rowOffset]:len())
+				end
+				if data[row + rowOffset - 1] then
+					col = data[row + rowOffset - 1]:len()
+					data[row + rowOffset - 1] = data[row + rowOffset - 1] .. part
+				elseif part:len() > 0 then
+					data[row + rowOffset - 1] = part
+					col = 0
 					term:setPosition(row - 2, data[row + rowOffset - 1]:len())
 					write(part)
 				end
+				
 				table.remove(data, row + rowOffset)
-				term:deleteRow(row - 1)
 				row = row - 1
+				term:deleteRow(row - 1)
 				term:setPosition(row - 1, col)
 			end
 		elseif key == kbrd.keycodes.ctrl then

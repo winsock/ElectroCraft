@@ -322,18 +322,17 @@ public class Terminal extends Writer {
 		rows.addAll(terminal.keySet());
 		Collections.sort(rows);
 		for (int j = 0; j < rows.size(); j++) {
-			if (j == row) {
-				continue;
-			} else if (j > row) {
+			if (j > row) {
 				newTerminal.put(j - 1, terminal.get(rows.get(j)));
-			} else {
+			} else if (j == row || rows.size() <= j) {
+				continue;
+			} else if (rows.size() > j) {
 				newTerminal.put(j, terminal.get(rows.get(j)));
 			}
 		}
-		newTerminal.put(rows.size(), new TreeMap<Integer, Character>());
 		terminal = newTerminal;
-		int[] updateRows = new int[this.rows];
-		for (int i = row; i < this.rows; i++)
+		int[] updateRows = new int[rows.size()];
+		for (int i = row; i < rows.size(); i++)
 			updateRows[i] = i;
 		sendUpdate(updateRows);
 	}
@@ -355,7 +354,7 @@ public class Terminal extends Writer {
 		}
 		terminal = newTerminal;
 		int[] updateRows = new int[this.rows];
-		for (int i = row; i < this.rows; i++)
+		for (int i = row - 1; i < this.rows; i++)
 			updateRows[i] = i;
 		sendUpdate(updateRows);
 	}
@@ -445,19 +444,19 @@ public class Terminal extends Writer {
 						rows.addAll(terminal.keySet());
 						Collections.sort(rows);
 						for (int j = 0; j < rows.size() + 1; j++) {
-							if (j == currentRow || rows.size() <= j) {
-								newTerminal.put(j, new TreeMap<Integer, Character>());
-							} else if (j > currentRow) {
+							if (j > currentRow) {
 								newTerminal.put(j, terminal.get(rows.get(j - 1)));
-							} else {
+							} else if (j == currentRow || rows.size() <= j) {
+								newTerminal.put(j, new TreeMap<Integer, Character>());
+							} else if (rows.size() > j) {
 								newTerminal.put(j, terminal.get(rows.get(j)));
 							}
 						}
 						currentColumn = 0;
 						columnOffset = 0;
 						terminal = newTerminal;
-						int[] updateRows = new int[this.rows];
-						for (int j = currentRow; j < this.rows; j++)
+						int[] updateRows = new int[rows.size()];
+						for (int j = currentRow - 1; j < rows.size(); j++)
 							updateRows[j] = j;
 						sendUpdate(updateRows);
 					}
