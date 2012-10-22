@@ -40,35 +40,36 @@ public class ContainerDrone extends Container {
         }
 	}
 	
-//	@Override
-//	 public ItemStack transferStackInSlot(int slot) {
-//		 ItemStack stack = null;
-//		 Slot slotObject = (Slot) inventorySlots.get(slot);
-//
-//		 // Null checks and checks if the item can be stacked (maxStackSize > 1)
-//		 if (slotObject != null && slotObject.getHasStack()) {
-//			 ItemStack stackInSlot = slotObject.getStack();
-//			 stack = stackInSlot.copy();
-//
-//			 // Merges the item into player inventory since its in the tileEntity
-//			 if (slot >= 0 && slot <= 3) {
-//				 if (!mergeItemStack(stackInSlot, 4, inventorySlots.size(), true)) {
-//					 return null;
-//				 }
-//			 // Placing it into the tileEntity is possible since its in the player inventory
-//			 } else if (!mergeItemStack(stackInSlot, 0, 1, false)) {
-//				 return null;
-//			 }
-//
-//			 if (stackInSlot.stackSize == 0) {
-//				 slotObject.putStack(null);
-//			 } else {
-//				 slotObject.onSlotChanged();
-//			 }
-//		 }
-//
-//		 return stack;
-//	 }
+	// Used to be transferStackInSlot
+	@Override
+	public ItemStack func_82846_b(EntityPlayer player, int slot) {
+		 ItemStack stack = null;
+		 Slot slotObject = (Slot) inventorySlots.get(slot);
+
+		 // Null checks and checks if the item can be stacked (maxStackSize > 1)
+		 if (slotObject != null && slotObject.getHasStack()) {
+			 ItemStack stackInSlot = slotObject.getStack();
+			 stack = stackInSlot.copy();
+
+			 // Merges the item into player inventory since its in the tileEntity
+			 if (slotObject.inventory instanceof InventoryDrone) {
+				 if (!mergeItemStack(stackInSlot, 40, inventorySlots.size(), true)) {
+					 return null;
+				 }
+			 // Placing it into the tileEntity is possible since its in the player inventory
+			 } else if (!mergeItemStack(stackInSlot, 0, 1, false)) {
+				 return null;
+			 }
+
+			 if (stackInSlot.stackSize == 0) {
+				 slotObject.putStack(null);
+			 } else {
+				 slotObject.onSlotChanged();
+			 }
+		 }
+
+		 return stack;
+	 }
 	
 	@Override
 	public boolean canInteractWith(EntityPlayer var1) {

@@ -39,8 +39,9 @@ public class InventoryDrone implements IInventory {
 			var1 -= 36;
 			if (var1 >= 3) {
 				return fuel;
+			} else {
+				return tools[var1];
 			}
-			return tools[var1];
 		}
 		return mainInventory[var1];
 	}
@@ -55,8 +56,9 @@ public class InventoryDrone implements IInventory {
 			if (var1 >= 3) {
 				var1 = 0;
 				slots = new ItemStack[] { fuel };
+			} else {
+				slots = tools;
 			}
-			slots = tools;
 		} else {
 			slots = mainInventory;
 		}
@@ -98,8 +100,9 @@ public class InventoryDrone implements IInventory {
 			if (var1 >= 3) {
 				var1 = 0;
 				slots = new ItemStack[] { fuel };
+			} else {
+				slots = tools;
 			}
-			slots = tools;
 		} else {
 			slots = mainInventory;
 		}
