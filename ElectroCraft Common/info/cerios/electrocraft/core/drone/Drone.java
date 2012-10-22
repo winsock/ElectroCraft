@@ -224,12 +224,21 @@ public class Drone extends Computer {
 						ItemStack stack = null;
 						if (luaState.getTop() >= 3) {
 							amount = luaState.checkInteger(-2);
-							stack = drone.drone.getInventory().getStackInSlot(luaState.checkInteger(-2));
+							stack = drone.drone.getInventory().getStackInSlot(luaState.checkInteger(-3));
+							ItemStack remainder = stack.copy();
+							remainder.stackSize = stack.stackSize - amount;
+							if (remainder.stackSize <= 0) {
+								amount -= Math.abs(remainder.stackSize);
+								remainder = null;
+							}
+							drone.drone.getInventory().setInventorySlotContents(luaState.checkInteger(-3), remainder);
+							stack.stackSize = amount;
 						} else {
 							stack = drone.drone.getInventory().getStackInSlot(luaState.checkInteger(-2));
 							if (stack != null) {
 								amount = stack.stackSize;
 							}
+							drone.drone.getInventory().setInventorySlotContents(luaState.checkInteger(-2), null);
 						}
 						
 						if (stack == null || amount <= 0) {
