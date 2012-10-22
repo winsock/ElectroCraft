@@ -241,9 +241,10 @@ public class ElectroCraft implements IElectroCraft {
 
     private void registerBaseRecipes() {
     	GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ElectroItems.ELECTRO_DUST.getItem(), 4), Item.redstone, "magnetiteDust", "magnetiteDust", "magnetiteDust"));
+    	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.SERIAL_CABLE.getBlock(), 16), "WWW", "III", "WWW", 'I', Item.ingotIron, 'W', Block.cloth);
     	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.COMPUTER.getBlock()), "III", "ICI", "IEI", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'I', Item.ingotIron, 'C', Item.compass);
     	GameRegistry.addRecipe(new ItemStack(ElectroBlocks.REDSTONE_ADAPTER.getBlock()), "III", "ICI", "IRI", 'R', Item.redstone, 'I', Item.ingotIron, 'C', Block.thinGlass);
-    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 0), "EDE", "PGP", "DPD", 'E', Item.emerald, 'D', ElectroItems.ELECTRO_DUST.getItem(), 'G', Item.ghastTear);
+    	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 0), "EDE", "PGP", "DPD", 'E', Item.emerald, 'D', ElectroItems.ELECTRO_DUST.getItem(), 'G', Item.ghastTear, 'P', Item.enderPearl);
     	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 1), "RDR", "PGP", "ETE", 'E', Item.emerald, 'D', ElectroItems.ELECTRO_DUST.getItem(), 'R', Item.redstone, 'D', Block.torchRedstoneActive, 'P', Item.enderPearl, 'G', Item.ghastTear);
     	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 2), "RDR", "EGE", "CPC", 'E', Block.oreEmerald, 'D', Block.oreDiamond, 'P', Item.enderPearl, 'R', Block.oreRedstone, 'G', Item.ghastTear, 'C', Block.oreCoal);
     	GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 3), "EPE", "PGP", "EPE", 'E', Item.emerald, 'P', Item.enderPearl, 'G', Item.ghastTear);
