@@ -455,9 +455,9 @@ public class Terminal extends Writer {
 						currentColumn = 0;
 						columnOffset = 0;
 						terminal = newTerminal;
-						int[] updateRows = new int[rows.size()];
-						for (int j = currentRow - 1; j < rows.size(); j++)
-							updateRows[j] = j;
+						int[] updateRows = new int[newTerminal.size() - currentRow];
+						for (int j = 0; j < newTerminal.size() - currentRow; j++)
+							updateRows[j] = currentRow + j;
 						sendUpdate(updateRows);
 					}
 				} else {

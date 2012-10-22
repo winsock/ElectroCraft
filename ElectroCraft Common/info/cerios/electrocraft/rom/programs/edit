@@ -159,11 +159,6 @@ while running do
 				write("\n")
 				term:setPosition(row, 0)
 				write(part)
-				for i = row + rowOffset + 2, term:getRows() + rowOffset do
-					if data[i] then
-						write("\n" .. data[i])
-					end
-				end
 				col = 0	
 			else
 				col = 0
@@ -214,22 +209,27 @@ while running do
 				term:setPosition(row - 1, col)
 			elseif #data > 1 and row > 1 then
 				local part = ""
+				
 				if data[row + rowOffset] and data[row + rowOffset]:len() > 0 then
 					part = data[row + rowOffset]:sub(0, data[row + rowOffset]:len())
 				end
-				if data[row + rowOffset - 1] then
+				term:deleteRow(row - 1)
+				if data[row + rowOffset - 1] and part:len() > 0 then
 					col = data[row + rowOffset - 1]:len()
 					data[row + rowOffset - 1] = data[row + rowOffset - 1] .. part
+					term:setPosition(row - 2, col)
+					write(data[row + rowOffset - 1])
 				elseif part:len() > 0 then
 					data[row + rowOffset - 1] = part
 					col = 0
-					term:setPosition(row - 2, data[row + rowOffset - 1]:len())
+					term:setPosition(row - 2, col)
 					write(part)
+				elseif data[row + rowOffset - 1] then
+					col = data[row + rowOffset - 1]:len()
 				end
 				
 				table.remove(data, row + rowOffset)
 				row = row - 1
-				term:deleteRow(row - 1)
 				term:setPosition(row - 1, col)
 			end
 		elseif key == kbrd.keycodes.ctrl then
