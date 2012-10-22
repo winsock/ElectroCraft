@@ -15,8 +15,8 @@ public class BlockRedstoneAdapter extends BlockNetwork {
     }
 
     @Override
-    public boolean isIndirectlyPoweringTo(World par1World, int par2, int par3, int par4, int par5) {
-        return isPoweringTo(par1World, par2, par3, par4, par5);
+    public boolean isIndirectlyPoweringTo(IBlockAccess blockAccess, int par2, int par3, int par4, int par5) {
+        return isPoweringTo(blockAccess, par2, par3, par4, par5);
     }
 
     @Override

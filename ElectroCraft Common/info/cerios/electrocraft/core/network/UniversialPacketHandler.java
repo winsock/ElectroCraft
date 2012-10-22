@@ -20,9 +20,9 @@ import java.util.List;
 import net.minecraft.src.Entity;
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
+import net.minecraft.src.INetworkManager;
 import net.minecraft.src.NBTBase;
 import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.NetworkManager;
 import net.minecraft.src.Packet250CustomPayload;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
@@ -34,7 +34,7 @@ public class UniversialPacketHandler implements IPacketHandler {
 	private byte[] lastVGAData;
 
 	@Override
-	public void onPacketData(NetworkManager manager, Packet250CustomPayload packet, Player player) {
+	public void onPacketData(INetworkManager manager, Packet250CustomPayload packet, Player player) {
 		if (!packet.channel.equalsIgnoreCase("electrocraft"))
 			return;
 		if (player instanceof EntityPlayerMP) {

@@ -37,7 +37,8 @@ public class SwordTool implements IDroneTool {
 		List<ItemStack> itemsDropped = new ArrayList<ItemStack>();
 		
 		Vec3 look = drone.getLookVec();
-		Vec3 pos = Vec3.getVec3Pool().getVecFromPool(drone.posX, drone.posY, drone.posZ);
+		// field_82592_a = getVecFromPool
+		Vec3 pos = Vec3.field_82592_a.getVecFromPool(drone.posX, drone.posY, drone.posZ);
 		Vec3 vector = pos.addVector(look.xCoord * 4, look.yCoord * 4, look.zCoord * 4);
 		
 		Entity entity = null;

@@ -41,11 +41,10 @@ public class RenderDrone extends RenderLiving {
         	GL11.glRotatef(10 - ((EntityDrone)par1EntityLiving).getRotationTicks(), 1, 0, 1);
         	GL11.glTranslatef(0.0625f, 0, 0);
 
-        	if (par1EntityLiving.getHeldItem().getItem().requiresMultipleRenderPasses())
-        	{
-        		for (int var25 = 0; var25 < par1EntityLiving.getHeldItem().getItem().getRenderPasses(par1EntityLiving.getHeldItem().getItemDamage()); ++var25)
-        		{
-        			int var24 = par1EntityLiving.getHeldItem().getItem().getColorFromDamage(par1EntityLiving.getHeldItem().getItemDamage(), var25);
+        	if (par1EntityLiving.getHeldItem().getItem().requiresMultipleRenderPasses()) {
+        		for (int var25 = 0; var25 < par1EntityLiving.getHeldItem().getItem().getRenderPasses(par1EntityLiving.getHeldItem().getItemDamage()); ++var25) {
+        			// func_82790_a used to be getColorFromDamage
+        			int var24 = par1EntityLiving.getHeldItem().getItem().func_82790_a(par1EntityLiving.getHeldItem(), var25);
         			float var26 = (float)(var24 >> 16 & 255) / 255.0F;
         			float var9 = (float)(var24 >> 8 & 255) / 255.0F;
         			float var10 = (float)(var24 & 255) / 255.0F;
@@ -53,8 +52,7 @@ public class RenderDrone extends RenderLiving {
         			this.renderManager.itemRenderer.renderItem(par1EntityLiving, par1EntityLiving.getHeldItem(), var25);
         		}
         	}
-        	else
-        	{
+        	else {
         		this.renderManager.itemRenderer.renderItem(par1EntityLiving, par1EntityLiving.getHeldItem(), 0);
         	}
         }
