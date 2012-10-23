@@ -782,8 +782,12 @@ public class Computer implements Runnable {
 				first = false;
 				luaStateLock.unlock();
 			} else if (first) {
+				if (luaStateLock.isHeldByCurrentThread())
+					luaStateLock.unlock();
 				continue;
 			}
+			if (luaStateLock.isHeldByCurrentThread())
+				luaStateLock.unlock();
 			stateLock.lock();
 			if (!isRunning() && ElectroCraft.instance.isRunning())
 				break;

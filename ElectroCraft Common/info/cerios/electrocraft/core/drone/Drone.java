@@ -506,7 +506,6 @@ public class Drone extends Computer {
 		};
 		this.luaState.register("drone", droneAPI);
 		luaState.pop(1);
-		luaStateLock.lock();
 		if (luaState != null && luaState.isOpen() && leftCard != null) {
 			luaState.register(leftCard.getValue1().getName(leftCard.getValue2()), leftCard.getValue1().getFunctions(leftCard.getValue2(), this));
 			luaState.pop(1);
@@ -515,7 +514,6 @@ public class Drone extends Computer {
 			luaState.register(rightCard.getValue1().getName(rightCard.getValue2()), rightCard.getValue1().getFunctions(rightCard.getValue2(), this));
 			luaState.pop(1);
 		}
-		luaStateLock.unlock();
 		luaStateLock.unlock();
 	}
 

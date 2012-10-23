@@ -20,6 +20,9 @@ function shell.run(file, ...)
 	if not found then
 		found, func, err = loadfile("/rom/programs/" .. file)
 	end
+	if (not found) and (drone ~= nil) then
+		found, func, err = loadfile("/rom/drone/programs/" .. file)
+	end
 	if err or not found then
 		return false, err
 	end
