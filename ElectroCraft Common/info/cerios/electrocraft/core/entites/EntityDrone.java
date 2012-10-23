@@ -60,7 +60,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void readEntityFromNBT(NBTTagCompound nbt) {
 		super.readEntityFromNBT(nbt);
-		if (!worldObj.isRemote)
+		if (worldObj.isRemote)
 			return;
 		id = nbt.getString("cid");
 		createDrone();
