@@ -105,8 +105,6 @@ public class Computer implements Runnable {
 		if (!this.baseDirectory.exists()) {
 			this.baseDirectory.mkdirs();
 		}
-		// Lua Stuff
-		loadLuaDefaults();
 		// Create a finalize guardian
 		finalizeGuardian = new Object() {
 			@Override
@@ -375,7 +373,7 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua(value = false)
-	public void loadBios() {
+	protected void loadBios() {
 		luaStateLock.lock();
 		try {
 			luaState.load(Computer.class.getResourceAsStream("/info/cerios/electrocraft/rom/bios.lua"), "bios_" + baseDirectory.getName());
@@ -457,11 +455,11 @@ public class Computer implements Runnable {
 						System.out.println("Possibly went to long without yielding?");
 						e.printLuaStackTrace();
 					}
+					luaState.reset_kill(100);
 					luaStateLock.unlock();
 				}
 			}
 		}
-		luaState.reset_kill(100);
 	}
 
 	@ExposedToLua(value = false)
@@ -469,7 +467,6 @@ public class Computer implements Runnable {
 		if (running) {
 			stateLock.lock();
 			wasResumed = true;
-			loadBios();
 			stateLock.unlock();
 			thisThread = new Thread(this);
 			thisThread.start();
@@ -487,7 +484,7 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua(value = false)
-	public void loadLuaDefaults() {
+	protected void loadLuaDefaults() {
 		luaStateLock.lock();
 		// Create a new state
 		if (luaState != null && luaState.isOpen())
@@ -695,8 +692,6 @@ public class Computer implements Runnable {
 		if (!running) {
 			stateLock.lock();
 			running = true;
-			loadLuaDefaults();
-			loadBios();
 			stateLock.unlock();
 			thisThread = new Thread(this);
 			thisThread.start();
@@ -779,6 +774,8 @@ public class Computer implements Runnable {
 
 	@Override
 	public void run() {
+		loadLuaDefaults();
+		loadBios();
 		while (isRunning() && ElectroCraft.instance.isRunning()) {
 			stateLock.lock();
 			if (!isRunning() && ElectroCraft.instance.isRunning())

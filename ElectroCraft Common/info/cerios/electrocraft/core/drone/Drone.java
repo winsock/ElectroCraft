@@ -63,21 +63,21 @@ public class Drone extends Computer {
 	@Override
 	public void loadBios() {
 		super.loadBios();
-		synchronized (luaStateLock) {
-			try {
-				luaState.load(this.getClass().getResourceAsStream("/info/cerios/electrocraft/rom/drone/dronebios.lua"), "drone_bios_" + this.getBaseDirectory().getName());
-				luaState.newThread();
-				luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine_drone");
-			} catch (IOException e) {
-				ElectroCraft.instance.getLogger().severe("Error loading drone BIOS!");
-			}
+		luaStateLock.lock();
+		try {
+			luaState.load(this.getClass().getResourceAsStream("/info/cerios/electrocraft/rom/drone/dronebios.lua"), "drone_bios_" + this.getBaseDirectory().getName());
+			luaState.newThread();
+			luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine_drone");
+		} catch (IOException e) {
+			ElectroCraft.instance.getLogger().severe("Error loading drone BIOS!");
 		}
+		luaStateLock.unlock();
 	}
 
 	@Override
 	public void loadLuaDefaults() {
 		super.loadLuaDefaults();
-
+		luaStateLock.lock();
 		NamedJavaFunction[] droneAPI = new NamedJavaFunction[] {
 				new NamedJavaFunction() {
 					Drone drone;
@@ -506,49 +506,44 @@ public class Drone extends Computer {
 		};
 		this.luaState.register("drone", droneAPI);
 		luaState.pop(1);
+		luaStateLock.lock();
 		if (luaState != null && luaState.isOpen() && leftCard != null) {
-			synchronized(luaStateLock) {
-				luaState.register(leftCard.getValue1().getName(leftCard.getValue2()), leftCard.getValue1().getFunctions(leftCard.getValue2(), this));
-				luaState.pop(1);
-			}
+			luaState.register(leftCard.getValue1().getName(leftCard.getValue2()), leftCard.getValue1().getFunctions(leftCard.getValue2(), this));
+			luaState.pop(1);
 		}
 		if (luaState != null && luaState.isOpen() && rightCard != null) {
-			synchronized(luaStateLock) {
-				luaState.register(rightCard.getValue1().getName(rightCard.getValue2()), rightCard.getValue1().getFunctions(rightCard.getValue2(), this));
-				luaState.pop(1);
-			}
+			luaState.register(rightCard.getValue1().getName(rightCard.getValue2()), rightCard.getValue1().getFunctions(rightCard.getValue2(), this));
+			luaState.pop(1);
 		}
+		luaStateLock.unlock();
+		luaStateLock.unlock();
 	}
 
 	public void setLeftCard(ICard card, ItemStack stack) {
+		luaStateLock.lock();
 		if (luaState != null && luaState.isOpen() && card == null && this.leftCard != null && (this.rightCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
-			synchronized(luaStateLock) {
-				luaState.pushNil();
-				luaState.setGlobal(leftCard.getValue1().getName(leftCard.getValue2()));
-			}
+			luaState.pushNil();
+			luaState.setGlobal(leftCard.getValue1().getName(leftCard.getValue2()));
 		}
 		if ((leftCard == null || (card != leftCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
-			synchronized(luaStateLock) {
-				luaState.register(card.getName(stack), card.getFunctions(stack, this));
-				luaState.setGlobal(card.getName(stack));
-			}
+			luaState.register(card.getName(stack), card.getFunctions(stack, this));
+			luaState.setGlobal(card.getName(stack));
 		}
+		luaStateLock.unlock();
 		this.leftCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
 	}
 
 	public void setRightCard(ICard card, ItemStack stack) {
+		luaStateLock.lock();
 		if (luaState != null && luaState.isOpen() && card == null && this.rightCard != null && (this.leftCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
-			synchronized(luaStateLock) {
-				luaState.pushNil();
-				luaState.setGlobal(rightCard.getValue1().getName(rightCard.getValue2()));
-			}
+			luaState.pushNil();
+			luaState.setGlobal(rightCard.getValue1().getName(rightCard.getValue2()));
 		}
 		if ((rightCard == null || (card != rightCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
-			synchronized(luaStateLock) {
-				luaState.register(card.getName(stack), card.getFunctions(stack, this));
-				luaState.setGlobal(card.getName(stack));
-			}
+			luaState.register(card.getName(stack), card.getFunctions(stack, this));
+			luaState.setGlobal(card.getName(stack));
 		}
+		luaStateLock.unlock();
 		this.rightCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
 	}
 
