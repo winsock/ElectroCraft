@@ -525,7 +525,7 @@ public class Drone extends Computer {
 			luaState.pushNil();
 			luaState.setGlobal(leftCard.getValue1().getName(leftCard.getValue2()));
 		}
-		if ((leftCard == null || (card != leftCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
+		if ((leftCard == null || (card != leftCard.getValue1() && luaState != null && luaState.isOpen())) && card != null && luaState != null) {
 			luaState.register(card.getName(stack), card.getFunctions(stack, this));
 			luaState.setGlobal(card.getName(stack));
 		}
@@ -539,7 +539,7 @@ public class Drone extends Computer {
 			luaState.pushNil();
 			luaState.setGlobal(rightCard.getValue1().getName(rightCard.getValue2()));
 		}
-		if ((rightCard == null || (card != rightCard.getValue1() && luaState != null && luaState.isOpen())) && card != null) {
+		if ((rightCard == null || (card != rightCard.getValue1() && luaState != null && luaState.isOpen())) && card != null && luaState != null) {
 			luaState.register(card.getName(stack), card.getFunctions(stack, this));
 			luaState.setGlobal(card.getName(stack));
 		}

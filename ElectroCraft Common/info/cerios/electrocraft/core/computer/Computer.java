@@ -109,9 +109,7 @@ public class Computer implements Runnable {
 		finalizeGuardian = new Object() {
 			@Override
 			public void finalize() {
-				luaStateLock.lock();
 				thisThread.interrupt();
-				luaStateLock.unlock();
 			}
 		};
 	}
