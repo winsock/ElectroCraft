@@ -778,12 +778,12 @@ public class Computer implements Runnable {
 	public void run() {
 		boolean first = true;
 		while (isRunning() && ElectroCraft.instance.isRunning()) {
-			if (luaStateLock.tryLock()) {
+			if (luaStateLock.tryLock() && first) {
 				loadLuaDefaults();
 				loadBios();
 				first = false;
 				luaStateLock.unlock();
-			} else {
+			} else if (first) {
 				continue;
 			}
 			stateLock.lock();
