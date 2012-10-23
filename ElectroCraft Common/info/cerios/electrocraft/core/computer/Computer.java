@@ -357,8 +357,11 @@ public class Computer implements Runnable {
 				postEvent("key", getKeyboard().popChar());
 		}
 
-		for (LuaAPI api : apis) {
-			api.tick(this);
+		if (luaStateLock.tryLock()) {
+			for (LuaAPI api : apis) {
+				api.tick(this);
+			}
+			luaStateLock.unlock();
 		}
 	}
 
@@ -773,9 +776,16 @@ public class Computer implements Runnable {
 
 	@Override
 	public void run() {
-		loadLuaDefaults();
-		loadBios();
+		boolean first = true;
 		while (isRunning() && ElectroCraft.instance.isRunning()) {
+			if (luaStateLock.tryLock()) {
+				loadLuaDefaults();
+				loadBios();
+				first = false;
+				luaStateLock.unlock();
+			} else {
+				continue;
+			}
 			stateLock.lock();
 			if (!isRunning() && ElectroCraft.instance.isRunning())
 				break;

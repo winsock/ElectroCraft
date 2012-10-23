@@ -24,7 +24,7 @@ public class SwordTool implements IDroneTool {
 
 	@Override
 	public boolean isRightTool(ItemStack item) {
-		return item.getItem() instanceof ItemSword;
+		return item != null && item.getItem() instanceof ItemSword;
 	}
 
 	@Override
