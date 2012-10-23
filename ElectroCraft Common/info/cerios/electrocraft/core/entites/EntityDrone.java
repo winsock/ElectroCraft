@@ -129,6 +129,12 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		}
 	}
 	
+	@Override
+	public void setDead() {
+		this.dead = true;
+		drone.setRunning(false);
+	}
+	
 	public void setClientFlying(boolean fly) {
 		this.clientFlying = fly;
 	}
