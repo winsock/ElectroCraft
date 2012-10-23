@@ -171,13 +171,11 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     public void startComputer() {
     	if (computer != null) {
     		computer.loadLuaDefaults();
-    		computer.setRunning(true);
 	    	for (NetworkBlock ioPort : ioPorts) {
 	    		computer.registerNetworkBlock(ioPort);
 	    	}
 	    	computer.loadBios();
-	    	new Thread(computer).start();
-	    	computer.postEvent("start");
+	    	computer.start();
     	}
     }
     

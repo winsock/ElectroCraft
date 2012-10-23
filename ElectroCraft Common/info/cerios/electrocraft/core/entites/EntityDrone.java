@@ -60,6 +60,8 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void readEntityFromNBT(NBTTagCompound nbt) {
 		super.readEntityFromNBT(nbt);
+		if (!worldObj.isRemote)
+			return;
 		id = nbt.getString("cid");
 		createDrone();
 		inventory.readFromNBT(nbt);
@@ -323,10 +325,8 @@ public class EntityDrone extends EntityLiving implements IComputer {
 				}
 				if (!drone.isRunning()) {
 					drone.loadLuaDefaults();
-					drone.setRunning(true);
 					drone.loadBios();
-			    	new Thread(drone).start();
-					drone.postEvent("start");
+					drone.start();
 				}
 				drone.addClient(player);
 			}

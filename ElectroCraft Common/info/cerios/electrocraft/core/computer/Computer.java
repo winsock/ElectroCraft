@@ -88,7 +88,10 @@ public class Computer implements Runnable {
 	private Timer sleepTimer = new Timer();
 	private List<Event> eventQueue = new ArrayList<Event>();
 	private Object eventLock = new Object();
-
+	private Object finalizeGuardian;
+	private Thread thisThread;
+	protected final ReentrantLock stateLock = new ReentrantLock();
+	
 	@ExposedToLua(value = false)
 	public Computer(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
 		this.isInternal = isInternal;
@@ -104,6 +107,15 @@ public class Computer implements Runnable {
 		}
 		// Lua Stuff
 		loadLuaDefaults();
+		// Create a finalize guardian
+		finalizeGuardian = new Object() {
+			@Override
+			public void finalize() {
+				luaStateLock.lock();
+				thisThread.interrupt();
+				luaStateLock.unlock();
+			}
+		};
 	}
 
 	@ExposedToLua(value = false)
@@ -455,9 +467,12 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	public void callLoad() {
 		if (running) {
+			stateLock.lock();
 			wasResumed = true;
 			loadBios();
-			new Thread(this).start();
+			stateLock.unlock();
+			thisThread = new Thread(this);
+			thisThread.start();
 			postEvent("resume", programStorage);
 		}
 	}
@@ -612,41 +627,6 @@ public class Computer implements Runnable {
 		loadAPI(new ComputerSocket());
 		loadAPI(mcIO = new MinecraftInterface());
 
-		// Install additional checks
-		new Thread(new Runnable() {
-			Computer computer;
-
-			public Runnable init(Computer computer) {
-				this.computer = computer;
-				return this;
-			}
-
-			@Override
-			public void run() {
-				while (computer.isRunning()) {
-					if (luaStateLock.tryLock()) {
-						if (!computer.luaState.isOpen())
-							break;
-						// System memory check
-						if (computer.luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
-							computer.setRunning(false);
-							computer.getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
-						}
-
-						// Extra backup check in case my wrapped file manager doesn't catch it
-						if (computer.getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
-							computer.setRunning(false);
-							computer.getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
-						}
-						luaStateLock.unlock();
-					}
-
-					try {
-						Thread.sleep(500);
-					} catch (InterruptedException e) { }
-				}
-			}
-		}.init(this)).start();
 		luaStateLock.unlock();
 	}
 
@@ -707,13 +687,30 @@ public class Computer implements Runnable {
 	@ExposedToLua
 	public void shutdown() {
 		running = false;
+		Thread.currentThread().interrupt();
+	}
+	
+	@ExposedToLua
+	public void start() {
+		if (!running) {
+			stateLock.lock();
+			running = true;
+			stateLock.unlock();
+			thisThread = new Thread(this);
+			thisThread.start();
+			postEvent("start");
+		}
 	}
 
 	@ExposedToLua(value = false)
 	public void setRunning(boolean value) {
+		stateLock.lock();
 		running = value;
 		if (value == false && luaState != null && luaState.isOpen())
 			luaState.close();
+		if (value == false && thisThread != null)
+			thisThread.interrupt();
+		stateLock.unlock();
 	}
 
 	@ExposedToLua(value = false)
@@ -780,7 +777,10 @@ public class Computer implements Runnable {
 
 	@Override
 	public void run() {
-		while (isRunning()) {
+		while (isRunning() && ElectroCraft.instance.isRunning()) {
+			stateLock.lock();
+			if (!isRunning() && ElectroCraft.instance.isRunning())
+				break;
 			// Update the terminal to send any pending terminal packets
 			FutureTask<Boolean> termTask = new FutureTask<Boolean>(new Callable<Boolean>() {
 				@Override
@@ -798,7 +798,7 @@ public class Computer implements Runnable {
 				e1.printStackTrace();
 			} catch (CancellationException e1) {
 			}
-			
+
 			if (killYielded)
 				postEvent("killyield");
 
@@ -912,10 +912,31 @@ public class Computer implements Runnable {
 					luaState.pop(luaState.getTop());
 				}
 			}
+			
+			if (luaStateLock.tryLock()) {
+				if (!luaState.isOpen())
+					break;
+				// System memory check
+				if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
+					setRunning(false);
+					getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
+				}
+
+				// Extra backup check in case my wrapped file manager doesn't catch it
+				if (getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
+					setRunning(false);
+					getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
+				}
+				luaStateLock.unlock();
+			}
+			
 			try {
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
+				shutdown();
+				return;
 			}
+			stateLock.unlock();
 		}
 	}
 
