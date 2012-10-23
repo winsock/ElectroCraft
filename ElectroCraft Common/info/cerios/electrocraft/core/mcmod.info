@@ -2,8 +2,8 @@
 {
   "modid" : "mod_ElectroCraft",
   "name" : "ElectroCraft",
-  "version" : "Inf-Dev 0.2",
-  "credits" : "JPC Emulator, people who helped on the IRC channel #minecraftforge",
+  "version" : "Beta 0.30",
+  "credits" : "People who helped on the IRC channel #minecraftforge",
   "url" : "#electrocraft on irc.esper.net",
   "authors": [
     "winsock AKA andrewq2 AKA Andrew Querol"
