@@ -94,7 +94,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	loadingState = true;
         	if (computer == null)
         		createComputer();
-        	computer.setRunning(true);
         	computer.setProgramStorage((NBTTagCompound) nbttagcompound.getTag("programStorage"));
         	computer.callLoad();
         	        	

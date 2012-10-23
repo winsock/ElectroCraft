@@ -69,7 +69,6 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			drone.setFlying(nbt.getBoolean("flying"));
 			if (nbt.getBoolean("isOn")) {
 				drone.setProgramStorage(nbt.getCompoundTag("programStorage"));
-				drone.setRunning(true);
 				drone.callLoad();
 			}
 		}
