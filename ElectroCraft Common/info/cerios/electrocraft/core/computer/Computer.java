@@ -445,7 +445,6 @@ public class Computer implements Runnable {
 								e.printLuaStackTrace();
 							}
 							this.setRunning(false);
-							return;
 						}
 					} catch (LuaSyntaxException e) {
 						System.out.println("Error running lua script: Syntax Error!");
@@ -905,6 +904,8 @@ public class Computer implements Runnable {
 							e.printLuaStackTrace();
 						}
 						this.setRunning(false);
+						if (luaStateLock.isHeldByCurrentThread())
+							luaStateLock.unlock();
 						return;
 					}
 					// Lets make sure the stack is clean
