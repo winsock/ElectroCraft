@@ -354,7 +354,7 @@ public class Terminal extends Writer {
 		}
 		terminal = newTerminal;
 		int[] updateRows = new int[this.rows];
-		for (int i = row - 1; i < this.rows; i++)
+		for (int i = row + (row > 0 ? -1 : 0); i < this.rows; i++)
 			updateRows[i] = i;
 		sendUpdate(updateRows);
 	}

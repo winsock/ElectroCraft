@@ -324,8 +324,6 @@ public class EntityDrone extends EntityLiving implements IComputer {
 					ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
 				}
 				if (!drone.isRunning()) {
-					drone.loadLuaDefaults();
-					drone.loadBios();
 					drone.start();
 				}
 				drone.addClient(player);

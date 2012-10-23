@@ -695,6 +695,8 @@ public class Computer implements Runnable {
 		if (!running) {
 			stateLock.lock();
 			running = true;
+			loadLuaDefaults();
+			loadBios();
 			stateLock.unlock();
 			thisThread = new Thread(this);
 			thisThread.start();
@@ -724,7 +726,7 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua
-	public boolean isRunning() {
+	public synchronized boolean isRunning() {
 		return running;
 	}
 
@@ -938,6 +940,7 @@ public class Computer implements Runnable {
 			}
 			stateLock.unlock();
 		}
+		sleepTimer.cancel();
 	}
 
 	private class Event {
