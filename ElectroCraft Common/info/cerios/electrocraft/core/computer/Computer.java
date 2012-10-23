@@ -41,6 +41,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.locks.ReentrantLock;
 
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
@@ -51,7 +56,7 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
 @ExposedToLua
-public class Computer {
+public class Computer implements Runnable {
 
 	private boolean isInternal = true;
 	private volatile boolean running = false;
@@ -72,7 +77,7 @@ public class Computer {
 	private int openFileHandles = 0;
 	protected LuaState luaState;
 	private Set<LuaAPI> apis = new HashSet<LuaAPI>();
-	protected final Object luaStateLock = new Object();
+	protected final ReentrantLock luaStateLock = new ReentrantLock();
 	private List<String> previousCommands = new ArrayList<String>();
 	private volatile boolean wasResumed = false;
 	private NBTTagCompound programStorage;
@@ -81,6 +86,8 @@ public class Computer {
 	private volatile boolean finishedSleeping = true;
 	private boolean killYielded = false;
 	private Timer sleepTimer = new Timer();
+	private List<Event> eventQueue = new ArrayList<Event>();
+	private Object eventLock = new Object();
 
 	@ExposedToLua(value = false)
 	public Computer(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
@@ -141,11 +148,6 @@ public class Computer {
 	@ExposedToLua(value = false)
 	public void setOpenFileHandles(int value) {
 		openFileHandles = value;
-	}
-
-	@ExposedToLua(value = false)
-	public LuaState getLuaState() {
-		return luaState;
 	}
 
 	@ExposedToLua(value = false)
@@ -338,12 +340,6 @@ public class Computer {
 
 	@ExposedToLua(value = false)
 	public void tick() {
-		// Update the terminal to send any pending terminal packets
-		terminal.updateTick();
-		
-		if (killYielded)
-			postEvent("killyield");
-
 		if (getKeyboard().getKeysInBuffer() > 0) {
 			if (getKeyboard().peak() > Character.MAX_VALUE)
 				postEvent("code", getKeyboard().popKey());
@@ -358,116 +354,25 @@ public class Computer {
 
 	@ExposedToLua(value = false)
 	public void postEvent(String eventName, Object... args) {
-		if (!finishedSleeping)
-			return;
-		if (killYielded)
-			killYielded = false;
-		if (!running)
-			return;
-		try {
-			synchronized(luaStateLock) {
-				if (!luaState.isOpen())
-					return;
-				luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
-				luaState.getField(-1, "resume");
-				luaState.remove(-2);
-				int argSize = 0;
-				boolean drone = false;
-				// Should we even try to load the drone BIOS
-				if (eventName == "start" || eventName == "resume") {
-					// Check to see if the drone coroutine exists
-					luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine_drone");
-					if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
-						// Nope it doesn't exist or its dead, pop the value
-						luaState.pop(1);
-					} else {
-						argSize += 1;
-						drone = true;
-					}
-				}
-				// Lets see if we should push the main coroutine
-				if (!drone || (eventName == "start" || eventName == "resume")) {
-					// Its either not a drone or its the start of a drone
-					luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
-					if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
-						// Oops we must of shutdown or something
-						luaState.pop(luaState.getTop());
-						return;
-					} else {
-						// Its a valid thread
-						argSize += 1;
-					}
-				}
-				if (argSize <= 0) {
-					// Both of the threads are non existent
-					return;
-				}
-				// Lets check if we should push arguments
-				if (eventName != "start" && eventName != "resume" && eventName != "killyield") {
-					// Its not a blacklisted event name lets push the arguments
-					luaState.pushString(eventName);
-					for (Object arg : args) {
-						luaState.pushJavaObject(arg);
-					}
-					argSize += 1 + args.length;
-				} else if (eventName == "resume" && args.length > 0) {
-					// If we are resuming push the program storage
-					luaState.pushJavaObject(args[0]);
-					argSize += 1;
-				}
-				
-				// Lets call the coroutine
-				luaState.call(argSize, LuaState.MULTRET);
-				// Reset the yield kill line counter to 100 lines
-				luaState.reset_kill(100);
-
-				// Check the results
-				if (luaState.isBoolean(1))
-					if (!luaState.checkBoolean(1, true))
-						throw new LuaRuntimeException("Runtime error!");
-				if (luaState.isNumber(-1)) {
-					finishedSleeping = false;
-					sleepTimer.schedule(new TimerTask() {
-						@Override
-						public void run() {
-							synchronized(sleepLock) {
-								finishedSleeping = true;
-								killYielded = true;
-							}
-						}}, luaState.checkInteger(-1, 0));
-				} else if (luaState.getTop() == 1) {
-					killYielded = true;
-				}
-			}
-		} catch (LuaSyntaxException e) {
-			getTerminal().print("Syntax Error!");
-			e.printStackTrace(new PrintWriter(getTerminal()));
-		} catch (LuaRuntimeException e) {
-			getTerminal().print("Runtime Error!");
-			if (luaState.isString(-1))
-				getTerminal().print(luaState.checkString(-1));
-			else {
-				e.printLuaStackTrace(new PrintWriter(getTerminal()));
-				e.printLuaStackTrace();
-			}
-			this.setRunning(false);
-			return;
+		synchronized (eventLock) {
+			Event e = new Event();
+			e.eventName = eventName;
+			e.args = args;
+			eventQueue.add(e);
 		}
-		// Lets make sure the stack is clean
-		luaState.pop(luaState.getTop());
 	}
 
 	@ExposedToLua(value = false)
 	public void loadBios() {
-		synchronized(luaStateLock) {
-			try {
-				luaState.load(Computer.class.getResourceAsStream("/info/cerios/electrocraft/rom/bios.lua"), "bios_" + baseDirectory.getName());
-				luaState.newThread();
-				luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
-			} catch (IOException e) {
-				getTerminal().print("Unable to load the BIOS check that you have installed ElectroCraft correctly");
-			}
+		luaStateLock.lock();
+		try {
+			luaState.load(Computer.class.getResourceAsStream("/info/cerios/electrocraft/rom/bios.lua"), "bios_" + baseDirectory.getName());
+			luaState.newThread();
+			luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+		} catch (IOException e) {
+			getTerminal().print("Unable to load the BIOS check that you have installed ElectroCraft correctly");
 		}
+		luaStateLock.unlock();
 	}
 
 	@ExposedToLua(value = false)
@@ -475,7 +380,7 @@ public class Computer {
 		if (running) {
 			programStorage = new NBTTagCompound(currentProgram);
 			for (String m : onSaveMethods) {
-				synchronized(luaStateLock) {
+				if (luaStateLock.tryLock()) {
 					try {
 						luaState.getGlobal(m);
 						if (luaState.type(-1) != LuaType.FUNCTION) {
@@ -486,7 +391,7 @@ public class Computer {
 						}
 						luaState.newThread();
 						luaState.setField(LuaState.REGISTRYINDEX, "save_thread");
-						
+
 						try {
 							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
 							luaState.getField(-1, "resume");
@@ -540,6 +445,7 @@ public class Computer {
 						System.out.println("Possibly went to long without yielding?");
 						e.printLuaStackTrace();
 					}
+					luaStateLock.unlock();
 				}
 			}
 		}
@@ -551,6 +457,7 @@ public class Computer {
 		if (running) {
 			wasResumed = true;
 			loadBios();
+			new Thread(this).start();
 			postEvent("resume", programStorage);
 		}
 	}
@@ -558,26 +465,27 @@ public class Computer {
 	@ExposedToLua(value = false)
 	public void loadAPI(LuaAPI api) {
 		apis.add(api);
-		synchronized(luaStateLock) {
-			getLuaState().register(api.getNamespace(), api.getGlobalFunctions(this));
-			luaState.setGlobal(api.getNamespace());
-		}
+		luaStateLock.lock();
+		luaState.register(api.getNamespace(), api.getGlobalFunctions(this));
+		luaState.setGlobal(api.getNamespace());
+		luaStateLock.unlock();
 	}
 
 	@ExposedToLua(value = false)
 	public void loadLuaDefaults() {
+		luaStateLock.lock();
 		// Create a new state
 		if (luaState != null && luaState.isOpen())
 			luaState.close();
 		luaState = new LuaState();
 		// Load the allowed libraries
-		getLuaState().openLib(Library.BASE);
-		getLuaState().openLib(Library.DEBUG);
-		getLuaState().openLib(Library.JAVA);
-		getLuaState().openLib(Library.MATH);
-		getLuaState().openLib(Library.PLUTO);
-		getLuaState().openLib(Library.STRING);
-		getLuaState().openLib(Library.TABLE);
+		luaState.openLib(Library.BASE);
+		luaState.openLib(Library.DEBUG);
+		luaState.openLib(Library.JAVA);
+		luaState.openLib(Library.MATH);
+		luaState.openLib(Library.PLUTO);
+		luaState.openLib(Library.STRING);
+		luaState.openLib(Library.TABLE);
 
 		// Reseting it, if not enabled will enable it
 		luaState.install_kill_hook(100);
@@ -716,11 +624,11 @@ public class Computer {
 			@Override
 			public void run() {
 				while (computer.isRunning()) {
-					synchronized(luaStateLock) {
-						if (!computer.getLuaState().isOpen())
+					if (luaStateLock.tryLock()) {
+						if (!computer.luaState.isOpen())
 							break;
 						// System memory check
-						if (computer.getLuaState().gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
+						if (computer.luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
 							computer.setRunning(false);
 							computer.getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
 						}
@@ -730,6 +638,7 @@ public class Computer {
 							computer.setRunning(false);
 							computer.getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
 						}
+						luaStateLock.unlock();
 					}
 
 					try {
@@ -738,6 +647,7 @@ public class Computer {
 				}
 			}
 		}.init(this)).start();
+		luaStateLock.unlock();
 	}
 
 	@ExposedToLua(value = false)
@@ -866,5 +776,151 @@ public class Computer {
 	public void removeNetworkBlock(NetworkBlock block) {
 		if (mcIO != null)
 			mcIO.remove(block);
+	}
+
+	@Override
+	public void run() {
+		while (isRunning()) {
+			// Update the terminal to send any pending terminal packets
+			FutureTask<Boolean> termTask = new FutureTask<Boolean>(new Callable<Boolean>() {
+				@Override
+				public Boolean call() throws Exception {
+					terminal.updateTick();
+					return true;
+				}
+			});
+			ElectroCraft.instance.registerRunnable(termTask);
+			try {
+				termTask.get();
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			} catch (ExecutionException e1) {
+				e1.printStackTrace();
+			} catch (CancellationException e1) {
+			}
+			
+			if (killYielded)
+				postEvent("killyield");
+
+			if (eventQueue.size() > 0) {
+				List<Event> copy;
+				synchronized (eventLock) {
+					copy = new ArrayList<Event>(eventQueue);
+					eventQueue.clear();
+				}
+				for (Event event : copy) {
+					String eventName = event.eventName;
+					Object[] args = event.args;
+
+					if (!finishedSleeping)
+						return;
+					if (killYielded)
+						killYielded = false;
+					if (!running)
+						return;
+					try {
+						if (luaStateLock.tryLock()) {
+							if (!luaState.isOpen())
+								return;
+							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+							luaState.getField(-1, "resume");
+							luaState.remove(-2);
+							int argSize = 0;
+							boolean drone = false;
+							// Should we even try to load the drone BIOS
+							if (eventName == "start" || eventName == "resume") {
+								// Check to see if the drone coroutine exists
+								luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine_drone");
+								if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
+									// Nope it doesn't exist or its dead, pop the value
+									luaState.pop(1);
+								} else {
+									argSize += 1;
+									drone = true;
+								}
+							}
+							// Lets see if we should push the main coroutine
+							if (!drone || (eventName == "start" || eventName == "resume")) {
+								// Its either not a drone or its the start of a drone
+								luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+								if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
+									// Oops we must of shutdown or something
+									luaState.pop(luaState.getTop());
+									return;
+								} else {
+									// Its a valid thread
+									argSize += 1;
+								}
+							}
+							if (argSize <= 0) {
+								// Both of the threads are non existent
+								return;
+							}
+							// Lets check if we should push arguments
+							if (eventName != "start" && eventName != "resume" && eventName != "killyield") {
+								// Its not a blacklisted event name lets push the arguments
+								luaState.pushString(eventName);
+								for (Object arg : args) {
+									luaState.pushJavaObject(arg);
+								}
+								argSize += 1 + args.length;
+							} else if (eventName == "resume" && args.length > 0) {
+								// If we are resuming push the program storage
+								luaState.pushJavaObject(args[0]);
+								argSize += 1;
+							}
+
+							// Lets call the coroutine
+							luaState.call(argSize, LuaState.MULTRET);
+							// Reset the yield kill line counter to 100 lines
+							luaState.reset_kill(100);
+
+							// Check the results
+							if (luaState.isBoolean(1))
+								if (!luaState.checkBoolean(1, true))
+									throw new LuaRuntimeException("Runtime error!");
+							if (luaState.isNumber(-1)) {
+								finishedSleeping = false;
+								sleepTimer.schedule(new TimerTask() {
+									@Override
+									public void run() {
+										synchronized(sleepLock) {
+											finishedSleeping = true;
+											killYielded = true;
+										}
+									}}, luaState.checkInteger(-1, 0));
+							} else if (luaState.getTop() == 1) {
+								killYielded = true;
+							}
+							luaStateLock.unlock();
+						}
+					} catch (LuaSyntaxException e) {
+						getTerminal().print("Syntax Error!");
+						e.printStackTrace(new PrintWriter(getTerminal()));
+					} catch (LuaRuntimeException e) {
+						getTerminal().print("Runtime Error!");
+						if (luaState.isString(-1))
+							getTerminal().print(luaState.checkString(-1));
+						else {
+							e.printLuaStackTrace(new PrintWriter(getTerminal()));
+							e.printLuaStackTrace();
+						}
+						this.setRunning(false);
+						return;
+					}
+					// Lets make sure the stack is clean
+					luaState.pop(luaState.getTop());
+				}
+			}
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+			}
+		}
+	}
+
+	private class Event {
+		public String eventName;
+		public Object[] args;
 	}
 }

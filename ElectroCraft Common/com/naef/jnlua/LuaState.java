@@ -17,6 +17,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.naef.jnlua.JavaReflector.Metamethod;
 
@@ -172,6 +173,8 @@ public class LuaState {
 	 */
 	private ReferenceQueue<LuaValueProxyImpl> proxyQueue = new ReferenceQueue<LuaValueProxyImpl>();
 
+	public final ReentrantLock luaStateLock = new ReentrantLock();
+
 	// -- Construction
 	/**
 	 * Creates a new instance. The class loader of this Lua state is set to the
@@ -188,7 +191,7 @@ public class LuaState {
 	public LuaState() {
 		this(0L);
 	}
-	
+
 	/**
 	 * Creates a new instance.
 	 */
@@ -201,9 +204,9 @@ public class LuaState {
 		finalizeGuardian = new Object() {
 			@Override
 			public void finalize() {
-				synchronized (LuaState.this) {
-					closeInternal();
-				}
+				luaStateLock.lock();
+				closeInternal();
+				luaStateLock.unlock();
 			}
 		};
 
@@ -245,7 +248,7 @@ public class LuaState {
 	 * 
 	 * @return the class loader
 	 */
-	public synchronized ClassLoader getClassLoader() {
+	public ClassLoader getClassLoader() {
 		return classLoader;
 	}
 
@@ -260,11 +263,13 @@ public class LuaState {
 	 * @param classLoader
 	 *            the class loader to set
 	 */
-	public synchronized void setClassLoader(ClassLoader classLoader) {
+	public void setClassLoader(ClassLoader classLoader) {
+		luaStateLock.lock();
 		if (classLoader == null) {
 			throw new NullPointerException();
 		}
 		this.classLoader = classLoader;
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -276,7 +281,7 @@ public class LuaState {
 	 * 
 	 * @return the Java reflector converter
 	 */
-	public synchronized JavaReflector getJavaReflector() {
+	public JavaReflector getJavaReflector() {
 		return javaReflector;
 	}
 
@@ -290,11 +295,13 @@ public class LuaState {
 	 * @param javaReflector
 	 *            the Java reflector
 	 */
-	public synchronized void setJavaReflector(JavaReflector javaReflector) {
+	public void setJavaReflector(JavaReflector javaReflector) {
+		luaStateLock.lock();
 		if (javaReflector == null) {
 			throw new NullPointerException();
 		}
 		this.javaReflector = javaReflector;
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -313,8 +320,8 @@ public class LuaState {
 	 *            the object, or <code>null</code>
 	 * @return the Java reflector
 	 */
-	public synchronized JavaFunction getMetamethod(Object obj,
-			Metamethod metamethod) {
+	public JavaFunction getMetamethod(Object obj, Metamethod metamethod) {
+		luaStateLock.lock();
 		if (obj != null && obj instanceof JavaReflector) {
 			JavaFunction javaFunction = ((JavaReflector) obj)
 					.getMetamethod(metamethod);
@@ -322,7 +329,9 @@ public class LuaState {
 				return javaFunction;
 			}
 		}
-		return javaReflector.getMetamethod(metamethod);
+		JavaFunction returnValue = javaReflector.getMetamethod(metamethod);
+		luaStateLock.unlock();
+		return returnValue;
 	}
 
 	/**
@@ -334,7 +343,7 @@ public class LuaState {
 	 * 
 	 * @return the converter
 	 */
-	public synchronized Converter getConverter() {
+	public Converter getConverter() {
 		return converter;
 	}
 
@@ -348,11 +357,13 @@ public class LuaState {
 	 * @param converter
 	 *            the converter
 	 */
-	public synchronized void setConverter(Converter converter) {
+	public void setConverter(Converter converter) {
+		luaStateLock.lock();
 		if (converter == null) {
 			throw new NullPointerException();
 		}
 		this.converter = converter;
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -364,7 +375,7 @@ public class LuaState {
 	 * 
 	 * @return whether this Lua state is open
 	 */
-	public final synchronized boolean isOpen() {
+	public final boolean isOpen() {
 		return isOpenInternal();
 	}
 
@@ -377,7 +388,7 @@ public class LuaState {
 	 * case.
 	 * </p>
 	 */
-	public synchronized void close() {
+	public void close() {
 		closeInternal();
 	}
 
@@ -392,9 +403,12 @@ public class LuaState {
 	 * @return a return value depending on the GC operation performed (see Lua
 	 *         Reference Manual)
 	 */
-	public synchronized int gc(GcAction what, int data) {
+	public int gc(GcAction what, int data) {
+		luaStateLock.lock();
 		check();
-		return lua_gc(what.ordinal(), data);
+		int returnValue = lua_gc(what.ordinal(), data);
+		luaStateLock.unlock();
+		return returnValue;
 	}
 
 	// -- Registration
@@ -404,9 +418,11 @@ public class LuaState {
 	 * @param library
 	 *            the library
 	 */
-	public synchronized void openLib(Library library) {
+	public void openLib(Library library) {
+		luaStateLock.lock();
 		check();
 		library.open(this);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -418,11 +434,13 @@ public class LuaState {
 	 * enumeration.
 	 * </p>
 	 */
-	public synchronized void openLibs() {
+	public void openLibs() {
+		luaStateLock.lock();
 		check();
 		for (Library library : Library.values()) {
 			library.open(this);
 		}
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -431,7 +449,8 @@ public class LuaState {
 	 * @param namedJavaFunction
 	 *            the Java function to register
 	 */
-	public synchronized void register(NamedJavaFunction namedJavaFunction) {
+	public void register(NamedJavaFunction namedJavaFunction) {
+		luaStateLock.lock();
 		check();
 		String name = namedJavaFunction.getName();
 		if (name == null) {
@@ -439,6 +458,7 @@ public class LuaState {
 		}
 		pushJavaFunction(namedJavaFunction);
 		setGlobal(name);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -450,8 +470,8 @@ public class LuaState {
 	 * @param namedJavaFunctions
 	 *            the Java functions of the module
 	 */
-	public synchronized void register(String moduleName,
-			NamedJavaFunction[] namedJavaFunctions) {
+	public void register(String moduleName, NamedJavaFunction[] namedJavaFunctions) {
+		luaStateLock.lock();
 		check();
 		/*
 		 * The following code corresponds to luaL_openlib() and must be kept in
@@ -482,6 +502,7 @@ public class LuaState {
 			pushJavaFunction(namedJavaFunctions[i]);
 			setField(-2, name);
 		}
+		luaStateLock.unlock();
 	}
 
 	// -- Load and dump
@@ -497,13 +518,14 @@ public class LuaState {
 	 * @throws IOException
 	 *             if an IO error occurs
 	 */
-	public synchronized void load(InputStream inputStream, String chunkName)
-			throws IOException {
+	public void load(InputStream inputStream, String chunkName) throws IOException {
+		luaStateLock.lock();
 		if (chunkName == null) {
 			throw new NullPointerException();
 		}
 		check();
 		lua_load(inputStream, "=" + chunkName);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -515,12 +537,14 @@ public class LuaState {
 	 * @param chunkName
 	 *            the name of the chunk for use in error messages
 	 */
-	public synchronized void load(String chunk, String chunkName) {
+	public void load(String chunk, String chunkName) {
+		luaStateLock.lock();
 		try {
 			load(new ByteArrayInputStream(chunk.getBytes("UTF-8")), chunkName);
 		} catch (IOException e) {
 			throw new LuaMemoryAllocationException(e.getMessage());
 		}
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -532,9 +556,11 @@ public class LuaState {
 	 * @throws IOException
 	 *             if an IO error occurs
 	 */
-	public synchronized void dump(OutputStream outputStream) throws IOException {
+	public void dump(OutputStream outputStream) throws IOException {
+		luaStateLock.lock();
 		check();
 		lua_dump(outputStream);
+		luaStateLock.unlock();
 	}
 
 	// -- Call
@@ -552,9 +578,11 @@ public class LuaState {
 	 *            the number of return values, or {@link #MULTRET} to accept all
 	 *            values returned by the function
 	 */
-	public synchronized void call(int argCount, int returnCount) {
+	public void call(int argCount, int returnCount) {
+		luaStateLock.lock();
 		check();
 		lua_pcall(argCount, returnCount);
+		luaStateLock.unlock();
 	}
 
 	// -- Global
@@ -564,9 +592,11 @@ public class LuaState {
 	 * @param name
 	 *            the global variable name
 	 */
-	public synchronized void getGlobal(String name) {
+	public void getGlobal(String name) {
+		luaStateLock.lock();
 		check();
 		lua_getglobal(name);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -576,10 +606,11 @@ public class LuaState {
 	 * @param name
 	 *            the global variable name
 	 */
-	public synchronized void setGlobal(String name)
-			throws LuaMemoryAllocationException, LuaRuntimeException {
+	public void setGlobal(String name) throws LuaMemoryAllocationException, LuaRuntimeException {
+		luaStateLock.lock();
 		check();
 		lua_setglobal(name);
+		luaStateLock.unlock();
 	}
 
 	// -- Stack push
@@ -589,9 +620,11 @@ public class LuaState {
 	 * @param b
 	 *            the boolean value to push
 	 */
-	public synchronized void pushBoolean(boolean b) {
+	public void pushBoolean(boolean b) {
+		luaStateLock.lock();
 		check();
 		lua_pushboolean(b ? 1 : 0);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -600,9 +633,11 @@ public class LuaState {
 	 * @param n
 	 *            the integer value to push
 	 */
-	public synchronized void pushInteger(int n) {
+	public void pushInteger(int n) {
+		luaStateLock.lock();
 		check();
 		lua_pushinteger(n);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -611,9 +646,11 @@ public class LuaState {
 	 * @param javaFunction
 	 *            the function to push
 	 */
-	public synchronized void pushJavaFunction(JavaFunction javaFunction) {
+	public void pushJavaFunction(JavaFunction javaFunction) {
+		luaStateLock.lock();
 		check();
 		lua_pushjavafunction(javaFunction);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -635,9 +672,11 @@ public class LuaState {
 	 *            the Java object
 	 * @see #pushJavaObject(Object)
 	 */
-	public synchronized void pushJavaObjectRaw(Object object) {
+	public void pushJavaObjectRaw(Object object) {
+		luaStateLock.lock();
 		check();
 		lua_pushjavaobject(object);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -649,17 +688,21 @@ public class LuaState {
 	 * @see #getConverter()
 	 * @see #setConverter(Converter)
 	 */
-	public synchronized void pushJavaObject(Object object) {
+	public void pushJavaObject(Object object) {
+		luaStateLock.lock();
 		check();
 		getConverter().convertJavaObject(this, object);
+		luaStateLock.unlock();
 	}
 
 	/**
 	 * Pushes a nil value on the stack.
 	 */
-	public synchronized void pushNil() {
+	public void pushNil() {
+		luaStateLock.lock();
 		check();
 		lua_pushnil();
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -668,9 +711,11 @@ public class LuaState {
 	 * @param n
 	 *            the number to push
 	 */
-	public synchronized void pushNumber(double n) {
+	public void pushNumber(double n) {
+		luaStateLock.lock();
 		check();
 		lua_pushnumber(n);
+		luaStateLock.unlock();
 	}
 
 	/**
@@ -679,9 +724,11 @@ public class LuaState {
 	 * @param s
 	 *            the string value to push
 	 */
-	public synchronized void pushString(String s) {
+	public void pushString(String s) {
+		luaStateLock.lock();
 		check();
 		lua_pushstring(s);
+		luaStateLock.unlock();
 	}
 
 	// -- Stack type test
@@ -696,9 +743,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a boolean
 	 */
-	public synchronized boolean isBoolean(int index) {
+	public boolean isBoolean(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isboolean(index) != 0;
+		boolean result = lua_isboolean(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -712,9 +762,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a function
 	 */
-	public synchronized boolean isCFunction(int index) {
+	public boolean isCFunction(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_iscfunction(index) != 0;
+		boolean result = lua_iscfunction(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -729,9 +782,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a function
 	 */
-	public synchronized boolean isFunction(int index) {
+	public boolean isFunction(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isfunction(index) != 0;
+		boolean result = lua_isfunction(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -746,9 +802,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a function
 	 */
-	public synchronized boolean isJavaFunction(int index) {
+	public boolean isJavaFunction(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isjavafunction(index) != 0;
+		boolean result = lua_isjavafunction(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -769,9 +828,12 @@ public class LuaState {
 	 * @return whether the value is a Java object
 	 * @see #isJavaObject(int, Class)
 	 */
-	public synchronized boolean isJavaObjectRaw(int index) {
+	public boolean isJavaObjectRaw(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isjavaobject(index) != 0;
+		boolean result = lua_isjavaobject(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -790,9 +852,12 @@ public class LuaState {
 	 * @see #setConverter(Converter)
 	 * @see #getConverter()
 	 */
-	public synchronized boolean isJavaObject(int index, Class<?> type) {
+	public boolean isJavaObject(int index, Class<?> type) {
+		luaStateLock.lock();
 		check();
-		return converter.getTypeDistance(this, index, type) != Integer.MAX_VALUE;
+		boolean result = converter.getTypeDistance(this, index, type) != Integer.MAX_VALUE;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -807,9 +872,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is <code>nil</code>
 	 */
-	public synchronized boolean isNil(int index) {
+	public boolean isNil(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isnil(index) != 0;
+		boolean result = lua_isnil(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -823,9 +891,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is undefined
 	 */
-	public synchronized boolean isNone(int index) {
+	public boolean isNone(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isnone(index) != 0;
+		boolean result = lua_isnone(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -840,9 +911,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is undefined
 	 */
-	public synchronized boolean isNoneOrNil(int index) {
+	public boolean isNoneOrNil(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isnoneornil(index) != 0;
+		boolean result = lua_isnoneornil(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -857,9 +931,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a number or a string convertible to a number
 	 */
-	public synchronized boolean isNumber(int index) {
+	public boolean isNumber(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isnumber(index) != 0;
+		boolean result = lua_isnumber(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -874,9 +951,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a string or a number
 	 */
-	public synchronized boolean isString(int index) {
+	public boolean isString(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isstring(index) != 0;
+		boolean result = lua_isstring(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -890,9 +970,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a table
 	 */
-	public synchronized boolean isTable(int index) {
+	public boolean isTable(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_istable(index) != 0;
+		boolean result = lua_istable(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -906,9 +989,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return whether the value is a thread
 	 */
-	public synchronized boolean isThread(int index) {
+	public boolean isThread(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_isthread(index) != 0;
+		boolean result = lua_isthread(index) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	// -- Stack query
@@ -922,9 +1008,12 @@ public class LuaState {
 	 *            the second stack index
 	 * @return whether the values are equal
 	 */
-	public synchronized boolean equal(int index1, int index2) {
+	public boolean equal(int index1, int index2) {
+		luaStateLock.lock();
 		check();
-		return lua_equal(index1, index2) != 0;
+		boolean result = lua_equal(index1, index2) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -938,10 +1027,12 @@ public class LuaState {
 	 * @return whether the value at the first index is less than the value at
 	 *         the second index
 	 */
-	public synchronized boolean lessThan(int index1, int index2)
-			throws LuaMemoryAllocationException, LuaRuntimeException {
+	public boolean lessThan(int index1, int index2) throws LuaMemoryAllocationException, LuaRuntimeException {
+		luaStateLock.lock();
 		check();
-		return lua_lessthan(index1, index2) != 0;
+		boolean result = lua_lessthan(index1, index2) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -954,9 +1045,12 @@ public class LuaState {
 	 *            the stack index
 	 * @return the length
 	 */
-	public synchronized int length(int index) {
+	public int length(int index) {
+		luaStateLock.lock();
 		check();
-		return lua_objlen(index);
+		int result = lua_objlen(index);
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -970,8 +1064,11 @@ public class LuaState {
 	 * @return whether the values are equal
 	 */
 	public synchronized boolean rawEqual(int index1, int index2) {
+		luaStateLock.lock();
 		check();
-		return lua_rawequal(index1, index2) != 0;
+		boolean result = lua_rawequal(index1, index2) != 0;
+		luaStateLock.unlock();
+		return result;
 	}
 
 	/**
@@ -1151,6 +1248,8 @@ public class LuaState {
 				}
 				return clazz.getCanonicalName();
 			}
+			break;
+		default:
 			break;
 		}
 		return type.displayText();
@@ -2043,6 +2142,8 @@ public class LuaState {
 		return new LuaRuntimeException(msg);
 	}
 
+	// TODO END
+
 	// -- Native methods
 	private static native String lua_version();
 
@@ -2196,13 +2297,13 @@ public class LuaState {
 	private native int lua_tablesize(int index);
 
 	private native void lua_tablemove(int index, int from, int to, int count);
-	
+
 	// ElectroCraft add Pluto
 	public native void persist(OutputStream out);
 	public native void unpersist(InputStream input);
 	public native void install_kill_hook(int count);
 	public native void reset_kill(int count);
-	
+
 	// -- Enumerated types
 	/**
 	 * Represents a Lua library.
@@ -2247,13 +2348,13 @@ public class LuaState {
 		 * The package library.
 		 */
 		PACKAGE,
-		
+
 		/**
 		 * Electrocraft
 		 * The Pluto library for persistance
 		 */
 		PLUTO,
-		
+
 		/**
 		 * The Java library.
 		 */
@@ -2324,7 +2425,7 @@ public class LuaState {
 	 * Phantom reference to a Lua value proxy for pre-mortem cleanup.
 	 */
 	private static class LuaValueProxyRef extends
-			PhantomReference<LuaValueProxyImpl> {
+	PhantomReference<LuaValueProxyImpl> {
 		// -- State
 		private int reference;
 
@@ -2380,7 +2481,7 @@ public class LuaState {
 	 * Invocation handler for implementing Java interfaces in Lua.
 	 */
 	private class LuaInvocationHandler extends LuaValueProxyImpl implements
-			InvocationHandler {
+	InvocationHandler {
 		// -- Construction
 		/**
 		 * Creates a new instance.

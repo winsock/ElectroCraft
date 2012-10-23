@@ -1,12 +1,22 @@
 package info.cerios.electrocraft.core.items;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
 
+import cpw.mods.fml.common.network.PacketDispatcher;
+
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
+import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.drone.Drone;
+import info.cerios.electrocraft.core.network.CustomPacket;
 import net.minecraft.src.CreativeTabs;
 import net.minecraft.src.Item;
 import net.minecraft.src.ItemStack;
@@ -69,8 +79,24 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							ForgeDirection dir = drone.getDirection(drone.getDrone().rotationYaw);
-							luaState.pushInteger(dir.ordinal());
+							Callable<Integer> callable = new Callable<Integer>() {
+								@Override
+								public Integer call() throws Exception {
+									ForgeDirection dir = drone.getDirection(drone.getDrone().rotationYaw);
+									return dir.ordinal();
+								}
+							};
+							final FutureTask<Integer> task = new FutureTask<Integer>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								luaState.pushInteger(task.get());
+							} catch (InterruptedException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							}
 							return 1;
 						}
 
@@ -89,7 +115,23 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							luaState.pushInteger(drone.getDir(drone.getDrone().rotationYaw));
+							Callable<Integer> callable = new Callable<Integer>() {
+								@Override
+								public Integer call() throws Exception {
+									return drone.getDir(drone.getDrone().rotationYaw);
+								}
+							};
+							final FutureTask<Integer> task = new FutureTask<Integer>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								luaState.pushInteger(task.get());
+							} catch (InterruptedException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							}
 							return 1;
 						}
 
@@ -108,7 +150,23 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							luaState.pushNumber(drone.getDrone().rotationYaw);
+							Callable<Float> callable = new Callable<Float>() {
+								@Override
+								public Float call() throws Exception {
+									return drone.getDrone().rotationYaw;
+								}
+							};
+							final FutureTask<Float> task = new FutureTask<Float>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								luaState.pushNumber(task.get());
+							} catch (InterruptedException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							}
 							return 1;
 						}
 
@@ -127,7 +185,29 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							drone.getDrone().rotate((float) luaState.checkNumber(-1), 10);
+							final float rotation = (float) luaState.checkNumber(-1);
+							Callable<Boolean> callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									drone.getDrone().rotate(rotation , 5);
+									return true;
+								}
+							};
+							final FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								task.get();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								e.printStackTrace();
+							}
+							while (drone.getDrone().isStillMovingOrRotating()) {
+								try {
+									Thread.sleep(1);
+								} catch (InterruptedException e) {
+								}
+							}
 							return 0;
 						}
 
@@ -146,10 +226,28 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							if (luaState.isBoolean(-1) && luaState.checkBoolean(-1, false)) {
-								drone.getDrone().setPositionAndRotation2(drone.getDrone().posX, drone.getDrone().posY, drone.getDrone().posZ, drone.getRotation(ForgeDirection.getOrientation(luaState.checkInteger(-2))), drone.getDrone().rotationPitch, 10);
-							} else {
-								drone.getDrone().setPositionAndRotation2(drone.getDrone().posX, drone.getDrone().posY, drone.getDrone().posZ, drone.getRotation(drone.getDirection(luaState.checkInteger(-1))), drone.getDrone().rotationPitch, 10);
+							final int dir = luaState.checkInteger(-1);
+							Callable<Boolean> callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									drone.getDrone().rotate(drone.getRotation(drone.getDirection(dir)), 5);
+									return true;
+								}
+							};
+							final FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								task.get();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								e.printStackTrace();
+							}
+							while (drone.getDrone().isStillMovingOrRotating()) {
+								try {
+									Thread.sleep(1);
+								} catch (InterruptedException e) {
+								}
 							}
 							return 0;
 						}
@@ -172,10 +270,26 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							luaState.pushNumber(Math.floor(drone.getDrone().posX));
-							luaState.pushNumber(Math.floor(drone.getDrone().posY));
-							luaState.pushNumber(Math.floor(drone.getDrone().posZ));
-							return 3;
+							Callable<Integer[]> callable = new Callable<Integer[]>() {
+								@Override
+								public Integer[] call() throws Exception {
+									return new Integer[] { MathHelper.floor_double(drone.getDrone().posX), MathHelper.floor_double(drone.getDrone().posY), MathHelper.floor_double(drone.getDrone().posZ) };
+								}
+							};
+							final FutureTask<Integer[]> task = new FutureTask<Integer[]>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								Integer[] values = task.get();
+								luaState.pushInteger(values[0]);
+								luaState.pushInteger(values[1]);
+								luaState.pushInteger(values[2]);
+								return 3;
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								e.printStackTrace();
+							}
+							return 0;
 						}
 
 						@Override
@@ -193,10 +307,26 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							luaState.pushNumber(drone.getDrone().posX - Math.floor(drone.getDrone().posX));
-							luaState.pushNumber(drone.getDrone().posY - Math.floor(drone.getDrone().posY));
-							luaState.pushNumber(drone.getDrone().posZ - Math.floor(drone.getDrone().posZ));
-							return 3;
+							Callable<Double[]> callable = new Callable<Double[]>() {
+								@Override
+								public Double[] call() throws Exception {
+									return new Double[] { drone.getDrone().posX - Math.floor(drone.getDrone().posX), drone.getDrone().posY - Math.floor(drone.getDrone().posY), drone.getDrone().posZ - Math.floor(drone.getDrone().posZ) };
+								}
+							};
+							final FutureTask<Double[]> task = new FutureTask<Double[]>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								Double[] values = task.get();
+								luaState.pushNumber(values[0]);
+								luaState.pushNumber(values[1]);
+								luaState.pushNumber(values[2]);
+								return 3;
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								e.printStackTrace();
+							}
+							return 0;
 						}
 
 						@Override
@@ -217,9 +347,24 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							ForgeDirection dir = drone.getDirection(drone.getDrone().rotationYaw);
-							luaState.pushInteger(drone.getDrone().worldObj.getBlockId((int)(dir.offsetX + drone.getDrone().posX), (int)(dir.offsetY + drone.getDrone().posY), (int)(dir.offsetZ + drone.getDrone().posZ)));
-							return 1;
+							Callable<Integer> callable = new Callable<Integer>() {
+								@Override
+								public Integer call() throws Exception {
+									ForgeDirection dir = drone.getDirection(drone.getDrone().rotationYaw);
+									return drone.getDrone().worldObj.getBlockId((int)(dir.offsetX + drone.getDrone().posX), (int)(dir.offsetY + drone.getDrone().posY), (int)(dir.offsetZ + drone.getDrone().posZ));
+								}
+							};
+							final FutureTask<Integer> task = new FutureTask<Integer>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								luaState.pushInteger(task.get());
+								return 3;
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								e.printStackTrace();
+							}
+							return 0;
 						}
 
 						@Override
@@ -236,14 +381,30 @@ public class ItemDroneUpgrade extends Item implements ICard {
 						}
 
 						@Override
-						public int invoke(LuaState luaState) {
-							ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
-							int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
-							int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
-							int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-							luaState.pushInteger(drone.getDrone().worldObj.getBlockId(x, y, z));
-							luaState.pushInteger(drone.getDrone().worldObj.getBlockMetadata(x, y, z));
-							return 2;
+						public int invoke(final LuaState luaState) {
+							Callable<Integer[]> callable = new Callable<Integer[]>() {
+								@Override
+								public Integer[] call() throws Exception {
+									ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+									int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+									int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+									int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+									return new Integer[] { drone.getDrone().worldObj.getBlockId(x, y, z), drone.getDrone().worldObj.getBlockMetadata(x, y, z) };
+								}
+							};
+							final FutureTask<Integer[]> task = new FutureTask<Integer[]>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								Integer[] values = task.get();
+								luaState.pushInteger(values[0]);
+								luaState.pushInteger(values[1]);
+								return 2;
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								e.printStackTrace();
+							}
+							return 0;
 						}
 
 						@Override
@@ -264,10 +425,26 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
 						@Override
 						public int invoke(LuaState luaState) {
-							double dx = luaState.checkNumber(-3) - drone.getDrone().posX;
-							double dy = luaState.checkNumber(-2) - drone.getDrone().posY;
-							double dz = luaState.checkNumber(-1) - drone.getDrone().posZ;
-							drone.getDrone().moveEntity(dx, dy, dz);
+							final double x = luaState.checkNumber(-3), y = luaState.checkNumber(-2), z = luaState.checkNumber(-1);
+							Callable<Boolean> callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									double dx = x - drone.getDrone().posX;
+									double dy = y - drone.getDrone().posY;
+									double dz = z - drone.getDrone().posZ;
+									drone.getDrone().moveEntity(dx, dy, dz);
+									return true;
+								}
+							};
+							final FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								task.get();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								e.printStackTrace();
+							}
 							return 0;
 						}
 
@@ -307,8 +484,24 @@ public class ItemDroneUpgrade extends Item implements ICard {
 						}
 
 						@Override
-						public int invoke(LuaState luaState) {
-							luaState.pushBoolean(drone.getDrone().getNavigator().tryMoveToXYZ(luaState.checkNumber(-4), luaState.checkNumber(-3), luaState.checkNumber(-2), MathHelper.clamp_float((float) luaState.checkNumber(-1), 0f, 1f)));
+						public int invoke(final LuaState luaState) {
+							Callable<Boolean> callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									return drone.getDrone().getNavigator().tryMoveToXYZ(luaState.checkNumber(-4), luaState.checkNumber(-3), luaState.checkNumber(-2), MathHelper.clamp_float((float) luaState.checkNumber(-1), 0f, 1f));
+								}
+							};
+							final FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							try {
+								luaState.pushBoolean(task.get());
+							} catch (InterruptedException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							} catch (ExecutionException e) {
+								luaState.pushBoolean(false);
+								e.printStackTrace();
+							}
 							return 1;
 						}
 

@@ -94,8 +94,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	loadingState = true;
         	if (computer == null)
         		createComputer();
-        	if (!computer.getLuaState().isOpen())
-    			computer.loadLuaDefaults();
+    		computer.loadLuaDefaults();
         	
         	computer.setRunning(true);
         	computer.setProgramStorage((NBTTagCompound) nbttagcompound.getTag("programStorage"));
@@ -177,6 +176,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
 	    		computer.registerNetworkBlock(ioPort);
 	    	}
 	    	computer.loadBios();
+	    	new Thread(computer).start();
 	    	computer.postEvent("start");
     	}
     }

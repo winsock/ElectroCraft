@@ -2,9 +2,12 @@ package info.cerios.electrocraft.core;
 
 import info.cerios.electrocraft.api.IComputer;
 import info.cerios.electrocraft.api.IElectroCraft;
+import info.cerios.electrocraft.api.computer.IComputerCallback;
+import info.cerios.electrocraft.api.computer.IComputerRunnable;
 import info.cerios.electrocraft.api.computer.IMCRunnable;
 import info.cerios.electrocraft.api.drone.tools.IDroneTool;
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
+import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlock;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.FutureTask;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -55,6 +59,7 @@ import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.network.IGuiHandler;
 import cpw.mods.fml.common.network.NetworkMod;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -71,7 +76,7 @@ public class ElectroCraft implements IElectroCraft {
     @SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
     public static IElectroCraftSided electroCraftSided;
     private Map<EntityPlayer, IComputer> nonCustomServerComputerMap = new HashMap<EntityPlayer, IComputer>();
-    private List<IMCRunnable> mainThreadFunctions = new ArrayList<IMCRunnable>();
+    private List<FutureTask<?>> mainThreadFunctions = new ArrayList<FutureTask<?>>();
     private List<ModContainer> addons = new ArrayList<ModContainer>();
     private List<ICard> droneUpgradeCards = new ArrayList<ICard>();
     private List<IDroneTool> droneTools = new ArrayList<IDroneTool>();
@@ -215,6 +220,16 @@ public class ElectroCraft implements IElectroCraft {
     	}
     }
     
+    @Mod.ServerStopping
+    public void onServerStopping(FMLServerStoppingEvent event) {
+    	synchronized(mainThreadLock) {
+    		for (FutureTask<?> task : mainThreadFunctions) {
+    			task.cancel(true);
+    		}
+    		mainThreadFunctions.clear();
+    	}
+    }
+    
     public ComputerServer getServer() {
     	return server;
     }
@@ -257,15 +272,15 @@ public class ElectroCraft implements IElectroCraft {
     }
     
     @Override
-    public void registerRunnable(IMCRunnable runnable) {
+    public void registerRunnable(FutureTask<?> task) {
     	synchronized(mainThreadLock) {
-    		mainThreadFunctions.add(runnable);
+    		mainThreadFunctions.add(task);
     	}
     }
     
-    public List<IMCRunnable> getAndClearTasks() {
+    public List<FutureTask<?>> getAndClearTasks() {
     	synchronized(mainThreadLock) {
-    		List<IMCRunnable> tasks = new ArrayList<IMCRunnable>(mainThreadFunctions);
+    		List<FutureTask<?>> tasks = new ArrayList<FutureTask<?>>(mainThreadFunctions);
     		mainThreadFunctions.clear();
     		return tasks;
     	}

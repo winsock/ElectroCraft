@@ -1,9 +1,13 @@
 package info.cerios.electrocraft.core;
 
+import info.cerios.electrocraft.api.computer.IComputerCallback;
+import info.cerios.electrocraft.api.computer.IComputerRunnable;
 import info.cerios.electrocraft.api.computer.IMCRunnable;
+import info.cerios.electrocraft.api.utils.ObjectPair;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.FutureTask;
 
 import net.minecraft.src.World;
 
@@ -14,14 +18,12 @@ import cpw.mods.fml.common.TickType;
 public class UniversialTickHandler implements IScheduledTickHandler {
 	@Override
 	public void tickStart(EnumSet<TickType> type, Object... tickData) {
-		if (((World)tickData[0]).isRemote)
-			return;
 		if (FMLCommonHandler.instance().getMinecraftServerInstance() == null || !FMLCommonHandler.instance().getMinecraftServerInstance().isServerRunning())
 			return;
 		FMLCommonHandler.instance().getMinecraftServerInstance().theProfiler.startSection(getLabel());
-		List<IMCRunnable> tasks = ElectroCraft.instance.getAndClearTasks();
-		for (IMCRunnable r : tasks) {
-			r.run(((World)tickData[0]));
+		List<FutureTask<?>> tasks = ElectroCraft.instance.getAndClearTasks();
+		for (FutureTask<?> r : tasks) {
+			r.run();
 		}
 		FMLCommonHandler.instance().getMinecraftServerInstance().theProfiler.endSection();
 	}
@@ -32,7 +34,7 @@ public class UniversialTickHandler implements IScheduledTickHandler {
 
 	@Override
 	public EnumSet<TickType> ticks() {
-		return EnumSet.of(TickType.WORLD);
+		return EnumSet.of(TickType.SERVER);
 	}
 
 	@Override

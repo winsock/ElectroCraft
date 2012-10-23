@@ -13,6 +13,8 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
 import info.cerios.electrocraft.api.IComputer;
+import info.cerios.electrocraft.api.computer.IComputerCallback;
+import info.cerios.electrocraft.api.computer.IComputerRunnable;
 import info.cerios.electrocraft.api.drone.tools.IDroneTool;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
@@ -43,10 +45,10 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	private String id = "";
 	private InventoryDrone inventory;
 	private boolean firstTick = true;
-	private int rotationTicks = 0;
+	private volatile int rotationTicks = 0;
 	private ForgeDirection digDirection = ForgeDirection.UNKNOWN;
 	private AbstractTool defaultTool = new AbstractTool();
-	private boolean clientFlying = false;
+	private volatile boolean clientFlying = false;
 
 	public EntityDrone(World par1World) {
 		super(par1World);
@@ -130,13 +132,26 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		this.clientFlying = fly;
 	}
 	
-	public void rotate(float yaw, int ticks) {
-		this.newPosX = this.posX;
-		this.newPosY = this.posY;
-		this.newPosZ = this.posZ;
-		this.newPosRotationIncrements = ticks;
-		this.newRotationYaw = yaw;
-		this.newRotationPitch = 0f;
+	public void rotate(final float yaw, final int ticks) {
+		newPosRotationIncrements = ticks;
+		newPosX = posX;
+		newPosY = posY;
+		newPosZ = posZ;
+		newRotationYaw = rotationYawHead = yaw;
+		newRotationPitch = 0f;
+	}
+	
+	public void move(final int x, final int y, final int z, final int ticks) {
+		newPosRotationIncrements = ticks;
+		newPosX = posX + x;
+		newPosY = posY + y;
+		newPosZ = posZ + z;
+		newRotationYaw = rotationYawHead = rotationYaw;
+		newRotationPitch = 0f;
+	}
+	
+	public boolean isStillMovingOrRotating() {
+		return this.newPosRotationIncrements > 0;
 	}
 	
 	@Override
@@ -255,6 +270,9 @@ public class EntityDrone extends EntityLiving implements IComputer {
 				drone.addToInventory(inventory, 0, 36, item);
 			}
 			tool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
+			drone.postEvent("tool", true);
+		} else {
+			drone.postEvent("tool", false);
 		}
 	}
 	
@@ -295,9 +313,6 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			} else {
 				if (drone == null)
 					createDrone();
-				if (drone.getLuaState() == null || !drone.getLuaState().isOpen()) {
-					drone.loadLuaDefaults();
-				}
 				GuiPacket guiPacket = new GuiPacket();
 				guiPacket.setCloseWindow(false);
 				guiPacket.setGui(Gui.COMPUTER_SCREEN);
@@ -307,8 +322,10 @@ public class EntityDrone extends EntityLiving implements IComputer {
 					ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
 				}
 				if (!drone.isRunning()) {
+					drone.loadLuaDefaults();
 					drone.setRunning(true);
 					drone.loadBios();
+			    	new Thread(drone).start();
 					drone.postEvent("start");
 				}
 				drone.addClient(player);
