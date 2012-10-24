@@ -31,6 +31,23 @@ public class ItemDroneUpgrade extends Item implements ICard {
 	}
 
 	@Override
+	public int getIconFromDamage(int meta) {
+		switch (meta) {
+		case 0:
+			return 9;
+		case 1:
+			return 8;
+		case 2:
+			return 6;
+		case 3:
+			return 7;
+		case 4:
+			return 5;
+		}
+		return 0;
+	}
+	
+	@Override
 	public String getItemNameIS(ItemStack stack) {
 		switch(stack.getItemDamage()) {
 		case 0:

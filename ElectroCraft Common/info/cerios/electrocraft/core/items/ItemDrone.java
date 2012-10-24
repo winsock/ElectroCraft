@@ -11,13 +11,18 @@ public class ItemDrone extends Item {
 		super(id);
 	}
 
-    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int par7, float par8, float par9, float par10) {
-    	if (!world.isRemote) {
-    		EntityDrone drone = new EntityDrone(world);
-    		drone.setPositionAndRotation(x, y + 1, z, 0, 0);
-    		world.spawnEntityInWorld(drone);
-    		stack.stackSize--;
-    	}
+	@Override
+	public String getTextureFile() {
+		return "/info/cerios/electrocraft/gfx/items.png";
+	}
+
+	public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int par7, float par8, float par9, float par10) {
+		if (!world.isRemote) {
+			EntityDrone drone = new EntityDrone(world);
+			drone.setPositionAndRotation(x, y + 1, z, 0, 0);
+			world.spawnEntityInWorld(drone);
+			stack.stackSize--;
+		}
 		return true;
-    }
+	}
 }

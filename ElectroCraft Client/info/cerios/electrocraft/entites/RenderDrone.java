@@ -32,6 +32,28 @@ public class RenderDrone extends RenderLiving {
 	@Override
     protected void renderEquippedItems(EntityLiving par1EntityLiving, float par2) {
 		GL11.glRotatef(par1EntityLiving.rotationYaw - par1EntityLiving.renderYawOffset, 0, 1, 0);
+		if (((EntityDrone)par1EntityLiving).getInventory().tools[0] != null) {
+			GL11.glPushMatrix();
+			GL11.glTranslatef(0.115f, 0.60f, 0.17f);
+			GL11.glScalef(0.25f, 0.25f, 0.25f);
+			GL11.glRotatef(110, 1, 0, 0);
+			GL11.glRotatef(60, 0, 1, 0);
+			GL11.glRotatef(110, 1, 1, 0);
+			GL11.glRotatef(-52, 1, 1, 1);
+			this.renderManager.itemRenderer.renderItem(par1EntityLiving, ((EntityDrone)par1EntityLiving).getInventory().tools[0], 0);
+			GL11.glPopMatrix();
+		}
+		if (((EntityDrone)par1EntityLiving).getInventory().tools[2] != null) {
+			GL11.glPushMatrix();
+			GL11.glTranslatef(-.385f, 0.60f, 0.17f);
+			GL11.glScalef(0.25f, 0.25f, 0.25f);
+			GL11.glRotatef(110, 1, 0, 0);
+			GL11.glRotatef(60, 0, 1, 0);
+			GL11.glRotatef(110, 1, 1, 0);
+			GL11.glRotatef(-52, 1, 1, 1);
+			this.renderManager.itemRenderer.renderItem(par1EntityLiving, ((EntityDrone)par1EntityLiving).getInventory().tools[2], 0);
+			GL11.glPopMatrix();
+		}
     	if (par1EntityLiving.getHeldItem() != null) {
             // Item render code *Copied from RenderPlayer*
     		GL11.glRotatef(180, 1, 0, 0);
