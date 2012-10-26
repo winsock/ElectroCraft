@@ -196,6 +196,57 @@ public class Computer implements Runnable {
 		System.out.println();
 	}
 
+	@ExposedToLua
+	public void dumpTable(List<Long> tablePointers) {
+		luaState.pushNil(); // key table permanents thread
+		while (luaState.next(-2)) { // value key table permanents thread
+			LuaType type = luaState.type(-1);
+			switch (type) {
+			case STRING:  /* strings */
+				System.out.print(luaState.toString(-1) + " | ");
+				break;
+
+			case BOOLEAN:  /* booleans */
+				System.out.print((luaState.toBoolean(-1) ? "true" : "false") + " | ");
+				break;
+
+			case NUMBER:  /* numbers */
+				System.out.print(luaState.toNumber(-1) + " | ");
+				break;
+			case TABLE:
+				if (!tablePointers.contains(luaState.toPointer(-1))) {
+					tablePointers.add(luaState.toPointer(-1));
+					System.out.println();
+					dumpTable(tablePointers);
+				}
+				break;
+			default:  /* other values */
+				System.out.print(luaState.typeName(-1) + " | ");
+				break;
+			}
+			type = luaState.type(-2);
+			switch (type) {
+			case STRING:  /* strings */
+				System.out.print(luaState.toString(-2) + " | ");
+				break;
+
+			case BOOLEAN:  /* booleans */
+				System.out.print((luaState.toBoolean(-2) ? "true" : "false") + " | ");
+				break;
+
+			case NUMBER:  /* numbers */
+				System.out.print(luaState.toNumber(-2) + " | ");
+				break;
+
+			default:  /* other values */
+				System.out.print(luaState.typeName(-2) + " | ");
+				break;
+			}
+			luaState.pop(1);
+			System.out.println();
+		}
+	}
+
 	/**
 	 * Expects the table to parse to be at the top of the stack
 	 * Expects a table to store the permanents at position 2
@@ -237,7 +288,10 @@ public class Computer implements Runnable {
 					tablePointers.add(luaState.toPointer(-1));
 					addToPermanentsTable((base + 2), flip, tablePointers);
 					if (luaState.getMetatable(-1)) {
-						addToPermanentsTable(base + 1, flip, tablePointers);
+						if (!tablePointers.contains(luaState.toPointer(-1))) {
+							tablePointers.add(luaState.toPointer(-1));
+							addToPermanentsTable(base + 1, flip, tablePointers);
+						}
 						luaState.pop(1);
 					}
 				}
@@ -247,7 +301,10 @@ public class Computer implements Runnable {
 					luaState.getFEnv(-1);
 					addToPermanentsTable((base + 1), flip, tablePointers);
 					if (luaState.getMetatable(-1)) {
-						addToPermanentsTable(base, flip, tablePointers);
+						if (!tablePointers.contains(luaState.toPointer(-1))) {
+							tablePointers.add(luaState.toPointer(-1));
+							addToPermanentsTable(base, flip, tablePointers);
+						}
 						luaState.pop(1);
 					}
 					luaState.pop(1);
@@ -259,14 +316,20 @@ public class Computer implements Runnable {
 					luaState.getFEnv(-1);
 					addToPermanentsTable((base + 1), flip, tablePointers);
 					if (luaState.getMetatable(-1)) {
-						addToPermanentsTable(base, flip, tablePointers);
+						if (!tablePointers.contains(luaState.toPointer(-1))) {
+							tablePointers.add(luaState.toPointer(-1));
+							addToPermanentsTable(base, flip, tablePointers);
+						}
 						luaState.pop(1);
 					}
 					luaState.pop(1);
 				}
 			}
 			if (luaState.getMetatable(-1)) {
-				addToPermanentsTable((base + 1), flip, tablePointers);
+				if (!tablePointers.contains(luaState.toPointer(-1))) {
+					tablePointers.add(luaState.toPointer(-1));
+					addToPermanentsTable((base + 1), flip, tablePointers);
+				}
 				luaState.pop(1);
 			}
 			luaState.pop(1); // key table permanents thread
@@ -315,7 +378,10 @@ public class Computer implements Runnable {
 						tablePointers.add(luaState.toPointer(-1));
 						addToPermanentsTable(base + 2, flip, tablePointers);
 						if (luaState.getMetatable(-1)) {
-							addToPermanentsTable(base + 1, flip, tablePointers);
+							if (!tablePointers.contains(luaState.toPointer(-1))) {
+								tablePointers.add(luaState.toPointer(-1));
+								addToPermanentsTable(base + 1, flip, tablePointers);
+							}
 							luaState.pop(1);
 						}
 					}
@@ -325,7 +391,10 @@ public class Computer implements Runnable {
 						luaState.getFEnv(-1);
 						addToPermanentsTable(base + 1, flip, tablePointers);
 						if (luaState.getMetatable(-1)) {
-							addToPermanentsTable(base, flip, tablePointers);
+							if (!tablePointers.contains(luaState.toPointer(-1))) {
+								tablePointers.add(luaState.toPointer(-1));
+								addToPermanentsTable(base, flip, tablePointers);
+							}
 							luaState.pop(1);
 						}
 						luaState.pop(1);
@@ -337,14 +406,20 @@ public class Computer implements Runnable {
 						luaState.getFEnv(-1);
 						addToPermanentsTable(base + 1, flip, tablePointers);
 						if (luaState.getMetatable(-1)) {
-							addToPermanentsTable(base, flip, tablePointers);
+							if (!tablePointers.contains(luaState.toPointer(-1))) {
+								tablePointers.add(luaState.toPointer(-1));
+								addToPermanentsTable(base, flip, tablePointers);
+							}
 							luaState.pop(1);
 						}
 						luaState.pop(1);
 					}
 				}
 				if (luaState.getMetatable(-1)) {
-					addToPermanentsTable(base + 1, flip, tablePointers);
+					if (!tablePointers.contains(luaState.toPointer(-1))) {
+						tablePointers.add(luaState.toPointer(-1));
+						addToPermanentsTable(base + 1, flip, tablePointers);
+					}
 					luaState.pop(1);
 				}
 				luaState.pop(1);
@@ -364,10 +439,10 @@ public class Computer implements Runnable {
 				luaState.pop(1);
 				return;
 			}
-			if (luaState.status(-1) != LuaState.YIELD) {
-				return;
-			}
 			luaState.newTable();
+			luaState.getGlobal("_G");
+			addToPermanentsTable(-2, true, new ArrayList<Long>());
+			luaState.pop(1);
 			luaState.getFEnv(-2);
 			if (luaState.isNil(-1)) {
 				luaState.pop(2);
@@ -377,6 +452,7 @@ public class Computer implements Runnable {
 			parseLocals(-2, true, -3, new ArrayList<Long>());
 			luaState.pop(1);
 			luaState.remove(-2);
+			dumpTable(new ArrayList<Long>());
 			// unpersistMap
 			try {
 				File persistFile = new File(baseDirectory.getAbsolutePath() + File.separator + ".persist");
@@ -388,7 +464,14 @@ public class Computer implements Runnable {
 				luaState.unpersist(fis);
 				fis.close();
 				persistFile.delete();
-				dumpStack();
+				luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+				luaState.getFEnv(-2);
+				luaState.newTable();
+				luaState.getFEnv(-3);
+				luaState.setField(-2, "__index");
+				luaState.setMetatable(-2);
+				luaState.setFEnv(-3);
+				luaState.pop(1);
 				luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
 				luaState.pop(1);
 				luaState.install_kill_hook(100);
@@ -433,7 +516,7 @@ public class Computer implements Runnable {
 			try {
 				luaState.pushValue(-2); // thread perm thread
 				luaState.remove(-3); // thread perm
-				
+
 				File persistFile = new File(baseDirectory, ".persist");
 				if (!persistFile.exists())
 					persistFile.createNewFile();
@@ -476,7 +559,7 @@ public class Computer implements Runnable {
 			}
 			luaStateLock.unlock();
 		}
-		
+
 		if (!ticked)
 			ticked = true;
 	}
@@ -508,7 +591,7 @@ public class Computer implements Runnable {
 	public void callSave() {
 		if (running && luaState.isOpen()) {
 			if (luaStateLock.tryLock()) {
-				savePlutoState();
+//				savePlutoState();
 				programStorage = new NBTTagCompound(currentProgram);
 				for (String m : onSaveMethods) {
 					try {
@@ -896,9 +979,9 @@ public class Computer implements Runnable {
 		boolean first = true;
 		// Register the Lua thread with the security manager
 		ElectroCraft.instance.getSecurityManager().registerThread(this);
-		
+
 		int ticksSinceLastSave = 0;
-		
+
 		while (isRunning() && ElectroCraft.instance.isRunning()) {
 			if (luaStateLock.tryLock() && first) {
 				loadLuaDefaults();
@@ -934,7 +1017,7 @@ public class Computer implements Runnable {
 				e1.printStackTrace();
 			} catch (CancellationException e1) {
 			}
-			
+
 			if (!ticked) {
 				stateLock.unlock();
 				continue;
@@ -963,16 +1046,13 @@ public class Computer implements Runnable {
 						if (luaStateLock.tryLock()) {
 							if (!luaState.isOpen())
 								return;
-							// Load the pluto state
-							if (eventName.equalsIgnoreCase("resume")) {
-								loadPlutoState();
-							}
-							
+
 							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
 							luaState.getField(-1, "resume");
+							dumpStack();
 							luaState.remove(-2);
 							int argSize = 0;
-							
+
 							luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
 							if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
 								// Oops we must of shutdown or something
@@ -982,7 +1062,7 @@ public class Computer implements Runnable {
 								// Its a valid thread
 								argSize += 1;
 							}
-							
+
 							if (argSize <= 0) {
 								// the thread is non existent
 								luaState.pop(luaState.getTop());
@@ -1004,7 +1084,7 @@ public class Computer implements Runnable {
 							luaState.reset_kill(100);
 							if (killYielded)
 								killYielded = false;
-							
+
 							// Check the results
 							if (luaState.isBoolean(1))
 								if (!luaState.checkBoolean(1, true))
@@ -1025,7 +1105,12 @@ public class Computer implements Runnable {
 
 							// Lets make sure the stack is clean
 							luaState.pop(luaState.getTop());
-							
+
+							// Load the pluto state
+//							if (eventName.equalsIgnoreCase("resume")) {
+//								loadPlutoState();
+//							}
+
 							// System memory check
 							if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
 								setRunning(false);
@@ -1037,14 +1122,14 @@ public class Computer implements Runnable {
 								setRunning(false);
 								getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
 							}
-							
+
 							if (ticksSinceLastSave % 900 == 0) {
 								callSave();
 								ticksSinceLastSave = 0;
 							} else {
 								ticksSinceLastSave++;
 							}
-							
+
 							luaStateLock.unlock();
 						}
 					} catch (LuaSyntaxException e) {

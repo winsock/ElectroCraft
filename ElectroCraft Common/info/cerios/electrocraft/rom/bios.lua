@@ -4,6 +4,7 @@ pluto = nil
 os.getTerminal():clear()
 
 local nativeYield = coroutine.yield or nativeYeild
+coroutine.yield = nil
 local events = {}
 function os.waitForEvent(...)
 	local eventTypes = {...}
