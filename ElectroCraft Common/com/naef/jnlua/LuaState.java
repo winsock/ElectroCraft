@@ -2301,6 +2301,7 @@ public class LuaState {
 	// ElectroCraft add Pluto
 	public native void persist(OutputStream out);
 	public native void unpersist(InputStream input);
+	public native String getLocal(int stackPos, int index, int threadIndex);
 	public native void install_kill_hook(int count);
 	public native void reset_kill(int count);
 

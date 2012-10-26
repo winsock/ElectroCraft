@@ -1,8 +1,7 @@
 local tArgs = {...}
 local path = ""
 local currentFile
-local shell = {}
-local programEnv = {}
+shell = {}
 
 function saveShell(nbttagcompound)
 	if path:len() > 0 then
@@ -27,9 +26,6 @@ function shell.run(file, ...)
 		return false, err
 	end
 	if func then
-		programEnv["shell"] = shell
-		setmetatable(programEnv, {__index = _G})
-		setfenv(func, programEnv)
 		currentFile = file
 		local ok, err = os.run(func, ...)
 		currentFile = nil
@@ -45,11 +41,11 @@ function shell.setPath(newPath)
 	path = newPath
 end
 
-if (#tArgs > 0) and (type(tArgs[1]) == "userdata") then
-	path = tArgs[1]:getString("path")
-	currentFile = tArgs[1]:getString("currentFile")
+if (#tArgs > 1) and (tArgs[1] == "resume") and (type(tArgs[2]) == "userdata") then
+	path = tArgs[2]:getString("path")
+	currentFile = tArgs[2]:getString("currentFile")
 	if currentFile and currentFile:len() > 0 then
-		shell.run(currentFile, tArgs[1])
+		shell.run(currentFile, tArgs[2])
 	end
 end
 
@@ -62,50 +58,57 @@ local term = os.getTerminal()
 
 write(prompt)
 while true do
-	local event, key = os.waitForEvent("key", "code")
+	local event, key = os.waitForEvent("key", "code", "resume")
 	prompt = path .. "> "
 	term:setEditing(true)
-	if key == "\n" then
-		write("\n")
-		local params = {}
-		for match in string.gmatch(line, "[^%s]+") do
-			table.insert(params, match)
+	if event == "resume" then
+		for i=1, #history do
+			print(history[i])
 		end
-		if #params > 0 then
-			term:setEditing(false)
-			local ok, err = shell.run(params[1], unpack(params, 2))
-			if not ok and err then
-				if type(err) == "string" then
-					print(err)
-				else
-					print("Unknown error!")
-				end
-			end
-			os.getComputer():setGraphicsMode(false)
-			term:setEditing(true)
-		end
-		if table[#table] ~= line then
-			table.insert(history, line)
-		end
-		historyNumber = #history + 1
-		line = ""
-		col = 1
-		prompt = path .. "> "
-		write(prompt)
+		print(prompt .. line)
 	elseif event == "key" then
-		local front = ""
-		local back = ""
-		if col - 1 > 0 then
-			front = line:sub(1, col - 1)
+		if key == "\n" then
+			write("\n")
+			local params = {}
+			for match in string.gmatch(line, "[^%s]+") do
+				table.insert(params, match)
+			end
+			if #params > 0 then
+				term:setEditing(false)
+				local ok, err = shell.run(params[1], unpack(params, 2))
+				if not ok and err then
+					if type(err) == "string" then
+						print(err)
+					else
+						print("Unknown error!")
+					end
+				end
+				os.getComputer():setGraphicsMode(false)
+				term:setEditing(true)
+			end
+			if table[#table] ~= line then
+				table.insert(history, line)
+			end
+			historyNumber = #history + 1
+			line = ""
+			col = 1
+			prompt = path .. "> "
+			write(prompt)
+		else
+			local front = ""
+			local back = ""
+			if col - 1 > 0 then
+				front = line:sub(1, col - 1)
+			end
+			if line:len() >= col + 1 then
+				back = line:sub(col + 1, line:len())
+			end
+			line = front .. key .. back
+			col = col + 1
+			term:clearLine()
+			write(prompt .. line)
+			term:setPosition(term:getCurrentRow(), col + prompt:len())
 		end
-		if line:len() >= col + 1 then
-			back = line:sub(col + 1, line:len())
-		end
-		line = front .. key .. back
-		col = col + 1
-		term:clearLine()
-		write(prompt .. line)
-		term:setPosition(term:getCurrentRow(), col + prompt:len())
 	elseif event == "code" then
 		if key == kbrd.keycodes.backspace then
 			if line:len() > 0 then

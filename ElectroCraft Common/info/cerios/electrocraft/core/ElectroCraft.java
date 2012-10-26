@@ -12,6 +12,7 @@ import info.cerios.electrocraft.core.blocks.BlockHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlock;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.ComputerSocketManager;
+import info.cerios.electrocraft.core.computer.LuaSecurity;
 import info.cerios.electrocraft.core.container.ContainerDrone;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.items.ElectroItems;
@@ -81,6 +82,7 @@ public class ElectroCraft implements IElectroCraft {
 	private List<ICard> droneUpgradeCards = new ArrayList<ICard>();
 	private List<IDroneTool> droneTools = new ArrayList<IDroneTool>();
 	private Object mainThreadLock = new Object();
+	private LuaSecurity securityManager;
 
 	// The Mod's color palette
 	public static final int[] colorPalette = {
@@ -167,9 +169,16 @@ public class ElectroCraft implements IElectroCraft {
 
 		// Create out computer socket connection manager
 		computerSocketManager = new ComputerSocketManager();
+		
+		// Create the security manager
+		securityManager = new LuaSecurity("ec");
 
 		// Log that we are done loading
 		ecLogger.info("Done loading version: " + FMLCommonHandler.instance().findContainerFor(this).getDisplayVersion());
+	}
+	
+	public LuaSecurity getSecurityManager() {
+		return securityManager;
 	}
 
 	private IGuiHandler guiHandler = new IGuiHandler() {

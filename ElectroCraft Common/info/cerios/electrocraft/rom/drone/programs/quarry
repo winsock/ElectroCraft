@@ -26,12 +26,12 @@ end
 -- Registers the save handler
 os.registerSaveHandler(save)
 
-if type(tArgs[1]) == "userdata" then
+if (type(tArgs[1]) == "string") and (tArgs[1] == "resume") and (type(tArgs[2]) == "userdata") then
 	-- Program was resumed from either server start or chunk load
-	size = tArgs[1]:getInteger("size")
-	xOffset = tArgs[1]:getInteger("xOffset")
-	depth = tArgs[1]:getInteger("depth")
-	yOffset = tArgs[1]:getInteger("zOffset")
+	size = tArgs[2]:getInteger("size")
+	xOffset = tArgs[2]:getInteger("xOffset")
+	depth = tArgs[2]:getInteger("depth")
+	yOffset = tArgs[2]:getInteger("zOffset")
 else
 	size = tonumber(tArgs[1])
 end

@@ -68,6 +68,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		if (drone != null) {
 			drone.setFlying(nbt.getBoolean("flying"));
 			if (nbt.getBoolean("isOn")) {
+				drone.setRunning(true);
 				drone.setProgramStorage(nbt.getCompoundTag("programStorage"));
 				drone.callLoad();
 			}
@@ -77,6 +78,8 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void writeEntityToNBT(NBTTagCompound nbt) {
 		super.writeEntityToNBT(nbt);
+		if (worldObj.isRemote)
+			return;
 		inventory.writeToNBT(nbt);
 		nbt.setString("cid", id);
 		if (drone != null) {

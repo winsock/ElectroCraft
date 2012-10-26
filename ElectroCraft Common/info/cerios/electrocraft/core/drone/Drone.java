@@ -61,20 +61,6 @@ public class Drone extends Computer {
 	}
 
 	@Override
-	public void loadBios() {
-		super.loadBios();
-		luaStateLock.lock();
-		try {
-			luaState.load(this.getClass().getResourceAsStream("/info/cerios/electrocraft/rom/drone/dronebios.lua"), "drone_bios_" + this.getBaseDirectory().getName());
-			luaState.newThread();
-			luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine_drone");
-		} catch (IOException e) {
-			ElectroCraft.instance.getLogger().severe("Error loading drone BIOS!");
-		}
-		luaStateLock.unlock();
-	}
-
-	@Override
 	public void loadLuaDefaults() {
 		super.loadLuaDefaults();
 		luaStateLock.lock();

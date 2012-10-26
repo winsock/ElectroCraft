@@ -1,6 +1,6 @@
 local tArgs = {...}
-local realDebug = debug
 debug = nil
+pluto = nil
 os.getTerminal():clear()
 
 local nativeYield = coroutine.yield or nativeYeild
@@ -31,7 +31,7 @@ function os.waitForEvent(...)
 				return event, param1, param2, param3, param4, param5
 			end
 		end
-		if event and (event ~= "resume" or event ~= "killyield" or event ~= "start") then
+		if event and (event ~= "killyield" or event ~= "start") then
 			table.insert(events, { event, param1, param2, param3, param4, param5 })
 		end
 		event, param1, param2, param3, param4, param5 = nativeYield("safe")
@@ -118,6 +118,42 @@ function os.run(func, ...)
 	return ok, nil
 end
 
+if drone ~= nil then
+	drone.forgeDir = {
+		up = 1, down = 0, north = 2, south = 3, east = 5, west = 4, unknown = 6
+	}
+
+	drone.dir = {
+		north = 0, west = 1, south = 2, east = 3, unknown = 4
+	}
+
+	drone.turnDir = {
+		left = 0, right = 1, arround = 2
+	}
+
+	local nativeUseTool = drone.useTool
+	function drone.useTool(...)
+		nativeUseTool(...)
+		event, result = os.waitForEvent("tool")
+		return result
+	end
+
+	function drone.turn(turn)
+		if gyro == nil then
+			return
+		end
+		gyro.face(gyro.getDir())
+		if turn == drone.turnDir.left then
+			gyro.rotate(gyro.getRotation() - 90)
+		elseif turn == drone.turnDir.right then
+			gyro.rotate(gyro.getRotation() + 90)
+		elseif turn == drone.turnDir.arround then
+			gyro.rotate(gyro.getRotation() - 180)
+		end
+		gyro.face(gyro.getDir())
+	end
+end
+
 function onSave(storage)
 	for i, v in ipairs(saveFuncs) do
 		v(storage)
@@ -142,8 +178,8 @@ if err then
 	error(err)
 end
 
-if #tArgs > 0 then
-	local ok, err = os.run(func, tArgs[1])
+if #tArgs > 1 and tArgs[1] == "resume" then
+	local ok, err = os.run(func, tArgs[1], tArgs[2])
 	if not ok and err then
 		print(err)
 	end

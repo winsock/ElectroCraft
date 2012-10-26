@@ -95,8 +95,13 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	if (computer == null)
         		createComputer();
         	computer.setProgramStorage((NBTTagCompound) nbttagcompound.getTag("programStorage"));
+        	computer.setRunning(true);
         	computer.callLoad();
         	        	
+        	for (NetworkBlock ioPort : ioPorts) {
+	    		computer.registerNetworkBlock(ioPort);
+	    	}
+        	
         	/*
              * Old code pertaining to persistence
              */
@@ -123,9 +128,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
 //        	computer.getVideoCard().setData(nbttagcompound.getByteArray("vga"));
 //        	computer.setGraphicsMode(nbttagcompound.getBoolean("graphics"));
 //        	
-//	    	for (NetworkBlock ioPort : ioPorts) {
-//	    		computer.registerNetworkBlock(ioPort);
-//	    	}
 //	    	new Thread(new Runnable() {
 //				@Override
 //				public void run() {
