@@ -2,7 +2,7 @@ package info.cerios.electrocraft.core.computer;
 
 import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.api.utils.Utils;
-import info.cerios.electrocraft.core.computer.luaapi.ComputerSocket;
+import info.cerios.electrocraft.core.computer.luaapi.Network;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,9 +16,9 @@ import java.util.Set;
 
 public class ComputerSocketManager {
 	
-	private Map<ComputerSocket, ObjectPair<InetSocketAddress, Mode>> registeredEndpoints = new HashMap<ComputerSocket, ObjectPair<InetSocketAddress, Mode>>();
+	private Map<Network, ObjectPair<InetSocketAddress, Mode>> registeredEndpoints = new HashMap<Network, ObjectPair<InetSocketAddress, Mode>>();
 	private Map<ObjectPair<InetSocketAddress, Mode>, Socket> boundSockets = new HashMap<ObjectPair<InetSocketAddress, Mode>, Socket>();
-	private Map<ObjectPair<Thread, ConnectionThread>, ObjectPair<ComputerSocket,Mode>> threads = new HashMap<ObjectPair<Thread, ConnectionThread>, ObjectPair<ComputerSocket,Mode>>();
+	private Map<ObjectPair<Thread, ConnectionThread>, ObjectPair<Network,Mode>> threads = new HashMap<ObjectPair<Thread, ConnectionThread>, ObjectPair<Network,Mode>>();
 	private static boolean running = false;
 	
 	public enum Mode {
@@ -26,7 +26,7 @@ public class ComputerSocketManager {
 		SEND
 	}
 	
-	public void registerEndpoint(ComputerSocket computerSocket, InetSocketAddress address, Mode mode) {
+	public void registerEndpoint(Network computerSocket, InetSocketAddress address, Mode mode) {
 		ObjectPair<InetSocketAddress, Mode> pair = new ObjectPair<InetSocketAddress, Mode>(address, mode);
 		registeredEndpoints.put(computerSocket, pair);
 		
@@ -35,18 +35,18 @@ public class ComputerSocketManager {
 			boundSockets.put(pair, socket);
 			ConnectionThread cThread = new ConnectionThread(socket, computerSocket, address, mode);
 			Thread thread = new Thread(cThread);
-			threads.put(new ObjectPair<Thread, ConnectionThread>(thread, cThread), new ObjectPair<ComputerSocket,Mode>(computerSocket, mode));
+			threads.put(new ObjectPair<Thread, ConnectionThread>(thread, cThread), new ObjectPair<Network,Mode>(computerSocket, mode));
 			thread.start();
 		} else {
-			ObjectPair<Thread, ConnectionThread> thread = Utils.getKeyByValue(threads, new ObjectPair<ComputerSocket,Mode>(computerSocket, mode));
+			ObjectPair<Thread, ConnectionThread> thread = Utils.getKeyByValue(threads, new ObjectPair<Network,Mode>(computerSocket, mode));
 			if (thread != null) {
 				thread.getValue2().addSocket(computerSocket);
 			}
 		}
 	}
 	
-	public ConnectionThread getConnectionThread(ComputerSocket adapter, Mode mode) {
-		ObjectPair<Thread, ConnectionThread> thread = Utils.getKeyByValue(threads, new ObjectPair<ComputerSocket,Mode>(adapter, mode));
+	public ConnectionThread getConnectionThread(Network adapter, Mode mode) {
+		ObjectPair<Thread, ConnectionThread> thread = Utils.getKeyByValue(threads, new ObjectPair<Network,Mode>(adapter, mode));
 		return thread.getValue2();
 	}
 	
@@ -58,16 +58,16 @@ public class ComputerSocketManager {
 		private InputStream in;
 		private OutputStream out;
 		
-		private Set<ComputerSocket> hookedSockets = new HashSet<ComputerSocket>();
+		private Set<Network> hookedSockets = new HashSet<Network>();
 		
-		public ConnectionThread(Socket socket, ComputerSocket adapter, InetSocketAddress address, Mode mode) {
+		public ConnectionThread(Socket socket, Network adapter, InetSocketAddress address, Mode mode) {
 			this.hookedSockets.add(adapter);
 			this.mode = mode;
 			this.socket = socket;
 			this.address = address;
 		}
 		
-		public void addSocket(ComputerSocket adpater) {
+		public void addSocket(Network adpater) {
 			this.hookedSockets.add(adpater);
 		}
 		
@@ -92,7 +92,7 @@ public class ComputerSocketManager {
 						return;
 					}
 					
-					for (ComputerSocket socket : hookedSockets) {
+					for (Network socket : hookedSockets) {
 						socket.onReceive(buffer);
 					}
 				}

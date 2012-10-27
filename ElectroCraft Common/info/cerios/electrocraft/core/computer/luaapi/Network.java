@@ -20,14 +20,14 @@ import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
 
 @ExposedToLua
-public class ComputerSocket implements LuaAPI {
+public class Network implements LuaAPI {
 	
 	private ByteArrayOutputStream qeuedData;
 	private boolean isBound = false;
 	private Mode mode;
 	
 	@ExposedToLua
-	public ComputerSocket() {
+	public Network() {
 		qeuedData = new ByteArrayOutputStream();
 	}
 	
@@ -151,7 +151,7 @@ public class ComputerSocket implements LuaAPI {
 					
 					@Override
 					public int invoke(LuaState luaState) {
-						luaState.pushJavaObject(new ComputerSocket());
+						luaState.pushJavaObject(new Network());
 						return 1;
 					}
 

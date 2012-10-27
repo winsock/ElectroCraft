@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core;
 
-import info.cerios.electrocraft.api.IComputer;
+import info.cerios.electrocraft.api.IComputerHost;
 import info.cerios.electrocraft.api.IElectroCraft;
 import info.cerios.electrocraft.api.computer.IComputerCallback;
 import info.cerios.electrocraft.api.computer.IComputerRunnable;
@@ -76,7 +76,7 @@ public class ElectroCraft implements IElectroCraft {
 	public static ElectroCraft instance;
 	@SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
 	public static IElectroCraftSided electroCraftSided;
-	private Map<EntityPlayer, IComputer> nonCustomServerComputerMap = new HashMap<EntityPlayer, IComputer>();
+	private Map<EntityPlayer, IComputerHost> nonCustomServerComputerMap = new HashMap<EntityPlayer, IComputerHost>();
 	private List<FutureTask<?>> mainThreadFunctions = new ArrayList<FutureTask<?>>();
 	private List<ModContainer> addons = new ArrayList<ModContainer>();
 	private List<ICard> droneUpgradeCards = new ArrayList<ICard>();
@@ -249,7 +249,7 @@ public class ElectroCraft implements IElectroCraft {
 		return server;
 	}
 
-	public IComputer getComputerForPlayer(EntityPlayer player) {
+	public IComputerHost getComputerForPlayer(EntityPlayer player) {
 		if (ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false).getBoolean(false)) {
 			return this.nonCustomServerComputerMap.get(player);
 		} else {
@@ -257,7 +257,7 @@ public class ElectroCraft implements IElectroCraft {
 		}
 	}
 
-	public void setComputerForPlayer(EntityPlayer player, IComputer computer) {
+	public void setComputerForPlayer(EntityPlayer player, IComputerHost computer) {
 		if (ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", false).getBoolean(false)) {
 			this.nonCustomServerComputerMap.put(player, computer);
 		} else {

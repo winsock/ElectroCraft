@@ -6,7 +6,7 @@ import info.cerios.electrocraft.api.computer.luaapi.LuaAPI;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
-import info.cerios.electrocraft.core.computer.luaapi.ComputerSocket;
+import info.cerios.electrocraft.core.computer.luaapi.Network;
 import info.cerios.electrocraft.core.computer.luaapi.MinecraftInterface;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
 import info.cerios.electrocraft.core.network.CustomPacket;
@@ -822,7 +822,7 @@ public class Computer implements Runnable {
 
 		// Load ElectroCraft default libraries
 		loadAPI(new ComputerFile());
-		loadAPI(new ComputerSocket());
+		loadAPI(new Network());
 		loadAPI(mcIO = new MinecraftInterface());
 
 		luaStateLock.unlock();
@@ -1049,7 +1049,6 @@ public class Computer implements Runnable {
 
 							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
 							luaState.getField(-1, "resume");
-							dumpStack();
 							luaState.remove(-2);
 							int argSize = 0;
 

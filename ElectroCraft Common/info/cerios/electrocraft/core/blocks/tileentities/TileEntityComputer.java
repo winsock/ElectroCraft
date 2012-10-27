@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core.blocks.tileentities;
 
-import info.cerios.electrocraft.api.IComputer;
+import info.cerios.electrocraft.api.IComputerHost;
 import info.cerios.electrocraft.api.computer.ExposedToLua;
 import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
@@ -20,7 +20,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Side;
 
 @ExposedToLua
-public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock, IComputer {
+public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock, IComputerHost {
 
     private Computer computer;
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();

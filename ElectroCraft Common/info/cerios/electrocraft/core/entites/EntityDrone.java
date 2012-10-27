@@ -12,7 +12,7 @@ import cpw.mods.fml.common.Side;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
-import info.cerios.electrocraft.api.IComputer;
+import info.cerios.electrocraft.api.IComputerHost;
 import info.cerios.electrocraft.api.computer.IComputerCallback;
 import info.cerios.electrocraft.api.computer.IComputerRunnable;
 import info.cerios.electrocraft.api.drone.tools.IDroneTool;
@@ -39,7 +39,7 @@ import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.World;
 import net.minecraftforge.common.ForgeDirection;
 
-public class EntityDrone extends EntityLiving implements IComputer {
+public class EntityDrone extends EntityLiving implements IComputerHost {
 
 	private Drone drone;
 	private String id = "";
@@ -135,7 +135,8 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void setDead() {
 		this.dead = true;
-		drone.setRunning(false);
+		if (drone != null)
+			drone.shutdown();
 	}
 	
 	public void setClientFlying(boolean fly) {
