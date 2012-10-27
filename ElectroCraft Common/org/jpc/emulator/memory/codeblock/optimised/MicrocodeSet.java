@@ -1,10 +1,10 @@
 /*
-    JPC: A x86 PC Hardware Emulator for a pure Java Virtual Machine
-    Release Version 2.0
+    JPC: An x86 PC Hardware Emulator for a pure Java Virtual Machine
+    Release Version 2.4
 
     A project from the Physics Dept, The University of Oxford
 
-    Copyright (C) 2007-2009 Isis Innovation Limited
+    Copyright (C) 2007-2010 The University of Oxford
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as published by
@@ -18,10 +18,17 @@
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+ 
     Details (including contact information) can be found at: 
 
-    www-jpc.physics.ox.ac.uk
+    jpc.sourceforge.net
+    or the developer website
+    sourceforge.net/projects/jpc/
+
+    Conceived and Developed by:
+    Rhys Newman, Ian Preston, Chris Dennis
+
+    End of licence header
 */
 
 package org.jpc.emulator.memory.codeblock.optimised;
@@ -37,7 +44,7 @@ public class MicrocodeSet
     public static final int ADDR_MASK16 = 1;
     public static final int EIP_UPDATE = 2;
     public static final int ADDR_IB = 3;
-    public static final int PUSH_O16_A16 = 4;
+    public static final int PUSH_O16 = 4;
     public static final int LOAD_SEG_SS = 5;
     public static final int LOAD0_AX = 6;
     public static final int ADDR_BP = 7;
@@ -45,7 +52,7 @@ public class MicrocodeSet
     public static final int LOAD0_MEM_WORD = 9;
 
     public static final int STORE1_ESP = 10;
-    public static final int POP_O16_A16 = 11;
+    public static final int POP_O16 = 11;
     public static final int STORE0_AX = 12;
     public static final int LOAD0_IW = 13;
     public static final int LOAD_SEG_DS = 14;
@@ -170,8 +177,8 @@ public class MicrocodeSet
 
     public static final int SBB_O16_FLAGS = 122;
     public static final int LODSB_A16 = 123;
-    public static final int POPA_A16 = 124;
-    public static final int PUSHA_A16 = 125;
+    public static final int POPA = 124;
+    public static final int PUSHA = 125;
     public static final int LOAD1_DL = 126;
     public static final int REP_MOVSB_A16 = 127;
     public static final int NOT = 128;
@@ -214,8 +221,8 @@ public class MicrocodeSet
 
     public static final int ROR_O8_FLAGS = 162;
     public static final int ROR_O8 = 163;
-    public static final int POP_O32_A16 = 164;
-    public static final int PUSH_O32_A16 = 165;
+    public static final int POP_O32 = 164;
+    public static final int PUSH_O32 = 165;
     public static final int REPNE_SCASB_A16 = 166;
     public static final int SUB_O32_FLAGS = 167;
     public static final int LOAD1_ID = 168;
@@ -287,9 +294,9 @@ public class MicrocodeSet
     public static final int SMSW = 228;
     public static final int ADDR_ID = 229;
     public static final int OUT_O16 = 230;
-    public static final int POPAD_A16 = 231;
+    public static final int POPAD = 231;
 
-    public static final int PUSHAD_A16 = 232;
+    public static final int PUSHAD = 232;
     public static final int STORE1_SI = 233;
     public static final int STORE1_MEM_BYTE = 234;
     public static final int MUL_O32 = 235;
@@ -659,15 +666,11 @@ public class MicrocodeSet
     public static final int POP_O16_A32 = 515;
     public static final int POP_O32_A32 = 516;
 
-    public static final int POPF_O16_A16 = 517;
-    public static final int POPF_O32_A16 = 518;
-    public static final int POPF_O16_A32 = 519;
-    public static final int POPF_O32_A32 = 520;
+    public static final int POPF_O16 = 517;
+    public static final int POPF_O32 = 518;
 
-    public static final int PUSHF_O16_A16 = 521;
-    public static final int PUSHF_O32_A16 = 522;
-    public static final int PUSHF_O16_A32 = 523;
-    public static final int PUSHF_O32_A32 = 524;
+    public static final int PUSHF_O16 = 521;
+    public static final int PUSHF_O32 = 522;
 
     public static final int PUSHA_A32 = 525;
     public static final int PUSHAD_A32 = 526;

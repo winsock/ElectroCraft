@@ -35,7 +35,6 @@ public class GuiComputerScreen extends GuiScreen {
 	private volatile boolean isVisible = true;
 	private int lastWidth, lastHeight, displayWidth, displayHeight;
 	private ByteBuffer displayBuffer;
-	private boolean terminalMode = true;
 	private Map<Integer, String> terminalList = new HashMap<Integer, String>();
 	private int rows = 20;
 	private int columns = 50;
@@ -75,55 +74,14 @@ public class GuiComputerScreen extends GuiScreen {
 		tess.draw();
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
-		if (terminalMode) {
-			tess.startDrawingQuads();
-			tess.setColorOpaque(0, 0, 0);
-			tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
-			tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
-			tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
-			tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
-			tess.draw();
-
-			for (int i = 0; i < terminalList.size(); i++) {
-				int currentLine = terminalList.keySet().toArray(new Integer[terminalList.size()])[i];
-				String line = terminalList.get(currentLine);
-				float pixelsPerChar = (halfScreenWidth * 2) / columns;
-				float pixelsPerLineHeight = ((halfScreenHeight * 2) / rows);
-
-				float scaleFactorX = 1f;
-				float scaleFactorY = 1f;
-				if (fontRenderer.getStringWidth(line) > (halfScreenWidth * 2)) {
-					scaleFactorX = (halfScreenWidth * 2) / fontRenderer.getStringWidth(line);
-				}
-				if ((fontRenderer.FONT_HEIGHT * columns) > (halfScreenHeight * 2)) {
-					scaleFactorY = (halfScreenHeight * 2) / (pixelsPerLineHeight * rows);
-				}
-				GL11.glPushMatrix();
-				GL11.glScalef(scaleFactorX, scaleFactorY, 1);
-				this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
-				if (i == currentRow && (ticksSinceLastBlink > 500 || delayTicks > 0)) {
-					this.fontRenderer.drawString("_", (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)) + (currentCol > line.length() ? fontRenderer.getStringWidth(line) : fontRenderer.getStringWidth(line.substring(0, currentCol))), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
-					if (delayTicks <= 0)
-						delayTicks = 500;
-				} else if (ticksSinceLastBlink <= 500) {
-					ticksSinceLastBlink++;
-				} else if (delayTicks > 0) {
-					delayTicks--;
-					if (delayTicks <= 0)
-						ticksSinceLastBlink = 0;
-				}
-				GL11.glPopMatrix();
-			}
-		} else {
-			GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-			tess.startDrawingQuads();
-			tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
-			tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
-			tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
-			tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
-			tess.draw();
-			GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-		}
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+		tess.startDrawingQuads();
+		tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
+		tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
+		tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
+		tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
+		tess.draw();
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
 		// Draw the screen title
 		fontRenderer.drawString("xEC Computer System", 53, 28, 0x404040);
@@ -139,49 +97,32 @@ public class GuiComputerScreen extends GuiScreen {
 	@Override
 	public void updateScreen() {
 		synchronized (syncObject) {
+			if (displayBuffer != null) {
+				if (!GL11.glIsTexture(displayTextureId) || (displayWidth != lastWidth || displayHeight != lastHeight)) {
+					if (GL11.glIsTexture(displayTextureId))
+						GL11.glDeleteTextures(displayTextureId);
+					displayTextureId = GL11.glGenTextures();
+					GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+					GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, displayWidth, displayHeight, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
+					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+					GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+					GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+					lastWidth = displayWidth;
+					lastHeight = displayHeight;
+				} else if (displayBuffer != null) {
+					GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
+					GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, displayWidth, displayHeight, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
+					GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+				}
+			}
 			if (shouldAskForScreenPacket) {
 				try {
-					if (!terminalMode) {
-						if (displayBuffer != null) {
-							if (!GL11.glIsTexture(displayTextureId) || (displayWidth != lastWidth || displayHeight != lastHeight)) {
-								if (GL11.glIsTexture(displayTextureId))
-									GL11.glDeleteTextures(displayTextureId);
-								displayTextureId = GL11.glGenTextures();
-								GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-								GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, displayWidth, displayHeight, 0, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
-								GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-								GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-								GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-								lastWidth = displayWidth;
-								lastHeight = displayHeight;
-							} else if (displayBuffer != null) {
-								GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-								GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, displayWidth, displayHeight, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, displayBuffer);
-								GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-							}
-						}
-						// Ask for another screen packet
-						CustomPacket packet = new CustomPacket();
-						packet.id = 1;
-						packet.data = new byte[] {};
-						PacketDispatcher.sendPacketToServer(packet.getMCPacket());
-						shouldAskForScreenPacket = false;
-//					} else {
-//						for (int i = 0; i < rows; i++) {
-//							if (ElectroCraftClient.instance.usingComputerClient()) {
-//								ElectroCraftClient.instance.getComputerClient().sendTerminalPacket(i);
-//							} else {
-//								CustomPacket packet = new CustomPacket();
-//								packet.id = 2;
-//								ByteArrayOutputStream out = new ByteArrayOutputStream();
-//								DataOutputStream dos = new DataOutputStream(out);
-//								dos.writeInt(i);
-//								packet.data = out.toByteArray();
-//								PacketDispatcher.sendPacketToServer(packet.getMCPacket());
-//							}
-//							shouldAskForScreenPacket = false;
-//						}
-					}
+					// Ask for another screen packet
+					CustomPacket packet = new CustomPacket();
+					packet.id = 1;
+					packet.data = new byte[] {};
+					PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+					shouldAskForScreenPacket = false;
 				} catch (IOException e) {
 					ElectroCraft.instance.getLogger().severe("Unable to send screen update packet!");
 				}
@@ -267,9 +208,7 @@ public class GuiComputerScreen extends GuiScreen {
 
 	public void handleCustomPacket(CustomPacket packet) {
 		try {
-			if (packet.id == 0) {
-				terminalMode = packet.data[0] == 0 ? false : true; 
-			} else if (packet.id == 1) {
+			if (packet.id == 1) {
 				ByteArrayInputStream in = new ByteArrayInputStream(packet.data);
 				DataInputStream dis = new DataInputStream(in);
 				int width = dis.readInt();
@@ -300,13 +239,7 @@ public class GuiComputerScreen extends GuiScreen {
 					try {
 						displayBuffer.clear();
 						for (byte b : Utils.extractBytes(data)) {
-							int rgb = ElectroCraft.colorPalette[b & 0xFF];
-							byte red = (byte) ((rgb >> 16) & 0xFF);
-							byte green = (byte) ((rgb >> 8) & 0xFF);
-							byte blue = (byte) (rgb & 0xFF);
-							displayBuffer.put(red);
-							displayBuffer.put(green);
-							displayBuffer.put(blue);
+							displayBuffer.put(b);
 						}
 					} catch (DataFormatException e) {
 						ElectroCraft.instance.getLogger().severe("Unable to read display full update packet!");
@@ -346,36 +279,6 @@ public class GuiComputerScreen extends GuiScreen {
 				}
 				displayWidth = width;
 				displayHeight = height;
-				shouldAskForScreenPacket = true;
-			} else if (packet.id == 2) {
-				ByteArrayInputStream in = new ByteArrayInputStream(packet.data);
-				DataInputStream dis = new DataInputStream(in);
-				columns = dis.readInt();
-				rows = dis.readInt();
-				currentCol = dis.readInt();
-				currentRow = dis.readInt();
-
-				int transmissionType = in.read();
-
-				if (transmissionType == 0) {
-					int row = dis.readInt();
-					if (dis.readBoolean()) {
-						String rowData = dis.readUTF();
-						terminalList.put(row, rowData);
-					} else {
-						terminalList.put(row, "");
-					}
-				} else if (transmissionType == 1) {
-                	int numberOfChangedRows = dis.readInt();
-                	for (int i = 0; i < numberOfChangedRows; i++) {
-                		int rowNumber = dis.readInt();
-                		if (dis.readBoolean()) {
-                    		terminalList.put(rowNumber, dis.readUTF());
-                    	} else {
-                    		terminalList.put(rowNumber, "");
-                    	}
-                	}
-                }
 				shouldAskForScreenPacket = true;
 			}
 		} catch (IOException e) {

@@ -1,10 +1,10 @@
 /*
-    JPC: A x86 PC Hardware Emulator for a pure Java Virtual Machine
-    Release Version 2.0
+    JPC: An x86 PC Hardware Emulator for a pure Java Virtual Machine
+    Release Version 2.4
 
     A project from the Physics Dept, The University of Oxford
 
-    Copyright (C) 2007-2009 Isis Innovation Limited
+    Copyright (C) 2007-2010 The University of Oxford
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as published by
@@ -18,10 +18,17 @@
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+ 
     Details (including contact information) can be found at: 
 
-    www-jpc.physics.ox.ac.uk
+    jpc.sourceforge.net
+    or the developer website
+    sourceforge.net/projects/jpc/
+
+    Conceived and Developed by:
+    Rhys Newman, Ian Preston, Chris Dennis
+
+    End of licence header
 */
 
 package org.jpc.emulator.memory.codeblock.fastcompiler.virt;
@@ -3604,7 +3611,7 @@ public class Virtual8086ModeUCodeStaticMethods
 	ss.setWord(offset & 0xffff, (short) edi);
     }
 
-    public static int eax_hef_POPA_A16_eax_ss_esp(int eax, Segment ss, int esp)
+    /*public static int eax_hef_POPA_A16_eax_ss_esp(int eax, Segment ss, int esp)
     {
 	return (eax & ~0xffff) | (0xffff & ss.getWord(0xffff & (esp + 14)));
     }
@@ -3682,7 +3689,7 @@ public class Virtual8086ModeUCodeStaticMethods
     public static int esp_nef_POPAD_A16_esp(int esp)
     {
 	return (esp & ~0xffff) | ((esp + 32) & 0xffff);
-    }
+        }*/
     
 // //     public static int ecx_hef_REPE_CMPSB_A16_dflag_ecx_es_edi_seg0_esi(boolean dflag, int ecx, Segment es, int edi, Segment seg0, int esi)
 // //     {

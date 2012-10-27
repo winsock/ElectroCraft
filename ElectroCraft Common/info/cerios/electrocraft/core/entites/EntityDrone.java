@@ -68,7 +68,6 @@ public class EntityDrone extends EntityLiving implements IComputer {
 		if (drone != null) {
 			drone.setFlying(nbt.getBoolean("flying"));
 			if (nbt.getBoolean("isOn")) {
-				drone.setRunning(true);
 				drone.callLoad();
 			}
 		}
@@ -132,7 +131,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 	@Override
 	public void setDead() {
 		this.dead = true;
-		drone.setRunning(false);
+		drone.shutdown();
 	}
 	
 	public void setClientFlying(boolean fly) {
@@ -277,9 +276,9 @@ public class EntityDrone extends EntityLiving implements IComputer {
 				drone.addToInventory(inventory, 0, 36, item);
 			}
 			tool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
-			drone.postEvent("tool", true);
+			//drone.postEvent("tool", true);
 		} else {
-			drone.postEvent("tool", false);
+			//drone.postEvent("tool", false);
 		}
 	}
 	

@@ -1,10 +1,10 @@
 /*
-    JPC: A x86 PC Hardware Emulator for a pure Java Virtual Machine
-    Release Version 2.0
+    JPC: An x86 PC Hardware Emulator for a pure Java Virtual Machine
+    Release Version 2.4
 
     A project from the Physics Dept, The University of Oxford
 
-    Copyright (C) 2007-2009 Isis Innovation Limited
+    Copyright (C) 2007-2010 The University of Oxford
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as published by
@@ -18,10 +18,17 @@
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+ 
     Details (including contact information) can be found at: 
 
-    www-jpc.physics.ox.ac.uk
+    jpc.sourceforge.net
+    or the developer website
+    sourceforge.net/projects/jpc/
+
+    Conceived and Developed by:
+    Rhys Newman, Ian Preston, Chris Dennis
+
+    End of licence header
 */
 
 package org.jpc.emulator.memory.codeblock.optimised;
@@ -37,6 +44,7 @@ import static org.jpc.emulator.memory.codeblock.optimised.MicrocodeSet.*;
 /**
  * 
  * @author Chris Dennis
+ * @author Ian Preston
  */
 public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 {
@@ -582,18 +590,23 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		case CLC: cpu.setCarryFlag(false); break;
 		case STC: cpu.setCarryFlag(true); break;
 		case CLI:
-                    if (cpu.getIOPrivilegeLevel() >= cpu.getCPL()) {
-                        cpu.eflagsInterruptEnable = false;
-                        cpu.eflagsInterruptEnableSoon = false;
-                    } else {
-                        if ((cpu.getIOPrivilegeLevel() < cpu.getCPL()) && (cpu.getCPL() == 3) && ((cpu.getCR4() & 1) != 0)) {
-                            cpu.eflagsInterruptEnableSoon = false;
+                    /* uncomment if we support VME
+                        if ((cpu.getCPL() == 3) && ((cpu.getCR4() & 2) != 0)) {
+                            if (cpu.getIOPrivilegeLevel() < 3)
+                            {
+                               cpu.eflagsInterruptEnableSoon = false;
+                               return;
+                            }
                         } else
+                    */
+                    {
+                        if (cpu.getIOPrivilegeLevel() < cpu.getCPL())
                         {
-                            System.out.println("IOPL=" + cpu.getIOPrivilegeLevel() + ", CPL=" + cpu.getCPL());
+                            System.out.println("IOPL=" + cpu.getIOPrivilegeLevel() + ", CPL=" + cpu.getCPL() + "CR4=0x" + Integer.toHexString(cpu.getCR4()));
                             throw new ProcessorException(ProcessorException.Type.GENERAL_PROTECTION, 0, true);
                         }
                     }
+                    cpu.eflagsInterruptEnable = false;
                     break;
 		case STI:
                     if (cpu.getIOPrivilegeLevel() >= cpu.getCPL()) {
@@ -952,40 +965,35 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 			leave_o16_a16();
 		} break;
 
-		case PUSH_O32_A16:
-		case PUSH_O32_A32: {
+		case PUSH_O32: {
 		    if (cpu.ss.getDefaultSizeFlag())
 			push_o32_a32(reg0);
 		    else
 			push_o32_a16(reg0);
 		} break;
 
-		case PUSH_O16_A16:
-		case PUSH_O16_A32: {
+		case PUSH_O16: {
 		    if (cpu.ss.getDefaultSizeFlag())
 			push_o16_a32((short)reg0);
 		    else
 			push_o16_a16((short)reg0);
 		} break;
 
-		case PUSHF_O32_A16:
-		case PUSHF_O32_A32: {
+		case PUSHF_O32: {
 		    if (cpu.ss.getDefaultSizeFlag())
 			push_o32_a32(~0x30000 & reg0);
 		    else
 			push_o32_a16(~0x30000 & reg0);
 		} break;
 
-		case PUSHF_O16_A16:
-		case PUSHF_O16_A32: {
+		case PUSHF_O16: {
 		    if (cpu.ss.getDefaultSizeFlag())
 			push_o16_a32((short)reg0);
 		    else
 			push_o16_a16((short)reg0);
 		} break;
 
-		case POP_O32_A16:
-		case POP_O32_A32: {
+		case POP_O32: {
 		    if (cpu.ss.getDefaultSizeFlag()) {
 			reg1 = cpu.esp + 4;
 			if (microcodes[position] == STORE0_SS)
@@ -999,8 +1007,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		    }
 		} break; 
 	
-		case POP_O16_A16:
-		case POP_O16_A32: {
+		case POP_O16: {
 		    if (cpu.ss.getDefaultSizeFlag()) {
 			reg1 = cpu.esp + 2;
 			if (microcodes[position] == STORE0_SS)
@@ -1014,8 +1021,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		    }
 		} break; 
 
-		case POPF_O32_A16:
-		case POPF_O32_A32: {
+		case POPF_O32: {
 		    if (cpu.ss.getDefaultSizeFlag()) {
 			reg0 = cpu.ss.getDoubleWord(cpu.esp);
 			cpu.esp += 4;
@@ -1033,8 +1039,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		    }
 		} break;
 		    
-		case POPF_O16_A16:
-		case POPF_O16_A32: {
+		case POPF_O16: {
 		    if (cpu.ss.getDefaultSizeFlag()) {
 			reg0 = 0xffff & cpu.ss.getWord(cpu.esp);
 			cpu.esp += 2;
@@ -1048,31 +1053,28 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 			else
 			    reg0 = ((cpu.getEFlags() & 0x3000) | (reg0 & ~0x3000));
 		} break; 
-		    
-		case PUSHAD_A32:
+
+                case PUSHA:
+                    if (cpu.ss.getDefaultSizeFlag())
+                        pusha_a32();
+                    else
+                        pusha_a16();
+                    break;
+		case PUSHAD:
 		    if (cpu.ss.getDefaultSizeFlag())
 			pushad_a32();
 		    else
 			pushad_a16();
 			break;
 
-		case PUSHAD_A16: 
-		    if (cpu.ss.getDefaultSizeFlag())
-			pusha_a32();
-		    else
-			pusha_a16();
-			break;
-
-		case POPA_A32:
-		case POPA_A16: {
+		case POPA: {
 		    if (cpu.ss.getDefaultSizeFlag())
                         popa_a32();
 		    else
 			popa_a16();
 		} break;
 
-		case POPAD_A32:
-		case POPAD_A16: {
+		case POPAD: {
 		    if (cpu.ss.getDefaultSizeFlag())
 			popad_a32();
 		    else
@@ -1101,6 +1103,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		case LODSB_A32: lodsb_a32(seg0); break;
 		case LODSW_A16: lodsw_a16(seg0); break;
 		case LODSW_A32: lodsw_a32(seg0); break;
+		case LODSD_A16: lodsd_a16(seg0); break;
 		case LODSD_A32: lodsd_a32(seg0); break;
 		case REP_LODSB_A32: rep_lodsb_a32(seg0); break;
 		case REP_LODSW_A32: rep_lodsw_a32(seg0); break;
@@ -1143,6 +1146,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		case REPNE_SCASB_A16: repne_scasb_a16(reg0); break;
 		case REPNE_SCASB_A32: repne_scasb_a32(reg0); break;
 		case REPNE_SCASW_A32: repne_scasw_a32(reg0); break;
+		case REPNE_SCASD_A16: repne_scasd_a16(reg0); break;
 		case REPNE_SCASD_A32: repne_scasd_a32(reg0); break;
 
 		case STOSB_A16: stosb_a16(reg0); break;
@@ -1199,7 +1203,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		    } break;
 
 		case CLTS: if (cpu.getCPL() != 0) throw new ProcessorException(ProcessorException.Type.GENERAL_PROTECTION, 0, true);//ProcessorException.GENERAL_PROTECTION_0;
-		    cpu.setCR3(cpu.getCR3() & ~0x4); break;
+		    cpu.setCR0(cpu.getCR0() & ~0x8); break;
 
 		case INVLPG: if (cpu.getCPL() != 0) throw new ProcessorException(ProcessorException.Type.GENERAL_PROTECTION, 0, true);//ProcessorException.GENERAL_PROTECTION_0;
 		    cpu.linearMemory.invalidateTLBEntry(seg0.translateAddressRead(addr0)); break;
@@ -1863,7 +1867,15 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
                 LOGGING.log(Level.INFO, "cs selector = " + Integer.toHexString(cpu.cs.getSelector())
                         + ", cs base = " + Integer.toHexString(cpu.cs.getBase()) + ", EIP = "
                         + Integer.toHexString(cpu.eip));
-                LOGGING.log(Level.INFO, "processor exception at 0x" + Integer.toHexString(cpu.cs.translateAddressRead(cpu.eip)), e);
+                String address = null;
+                try
+                {
+                    address = "0x" + Integer.toHexString(cpu.cs.translateAddressRead(cpu.eip));
+                } catch (ProcessorException f)
+                {
+                    address = "cs:eip = " + Integer.toHexString(cpu.cs.getBase()) + ":" + Integer.toHexString(cpu.eip);
+                }
+                LOGGING.log(Level.INFO, "processor exception at " + address, e);
             }
 
 	    cpu.handleProtectedModeException(e);
@@ -2469,6 +2481,19 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 	    addr += 2;
 	
 	cpu.esi = addr;
+    }
+
+    private final void lodsd_a16(Segment dataSegment)
+    {
+	int addr = cpu.esi & 0xFFFF;
+	cpu.eax = dataSegment.getDoubleWord(addr);
+	
+	if (cpu.eflagsDirection)
+	    addr -= 4;
+	else
+	    addr += 4;
+	
+	cpu.esi = (cpu.esi & ~0xffff) | (0xffff &  addr);
     }
 
     private final void lodsd_a32(Segment dataSegment)
@@ -3481,6 +3506,39 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 	}
     }
 
+    private final void repne_scasd_a16(int data)
+    {
+	int count = 0xFFFF & cpu.ecx;
+	int addr = 0xFFFF & cpu.edi;
+        boolean used = count != 0;
+	int input = 0;
+
+	try {
+	    if (cpu.eflagsDirection) {
+		while (count != 0) {
+		    input = cpu.es.getDoubleWord(addr);
+		    count--;
+		    addr -= 4;
+		    if (data == input) break;
+		}
+	    } else {
+		while (count != 0) {
+		    input = cpu.es.getDoubleWord(addr);
+		    count--;
+		    addr += 4;
+		    if (data == input) break;
+		}
+	    }
+	} finally {
+            executeCount += ((cpu.ecx & 0xFFFF) - count);
+	    cpu.ecx = (cpu.ecx & ~0xFFFF) | (0xFFFF & count);
+	    cpu.edi = (cpu.edi & ~0xFFFF) | (0xFFFF & addr);
+	    if (used)
+
+		sub_o32_flags((0xffffffffl & data) - (0xffffffffl & input), data, input);
+	}
+    }
+
     private final void repne_scasd_a32(int data)
     {
 	int count = cpu.ecx;
@@ -3604,14 +3662,14 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		    //check hardware interrupts
 		    cpu.es.setByte(addr, (byte)data);		
 		    count--;
-		    addr -= 1;
+		    addr = (addr - 1) & 0xFFFF;
 		}
 	    } else {
 		while (count != 0) {
 		    //check hardware interrupts
 		    cpu.es.setByte(addr, (byte)data);		
 		    count--;
-		    addr += 1;
+		    addr = (addr + 1) & 0xFFFF;
 		}
 	    }
 	}
@@ -3662,14 +3720,14 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		    //check hardware interrupts
 		    cpu.es.setWord(addr, (short)data);		
 		    count--;
-		    addr -= 2;
+		    addr = (addr - 2) & 0xFFFF;
 		}
 	    } else {
 		while (count != 0) {
 		    //check hardware interrupts
 		    cpu.es.setWord(addr, (short)data);		
 		    count--;
-		    addr += 2;
+		    addr = (addr + 2) & 0xFFFF;
 		}
 	    }
 	}
@@ -3720,14 +3778,14 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 		    //check hardware interrupts
 		    cpu.es.setDoubleWord(addr, data);		
 		    count--;
-		    addr -= 4;
+		    addr = (addr - 4) & 0xFFFF;
 		}
 	    } else {
 		while (count != 0) {
 		    //check hardware interrupts
 		    cpu.es.setDoubleWord(addr, data);		
 		    count--;
-		    addr += 4;
+		    addr = (addr + 4) & 0xFFFF;
 		}
 	    }
 	}
@@ -4490,7 +4548,6 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 	    throw new IllegalStateException("Execute Failed");
 	case 0x0b: // TSS (Busy) 
 	case 0x09: // TSS (Not Busy)
-	    
 	    if ((newSegment.getDPL() < cpu.getCPL()) || (newSegment.getDPL() < newSegment.getRPL()) )
 		throw new ProcessorException(ProcessorException.Type.GENERAL_PROTECTION, targetSelector, true);
 	    if (!newSegment.isPresent())
@@ -4503,65 +4560,204 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 	    newSegment.getByte(0); // new TSS paged into memory ?
 	    cpu.tss.getByte(0);// old TSS paged into memory ?
 
-	    int esSelector = 0xFFFF & newSegment.getWord(72); // read new registers
-	    int csSelector = 0xFFFF & newSegment.getWord(76);
-	    int ssSelector = 0xFFFF & newSegment.getWord(80);
-	    int dsSelector = 0xFFFF & newSegment.getWord(84);
-	    int fsSelector = 0xFFFF & newSegment.getWord(88);
-	    int gsSelector = 0xFFFF & newSegment.getWord(92);
-	    int ldtSelector = 0xFFFF & newSegment.getWord(96);
+            if (cpu.tss.getLimit() < 0x5f)
+                throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, (cpu.tss.getSelector() & 0xfffc), true);
+
+            //save current state into current TSS
+            ((ProtectedModeSegment.AbstractTSS) cpu.tss).saveCPUState(cpu);
+
+            //load new task state from new TSS
+            int esSelector = 0xFFFF & newSegment.getWord(0x48); // read new registers
+	    int csSelector = 0xFFFF & newSegment.getWord(0x4c);
+	    int ssSelector = 0xFFFF & newSegment.getWord(0x50);
+	    int dsSelector = 0xFFFF & newSegment.getWord(0x54);
+	    int fsSelector = 0xFFFF & newSegment.getWord(0x58);
+	    int gsSelector = 0xFFFF & newSegment.getWord(0x5c);
+	    int ldtSelector = 0xFFFF & newSegment.getWord(0x60);
+            int trapWord = 0xFFFF & newSegment.getWord(0x64);
+
+            ((ProtectedModeSegment) cpu.es).supervisorSetSelector(esSelector);
+            ((ProtectedModeSegment) cpu.cs).supervisorSetSelector(csSelector);
+            ((ProtectedModeSegment) cpu.ss).supervisorSetSelector(ssSelector);
+            ((ProtectedModeSegment) cpu.ds).supervisorSetSelector(dsSelector);
+            if (cpu.fs != SegmentFactory.NULL_SEGMENT)
+                ((ProtectedModeSegment) cpu.fs).supervisorSetSelector(fsSelector);
+            if (cpu.gs != SegmentFactory.NULL_SEGMENT)
+                ((ProtectedModeSegment) cpu.gs).supervisorSetSelector(gsSelector);
+
+            //clear busy bit for old task
+            int descriptorHigh = cpu.readSupervisorDoubleWord(cpu.gdtr, (cpu.tss.getSelector() & 0xfff8) + 4);
+            descriptorHigh &= ~0x200;
+            cpu.setSupervisorDoubleWord(cpu.gdtr, (cpu.tss.getSelector() & 0xfff8) + 4, descriptorHigh);
+
+            //set busy bit for new task
+            descriptorHigh = cpu.readSupervisorDoubleWord(cpu.gdtr,(targetSelector & 0xfff8) + 4);
+            descriptorHigh |= 0x200;
+            cpu.setSupervisorDoubleWord(cpu.gdtr, (targetSelector & 0xfff8) + 4, descriptorHigh);
+
+            //commit new TSS
+            cpu.setCR0(cpu.getCR0() | 0x8); // set TS flag in CR0;
+	    cpu.tss = cpu.getSegment(targetSelector); //includes updated busy flag
+	    ((ProtectedModeSegment.AbstractTSS) cpu.tss).restoreCPUState(cpu);
 	    
+
+            // Task switch clear LE/L3/L2/L1/L0 in dr7
+            cpu.dr7 &= ~0x155;
+
+            int tempCPL = cpu.getCPL();
+            //set cpl to 3 to force a privilege level change and stack switch if SS isn't properly loaded
+            cpu.setCPL(3);
+
 	    if((ldtSelector & 0x4) !=0) // not in gdt
 		throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ldtSelector, true);
-	    cpu.gdtr.checkAddress((ldtSelector & ~0x7) + 7 ) ;// check ldtr is valid
-	    if(cpu.readSupervisorByte(cpu.gdtr, ((ldtSelector & ~0x7) + 5 )& 0xF) != 2) // not a ldt entry
-		throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ldtSelector, true);
+            //load ldt
+            if ((ldtSelector & 0xfffc ) != 0)
+            {
+                cpu.gdtr.checkAddress((ldtSelector & ~0x7) + 7 ) ;// check ldtr is valid
+                if((cpu.readSupervisorByte(cpu.gdtr, ((ldtSelector & ~0x7) + 5 ))& 0xE) != 2) // not a ldt entry
+                {
+                    System.out.println("Tried to load LDT in task switch with invalid segment type: 0x"  + Integer.toHexString(cpu.readSupervisorByte(cpu.gdtr, ((ldtSelector & ~0x7) + 5 )& 0xF)));
+                    throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ldtSelector & 0xfffc, true);
+                }
 
-	    Segment newLdtr=cpu.getSegment(ldtSelector); // get new ldt
-	    
-	    if ((esSelector & 0x4) !=0) // check es descriptor is in memory
-		newLdtr.checkAddress((esSelector & ~0x7)+7);
-	    else
-		cpu.gdtr.checkAddress((esSelector & ~0x7)+7);
-		
-	    if ((csSelector & 0x4)!=0) // check cs descriptor is in memory
-		newLdtr.checkAddress((csSelector & ~0x7)+7);
-	    else
-		cpu.gdtr.checkAddress((csSelector & ~0x7)+7);
-		
-	    if ((ssSelector & 0x4)!=0) // check ss descriptor is in memory
-		newLdtr.checkAddress((ssSelector & ~0x7)+7);
-	    else
-		cpu.gdtr.checkAddress((ssSelector & ~0x7)+7);
-		
-	    if ((dsSelector & 0x4)!=0) // check ds descriptor is in memory
-		newLdtr.checkAddress((dsSelector & ~0x7)+7);
-	    else
-		cpu.gdtr.checkAddress((dsSelector & ~0x7)+7);
-		
-	    if ((fsSelector & 0x4)!=0) // check fs descriptor is in memory
-		newLdtr.checkAddress((fsSelector & ~0x7)+7);
-	    else
-		cpu.gdtr.checkAddress((fsSelector & ~0x7)+7);
-		
-	    if ((gsSelector & 0x4)!=0) // check gs descriptor is in memory
-		newLdtr.checkAddress((gsSelector & ~0x7)+7);
-	    else
-		cpu.gdtr.checkAddress((gsSelector & ~0x7)+7);
-		
-	    cpu.setSupervisorDoubleWord(cpu.gdtr, (cpu.tss.getSelector() & ~0x7) + 4,
-		    ~0x200 & cpu.readSupervisorDoubleWord(cpu.gdtr, (cpu.tss.getSelector() & ~0x7) + 4)); // clear busy bit of current tss
-	    ((ProtectedModeSegment.AbstractTSS) cpu.tss).saveCPUState(cpu);
-		    
-	    cpu.setSupervisorDoubleWord(cpu.gdtr, (targetSelector & ~0x7) + 4,
-		    0x200 | cpu.readSupervisorDoubleWord(cpu.gdtr, (targetSelector & ~0x7) + 4)); // set busy bit of new tss
+                Segment newLdtr=cpu.getSegment(ldtSelector); // get new ldt
+                if (!newLdtr.isSystem())
+                    throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ldtSelector & 0xfffc, true);
 
+                if (!newLdtr.isPresent())
+                    throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ldtSelector & 0xfffc, true);
 
-	    cpu.setCR0(cpu.getCR0() | 0x8); // set TS flag in CR0;
-	    cpu.tss=newSegment;
-	    ((ProtectedModeSegment.AbstractTSS) cpu.tss).restoreCPUState(cpu);
-	    cpu.cs.checkAddress(cpu.eip);
-	    
+                cpu.ldtr = newLdtr;
+            }
+
+            if (cpu.isVirtual8086Mode())
+            {
+                System.out.println("VM TSS");
+                //load vm86 segments
+
+                cpu.setCPL(3);
+
+                throw new IllegalStateException("Unimplemented task switch to VM86 mode");
+            } else
+            {
+                cpu.setCPL(csSelector & 3);
+                //load SS
+                if ((ssSelector & 0xfffc) != 0)
+                {
+                    Segment newSS = cpu.getSegment(ssSelector);
+                    if (newSS.isSystem() || ((ProtectedModeSegment) newSS).isCode() || !((ProtectedModeSegment) newSS).isDataWritable())
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ssSelector & 0xfffc, true);
+
+                    if (!newSS.isPresent())
+                        throw new ProcessorException(ProcessorException.Type.STACK_SEGMENT, ssSelector & 0xfffc, true);
+
+                    if (newSS.getDPL() != cpu.cs.getRPL())
+                    {
+                        System.out.println("SS.dpl != cs.rpl : " + newSS.getDPL() + "!=" + cpu.cs.getRPL());
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ssSelector & 0xfffc, true);
+                    }
+
+                    if (newSS.getDPL() != newSS.getRPL())
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ssSelector & 0xfffc, true);
+
+                    cpu.ss = newSS;
+                }
+                else
+                    throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, ssSelector & 0xfffc, true);
+
+                int newCsRpl = csSelector & 3;
+                //load other data segments
+                if ((dsSelector & 0xfffc) != 0)
+                {
+                    ProtectedModeSegment newDS = (ProtectedModeSegment) cpu.getSegment(dsSelector);
+
+                    if (newDS.isSystem() || (newDS.isCode() && ((newDS.getType() & 2) == 0)))
+                    {
+                        System.out.println(newDS.isSystem());
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, dsSelector & 0xfffc, true);
+                    }
+
+                    if (!newDS.isConforming() || newDS.isDataWritable())
+                        if ((newDS.getRPL() > newDS.getDPL()) || (newCsRpl > newDS.getDPL()))
+                            throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, dsSelector & 0xfffc, true);
+
+                    if (!newDS.isPresent())
+                        throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, dsSelector & 0xfffc, true);
+
+                    cpu.ds = newDS;
+                }
+                if ((esSelector & 0xfffc) != 0)
+                {
+                    ProtectedModeSegment newES = (ProtectedModeSegment) cpu.getSegment(esSelector);
+
+                    if (newES.isSystem() || (newES.isCode() && ((newES.getType() & 2) == 0)))
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, esSelector & 0xfffc, true);
+
+                    if (!newES.isConforming() || newES.isDataWritable())
+                        if ((newES.getRPL() > newES.getDPL()) || (newCsRpl > newES.getDPL()))
+                            throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, esSelector & 0xfffc, true);
+
+                    if (!newES.isPresent())
+                        throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, esSelector & 0xfffc, true);
+
+                    cpu.es = newES;
+                }
+                if ((fsSelector & 0xfffc) != 0)
+                {
+                    ProtectedModeSegment newFS = (ProtectedModeSegment) cpu.getSegment(fsSelector);
+
+                    if (newFS.isSystem() || (newFS.isCode() && ((newFS.getType() & 2) == 0)))
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, fsSelector & 0xfffc, true);
+
+                    if (!newFS.isConforming() || newFS.isDataWritable())
+                        if ((newFS.getRPL() > newFS.getDPL()) || (newCsRpl > newFS.getDPL()))
+                            throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, fsSelector & 0xfffc, true);
+
+                    if (!newFS.isPresent())
+                        throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, fsSelector & 0xfffc, true);
+
+                    cpu.fs = newFS;
+                }
+                if ((gsSelector & 0xfffc) != 0)
+                {
+                    ProtectedModeSegment newGS = (ProtectedModeSegment) cpu.getSegment(gsSelector);
+
+                    if (newGS.isSystem() || (newGS.isCode() && ((newGS.getType() & 2) == 0)))
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, gsSelector & 0xfffc, true);
+
+                    if (!newGS.isConforming() || newGS.isDataWritable())
+                        if ((newGS.getRPL() > newGS.getDPL()) || (newCsRpl > newGS.getDPL()))
+                            throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, gsSelector & 0xfffc, true);
+
+                    if (!newGS.isPresent())
+                        throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, gsSelector & 0xfffc, true);
+
+                    cpu.gs = newGS;
+                }
+
+                //load CS
+                if ((csSelector & 0xfffc) != 0)
+                {
+                    Segment newCS = cpu.getSegment(csSelector);
+                    if (newCS.isSystem() || ((ProtectedModeSegment) newCS).isDataWritable())
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, csSelector & 0xfffc, true);
+
+                    if (!((ProtectedModeSegment) newCS).isConforming() && (newCS.getDPL() != newCS.getRPL()))
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, csSelector & 0xfffc, true);
+
+                    if (((ProtectedModeSegment) newCS).isConforming() && (newCS.getDPL() > newCS.getRPL()))
+                        throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, csSelector & 0xfffc, true);
+
+                    if (!newCS.isPresent())
+                        throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, csSelector & 0xfffc, true);
+
+                    cpu.cs = newCS;
+                    cpu.cs.checkAddress(cpu.eip);
+                }
+                else
+                    throw new ProcessorException(ProcessorException.Type.TASK_SWITCH, csSelector & 0xfffc, true);
+            }
+
 	    return;
 
 	case 0x0c: // Call Gate
@@ -5027,6 +5223,9 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 	    case 0x1a: // Non-conforming Code Segment
 	    case 0x1b: // Non-conforming Code Segment
 		{
+                    if(!newSegment.isPresent())
+                        throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, newSegment.getSelector(), true);
+
 		    if ((cpu.esp < 4) && (cpu.esp > 0))
 			throw ProcessorException.STACK_SEGMENT_0;
 		
@@ -6878,6 +7077,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
         
 	cpu.esp = (cpu.esp & ~0xffff) | (offset & 0xffff);
     }
+
     private final void pusha_a16() 
     {
 	int offset = 0xFFFF & cpu.esp;
@@ -7180,7 +7380,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 	if (!(tempSegment.isPresent()))
 	    throw new ProcessorException(ProcessorException.Type.GENERAL_PROTECTION, selector, true);
 
-	long descriptor = cpu.readSupervisorQuadWord(cpu.gdtr, (selector & 0xfff8)) | (0x1l << 41); // set busy flag in segment descriptor
+	long descriptor = cpu.readSupervisorQuadWord(cpu.gdtr, (selector & 0xfff8)) | (0x1L << 41); // set busy flag in segment descriptor
 	cpu.setSupervisorQuadWord(cpu.gdtr, selector & 0xfff8, descriptor);
 	
 	//reload segment
@@ -7716,7 +7916,7 @@ public class ProtectedModeUBlock implements ProtectedModeCodeBlock
 
         Segment s = cpu.getSegment(selector);
         if (!s.isPresent())
-            throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, 0xc, true);
+            throw new ProcessorException(ProcessorException.Type.NOT_PRESENT, selector, true);
         return s;
     }
 

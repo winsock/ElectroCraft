@@ -1,4 +1,0 @@
-print("Cerios Help System!")
-print("To run a program type its name")
-print("To edit a program type \"edit <name>\"")
-print("To list files type \"ls <optional path>\"")

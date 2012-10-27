@@ -107,7 +107,7 @@ public class BlockComputer extends BlockNetwork {
 			if (computerTileEntity != null) {
 				if (computerTileEntity.getComputer() != null) {
 					if (computerTileEntity.getComputer().isRunning())
-						computerTileEntity.getComputer().setRunning(false);
+						computerTileEntity.getComputer().shutdown();
 					computerTileEntity.getComputer().getBaseDirectory().delete();
 				}
 			}
@@ -125,11 +125,11 @@ public class BlockComputer extends BlockNetwork {
 			if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
 				TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
 				if (computerTileEntity != null) {
+					ElectroCraft.instance.setComputerForPlayer(player, computerTileEntity);
 					if (computerTileEntity.getComputer() == null)
 						computerTileEntity.createComputer();
 					if (!computerTileEntity.getComputer().isRunning())
 						computerTileEntity.startComputer();
-					ElectroCraft.instance.setComputerForPlayer(player, computerTileEntity);
 					GuiPacket guiPacket = new GuiPacket();
 					guiPacket.setCloseWindow(false);
 					guiPacket.setGui(Gui.COMPUTER_SCREEN);

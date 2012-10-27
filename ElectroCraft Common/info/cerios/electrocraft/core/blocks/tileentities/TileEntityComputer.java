@@ -87,7 +87,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	loadingState = true;
         	if (computer == null)
         		createComputer();
-        	computer.setRunning(true);
         	computer.callLoad();
         	        	
         	for (NetworkBlock ioPort : ioPorts) {
@@ -169,8 +168,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     
     public void stopComputer() {
     	if (computer != null && computer.isRunning()) {
-	    	computer.postEvent("kill");
-    		computer.setRunning(false);
+    		computer.shutdown();
     	}
     }
     

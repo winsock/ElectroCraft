@@ -1,10 +1,10 @@
 /*
-    JPC: A x86 PC Hardware Emulator for a pure Java Virtual Machine
-    Release Version 2.0
+    JPC: An x86 PC Hardware Emulator for a pure Java Virtual Machine
+    Release Version 2.4
 
     A project from the Physics Dept, The University of Oxford
 
-    Copyright (C) 2007-2009 Isis Innovation Limited
+    Copyright (C) 2007-2010 The University of Oxford
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as published by
@@ -18,10 +18,17 @@
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+ 
     Details (including contact information) can be found at: 
 
-    www-jpc.physics.ox.ac.uk
+    jpc.sourceforge.net
+    or the developer website
+    sourceforge.net/projects/jpc/
+
+    Conceived and Developed by:
+    Rhys Newman, Ian Preston, Chris Dennis
+
+    End of licence header
 */
 
 package org.jpc.emulator.memory.codeblock.optimised;
@@ -605,28 +612,20 @@ public final class RealModeUDecoder implements Decoder, InstructionSource
 	case 0x6a: //PUSH Ib
 	case 0xfa0: //PUSH FS
 	case 0xfa8: //PUSH GS
-	    switch (prefices & (PREFICES_OPERAND | PREFICES_ADDRESS)) {
+	    switch (prefices & PREFICES_OPERAND) {
 	    case 0:
-		working.write(PUSH_O16_A16); break;
+		working.write(PUSH_O16); break;
 	    case PREFICES_OPERAND:
-		working.write(PUSH_O32_A16); break;
-	    case PREFICES_ADDRESS:
-		working.write(PUSH_O16_A32); break;
-	    case PREFICES_ADDRESS | PREFICES_OPERAND:
-		working.write(PUSH_O32_A32); break;
+		working.write(PUSH_O32); break;
 	    }
 	    break;
 
 	case 0x9c: //PUSHF
-	    switch (prefices & (PREFICES_OPERAND | PREFICES_ADDRESS)) {
+	    switch (prefices & PREFICES_OPERAND) {
 	    case 0:
-		working.write(PUSHF_O16_A16); break;
+		working.write(PUSHF_O16); break;
 	    case PREFICES_OPERAND:
-		working.write(PUSHF_O32_A16); break;
-	    case PREFICES_ADDRESS:
-		working.write(PUSHF_O16_A32); break;
-	    case PREFICES_ADDRESS | PREFICES_OPERAND:
-		working.write(PUSHF_O32_A32); break;
+		working.write(PUSHF_O32); break;
 	    }
 	    break;
 
@@ -644,54 +643,38 @@ public final class RealModeUDecoder implements Decoder, InstructionSource
 	case 0x8f: //POP Ev
 	case 0xfa1: //POP FS
 	case 0xfa9: //POP GS
-	    switch (prefices & (PREFICES_OPERAND | PREFICES_ADDRESS)) {
+	    switch (prefices & PREFICES_OPERAND) {
 	    case 0:
-		working.write(POP_O16_A16); break;
+		working.write(POP_O16); break;
 	    case PREFICES_OPERAND:
-		working.write(POP_O32_A16); break;
-	    case PREFICES_ADDRESS:
-		working.write(POP_O16_A32); break;
-	    case PREFICES_ADDRESS | PREFICES_OPERAND:
-		working.write(POP_O32_A32); break;
+		working.write(POP_O32); break;
 	    }
 	    break;
 
 	case 0x9d: //POPF
-	    switch (prefices & (PREFICES_OPERAND | PREFICES_ADDRESS)) {
+	    switch (prefices & PREFICES_OPERAND) {
 	    case 0:
-		working.write(POPF_O16_A16); break;
+		working.write(POPF_O16); break;
 	    case PREFICES_OPERAND:
-		working.write(POPF_O32_A16); break;
-	    case PREFICES_ADDRESS:
-		working.write(POPF_O16_A32); break;
-	    case PREFICES_ADDRESS | PREFICES_OPERAND:
-		working.write(POPF_O32_A32); break;
+		working.write(POPF_O32); break;
 	    }
 	    break;
 
 	case 0x60: //PUSHA/D
-	    switch (prefices & (PREFICES_OPERAND | PREFICES_ADDRESS)) {
+	    switch (prefices & PREFICES_OPERAND) {
 	    case 0:
-		working.write(PUSHA_A16); break;
+		working.write(PUSHA); break;
 	    case PREFICES_OPERAND:
-		working.write(PUSHAD_A16); break;
-	    case PREFICES_ADDRESS:
-		working.write(PUSHA_A32); break;
-	    case PREFICES_ADDRESS | PREFICES_OPERAND:
-		working.write(PUSHAD_A32); break;
+		working.write(PUSHAD); break;
 	    }
 	    break;
 
 	case 0x61: //POPA/D
-	    switch (prefices & (PREFICES_OPERAND | PREFICES_ADDRESS)) {
+	    switch (prefices & PREFICES_OPERAND) {
 	    case 0:
-		working.write(POPA_A16); break;
+		working.write(POPA); break;
 	    case PREFICES_OPERAND:
-		working.write(POPAD_A16); break;
-	    case PREFICES_ADDRESS:
-		working.write(POPA_A32); break;
-	    case PREFICES_ADDRESS | PREFICES_OPERAND:
-		working.write(POPAD_A32); break;
+		working.write(POPAD); break;
 	    }
 	    break;
 
@@ -1520,15 +1503,11 @@ public final class RealModeUDecoder implements Decoder, InstructionSource
 		    working.write(JUMP_FAR_O16);
 		break;
 	    case 0x30:
-		switch (prefices & (PREFICES_OPERAND | PREFICES_ADDRESS)) {
+		switch (prefices & PREFICES_OPERAND) {
 		case 0:
-		    working.write(PUSH_O16_A16); break;
+		    working.write(PUSH_O16); break;
 		case PREFICES_OPERAND:
-		    working.write(PUSH_O32_A16); break;
-		case PREFICES_ADDRESS:
-		    working.write(PUSH_O16_A32); break;
-		case PREFICES_ADDRESS | PREFICES_OPERAND:
-		    working.write(PUSH_O32_A32); break;
+		    working.write(PUSH_O32); break;
 		}
 		break;
             case 0xff:

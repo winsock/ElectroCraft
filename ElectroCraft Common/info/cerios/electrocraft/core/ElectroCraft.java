@@ -162,7 +162,7 @@ public class ElectroCraft implements IElectroCraft {
 		NetworkRegistry.instance().registerGuiHandler(this, guiHandler);
 		
 		// Create the security manager
-		securityManager = new ComputerSecurity("ec");
+		//securityManager = new ComputerSecurity("ec");
 
 		// Log that we are done loading
 		ecLogger.info("Done loading version: " + FMLCommonHandler.instance().findContainerFor(this).getDisplayVersion());
