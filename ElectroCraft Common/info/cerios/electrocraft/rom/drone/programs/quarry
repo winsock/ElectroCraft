@@ -1,0 +1,118 @@
+local tArgs = {...}
+
+if #tArgs < 1 then
+	print("Usage: quarry <size>")
+	return
+end
+
+if gyro == nil then
+	print("Quarry needs the Gyroscope card!")
+	return
+end
+
+local size = 0
+local xOffset = 1
+local depth = 0
+local zOffset = 1
+
+-- Gets called on server stop/chunk unload
+local function save(nbt)
+	nbt:setInteger("size", size)
+	nbt:setInteger("xOffset", xOffset)
+	nbt:setInteger("depth", depth)
+	nbt:setInteger("zOffset", yOffset)
+end
+
+-- Registers the save handler
+os.registerSaveHandler(save)
+
+if (type(tArgs[1]) == "string") and (tArgs[1] == "resume") and (type(tArgs[2]) == "userdata") then
+	-- Program was resumed from either server start or chunk load
+	size = tArgs[2]:getInteger("size")
+	xOffset = tArgs[2]:getInteger("xOffset")
+	depth = tArgs[2]:getInteger("depth")
+	yOffset = tArgs[2]:getInteger("zOffset")
+else
+	size = tonumber(tArgs[1])
+end
+
+local function breakFrontAndMove()
+	drone.useTool()
+	while not drone.move() do
+		print("Block unbreakable by this tool, please switch tools!")
+		print("Press 'c' to continue")
+		local key
+		while key ~= "c" do
+			local event, param = os.waitForEvent("key")
+			key = param
+			if key == "q" then
+				return false
+			end
+		end
+		print ("Trying again!")
+		drone.useTool()
+	end
+	return true
+end
+
+local key = ""
+while key ~= "q" do
+	for x=xOffset, size do
+		for z=zOffset, size - 1 do
+			if not breakFrontAndMove() then
+				return
+			end
+			zOffset = zOffset + 1
+		end
+		zOffset = 1
+		xOffset = xOffset + 1
+		if x < size then
+			if size % 2 == 0 then
+				if x % 2 == 0 then
+					drone.turn(drone.turnDir.right)
+					if not breakFrontAndMove() then
+						return
+					end
+					drone.turn(drone.turnDir.right)
+				else
+					drone.turn(drone.turnDir.left)
+					if not breakFrontAndMove() then
+						return
+					end
+					drone.turn(drone.turnDir.left)
+				end
+			else
+				if (x + depth) % 2 == 0 then
+					drone.turn(drone.turnDir.right)
+					if not breakFrontAndMove() then
+						return
+					end
+					drone.turn(drone.turnDir.right)
+				else
+					drone.turn(drone.turnDir.left)
+					if not breakFrontAndMove() then
+						return
+					end
+					drone.turn(drone.turnDir.left)
+				end
+			end
+		end
+	end
+	if not drone.useTool(drone.forgeDir.down) then
+		return
+	end
+	xOffset = 1
+	depth = depth + 1
+	if size > 1 then
+		if size % 2 == 0 then
+			drone.turn(drone.turnDir.left)
+		else
+			if depth % 2 == 0 then
+				drone.turn(drone.turnDir.left)
+			else
+				drone.turn(drone.turnDir.right)
+			end
+		end
+	end
+	key = os.getKeyboard():popChar()
+end

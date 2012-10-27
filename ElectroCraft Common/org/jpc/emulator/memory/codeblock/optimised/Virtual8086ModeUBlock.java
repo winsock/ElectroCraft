@@ -1,10 +1,10 @@
 /*
-    JPC: An x86 PC Hardware Emulator for a pure Java Virtual Machine
-    Release Version 2.4
+    JPC: A x86 PC Hardware Emulator for a pure Java Virtual Machine
+    Release Version 2.0
 
     A project from the Physics Dept, The University of Oxford
 
-    Copyright (C) 2007-2010 The University of Oxford
+    Copyright (C) 2007-2009 Isis Innovation Limited
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as published by
@@ -18,17 +18,10 @@
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- 
+
     Details (including contact information) can be found at: 
 
-    jpc.sourceforge.net
-    or the developer website
-    sourceforge.net/projects/jpc/
-
-    Conceived and Developed by:
-    Rhys Newman, Ian Preston, Chris Dennis
-
-    End of licence header
+    www-jpc.physics.ox.ac.uk
 */
 
 package org.jpc.emulator.memory.codeblock.optimised;
@@ -641,78 +634,52 @@ public class Virtual8086ModeUBlock implements Virtual8086ModeCodeBlock
 	    case ENTER_O16_A16: enter_o16_a16(reg0, reg1); break;
 	    case LEAVE_O16_A16: leave_o16_a16(); break;
 
-	    case PUSH_O16: push_o16((short)reg0); break;
-	    case PUSH_O32: push_o32(reg0); break;
+	    case PUSH_O16_A16: push_o16_a16((short)reg0); break;
+	    case PUSH_O32_A16: push_o32_a16(reg0); break;
 
-	    case PUSHF_O16:
+	    case PUSHF_O16_A16:
 		if (cpu.eflagsIOPrivilegeLevel < 3)
 		    throw ProcessorException.GENERAL_PROTECTION_0;
-		push_o16((short)reg0);
+		push_o16_a16((short)reg0);
 		break;
-	    case PUSHF_O32: 
+	    case PUSHF_O32_A16: 
                 if (cpu.eflagsIOPrivilegeLevel < 3)
 		    throw ProcessorException.GENERAL_PROTECTION_0;
-                push_o32(~0x30000 & reg0); break;
+                push_o32_a16(~0x30000 & reg0); break;
 
-            case POP_O16: {
-                if (cpu.ss.getDefaultSizeFlag()) {
-                    reg1 = cpu.esp + 2;
-                    if (microcodes[position] == STORE0_SS)
-                        cpu.eflagsInterruptEnable = false;
-                    reg0 = 0xffff & cpu.ss.getWord(cpu.esp);
-                } else {
-                    reg1 = (cpu.esp & ~0xffff) | ((cpu.esp + 2) & 0xffff);
-                    if (microcodes[position] == STORE0_SS)
-                        cpu.eflagsInterruptEnable = false;
-                    reg0 = 0xffff & cpu.ss.getWord(0xffff & cpu.esp);
-                }
-            } break;
-
-	    case POP_O32: {
-                if (cpu.ss.getDefaultSizeFlag()) {
-                    reg1 = cpu.esp + 4;
-                    if (microcodes[position] == STORE0_SS)
-                        cpu.eflagsInterruptEnable = false;
-                    reg0 = cpu.ss.getDoubleWord(cpu.esp);
-                } else {
-                    reg1 = (cpu.esp & ~0xffff) | ((cpu.esp + 4) & 0xffff);
-                    if (microcodes[position] == STORE0_SS)
-                        cpu.eflagsInterruptEnable = false;
-                    reg0 = cpu.ss.getDoubleWord(0xffff & cpu.esp);
-                }
-            } break;
-                
-	    case POPF_O16:
-		if (cpu.eflagsIOPrivilegeLevel < 3)
-		    throw ProcessorException.GENERAL_PROTECTION_0;
-
-                if (cpu.ss.getDefaultSizeFlag()) {
-                    reg0 = 0xffff & cpu.ss.getWord(cpu.esp);
-                    cpu.esp = cpu.esp + 2;
-                } else {
-                    reg0 = 0xffff & cpu.ss.getWord(cpu.esp & 0xffff);
-                    cpu.esp = (cpu.esp & ~0xffff) | ((cpu.esp + 2) & 0xffff);
-                }
+	    case POP_O16_A16:
+		reg1 = (cpu.esp & ~0xffff) | ((cpu.esp + 2) & 0xffff);		
+		if ((microcodes[position] == STORE0_SS)) 	
+		    cpu.eflagsInterruptEnable = false;	
+		reg0 = cpu.ss.getWord(cpu.esp & 0xffff); 
 		break;
 
-	    case POPF_O32:
-		if (cpu.eflagsIOPrivilegeLevel < 3)
-		    throw ProcessorException.GENERAL_PROTECTION_0;
-                
-                if (cpu.ss.getDefaultSizeFlag()) {
-                    reg0 = (cpu.getEFlags() & 0x20000) | (cpu.ss.getDoubleWord(cpu.esp) & ~0x1a0000);
-                    cpu.esp = cpu.esp + 4;
-                } else {
-                    reg0 = (cpu.getEFlags() & 0x20000) | (cpu.ss.getDoubleWord(cpu.esp & 0xffff) & ~0x1a0000);
-                    cpu.esp = (cpu.esp & ~0xffff) | ((cpu.esp + 4) & 0xffff);
-                }
+	    case POP_O32_A16:
+		reg1 = (cpu.esp & ~0xffff) | ((cpu.esp + 4) & 0xffff);
+		if ((microcodes[position] == STORE0_SS)) 
+		    cpu.eflagsInterruptEnable = false;
+		reg0 = cpu.ss.getDoubleWord(cpu.esp & 0xffff);
 		break;
 
-	    case PUSHA: pusha(); break;
-	    case PUSHAD: pushad(); break;
+	    case POPF_O16_A16:
+		if (cpu.eflagsIOPrivilegeLevel < 3)
+		    throw ProcessorException.GENERAL_PROTECTION_0;
+		reg0 = cpu.ss.getWord(cpu.esp & 0xffff);
+		cpu.esp = (cpu.esp & ~0xffff) | ((cpu.esp + 2) & 0xffff);		
+		break;
 
-	    case POPA: popa(); break;
-	    case POPAD: popad(); break;
+	    case POPF_O32_A16:
+		if (cpu.eflagsIOPrivilegeLevel < 3)
+		    throw ProcessorException.GENERAL_PROTECTION_0;
+		reg0 = cpu.ss.getDoubleWord(cpu.esp & 0xffff);
+		cpu.esp = (cpu.esp & ~0xffff) | ((cpu.esp + 4) & 0xffff);
+		break;
+
+	    case PUSHA_A16: pusha_a16(); break;
+	    case PUSHAD_A16: pushad_a16(); break;
+
+	    case POPA_A16: popa_a16(); break;
+	    case POPAD_A16: popad_a16(); break;
 
 	    case SIGN_EXTEND_8_16: reg0 = 0xffff & ((byte)reg0); break;
 	    case SIGN_EXTEND_8_32: reg0 = (byte)reg0; break;
@@ -891,7 +858,7 @@ public class Virtual8086ModeUBlock implements Virtual8086ModeCodeBlock
  
 	    case CPUID: cpuid(); break;
 
- 	    case CLTS: cpu.setCR0(cpu.getCR0() & ~0x8); break;
+// 	    case CLTS: cpu.setCR3(cpu.getCR3() & ~0x4); break;
 
 	    case BITWISE_FLAGS_O8: bitwise_flags((byte)reg0); break;
 	    case BITWISE_FLAGS_O16: bitwise_flags((short)reg0); break;
@@ -1408,7 +1375,7 @@ public class Virtual8086ModeUBlock implements Virtual8086ModeCodeBlock
                         cpu.eip += cumulativeX86Length[position - 1];
                     } break;
 		case ADDR_IB: addr0 += ((byte)microcodes[position++]); break; //3832219
-		case PUSH_O16: push_o16((short)reg0); break; //3221577
+		case PUSH_O16_A16: push_o16_a16((short)reg0); break; //3221577
 		case LOAD_SEG_SS: seg0 = cpu.ss; break; //2739696
 		case LOAD0_AX: reg0 = cpu.eax & 0xffff; break; //2718333
 		case ADDR_BP: addr0 += ((short)cpu.ebp); break; //2701629
@@ -1416,18 +1383,11 @@ public class Virtual8086ModeUBlock implements Virtual8086ModeCodeBlock
 		case LOAD0_MEM_WORD:  reg0 = 0xffff & seg0.getWord(addr0); break; //2352051
                     
 		case STORE1_ESP: cpu.esp = reg1; break; //2252894
-		case POP_O16: //2251454
-                    if (cpu.ss.getDefaultSizeFlag()) {
-                        reg1 = cpu.esp + 2;
-                        if (microcodes[position] == STORE0_SS)
-                            cpu.eflagsInterruptEnable = false;
-                        reg0 = 0xffff & cpu.ss.getWord(cpu.esp);
-                    } else {
-                        reg1 = (cpu.esp & ~0xffff) | ((cpu.esp + 2) & 0xffff);
-                        if (microcodes[position] == STORE0_SS)
-                            cpu.eflagsInterruptEnable = false;
-                        reg0 = 0xffff & cpu.ss.getWord(0xffff & cpu.esp);
-                    }
+		case POP_O16_A16: //2251454
+		    reg1 = (cpu.esp & ~0xffff) | ((cpu.esp + 2) & 0xffff);		
+		    if ((microcodes[position] == STORE0_SS)) 	
+			cpu.eflagsInterruptEnable = false;	
+		    reg0 = cpu.ss.getWord(cpu.esp & 0xffff); 
 		    break;
 		case STORE0_AX:	cpu.eax = (cpu.eax & ~0xffff) | (reg0 & 0xffff); break; //2211780
 		case LOAD0_IW: reg0 = microcodes[position++] & 0xffff; break; //1748064
@@ -1963,60 +1923,36 @@ public class Virtual8086ModeUBlock implements Virtual8086ModeCodeBlock
 	cpu.ebp = tempEBP;
     }
 
-    private final void push_o16(short data)
+    private final void push_o16_a16(short data)
     {
-        if (cpu.ss.getDefaultSizeFlag()) {
-            if ((cpu.esp < 2) && (cpu.esp > 0))
-                throw ProcessorException.STACK_SEGMENT_0;
-            
-            int offset = cpu.esp - 2;
-            cpu.ss.setWord(offset, data);
-            cpu.esp = offset;
-        } else {
-            if (((cpu.esp & 0xffff) < 2) && ((cpu.esp & 0xffff) > 0))
-                throw ProcessorException.STACK_SEGMENT_0;
-            
-            int offset = (cpu.esp - 2) & 0xffff;
-            cpu.ss.setWord(offset, data);
-            cpu.esp = (cpu.esp & ~0xffff) | offset;
-        }
+	if (((cpu.esp & 0xffff) < 2) && ((cpu.esp & 0xffff) > 0))
+	    throw ProcessorException.STACK_SEGMENT_0;
+	
+	int offset = (cpu.esp - 2) & 0xffff;
+	cpu.ss.setWord(offset, data);
+	cpu.esp = (cpu.esp & ~0xffff) | offset;      
     }
 
-    private final void push_o32(int data)
+    private final void push_o32_a16(int data)
     {
-        if (cpu.ss.getDefaultSizeFlag()) {
-            if ((cpu.esp < 4) && (cpu.esp > 0))
-                throw ProcessorException.STACK_SEGMENT_0;
-            
-            int offset = cpu.esp - 4;
-            cpu.ss.setDoubleWord(offset, data);
-            cpu.esp = offset;
-        } else {
-            if (((cpu.esp & 0xffff) < 4) && ((cpu.esp & 0xffff) > 0))
-                throw ProcessorException.STACK_SEGMENT_0;
-            
-            int offset = (cpu.esp - 4) & 0xffff;
-            cpu.ss.setDoubleWord(offset, data);
-            cpu.esp = (cpu.esp & ~0xffff) | offset;
-        }
+	if (((cpu.esp & 0xffff) < 4) && ((cpu.esp & 0xffff) > 0))
+	    throw ProcessorException.STACK_SEGMENT_0;
+
+	int offset = (cpu.esp - 4) & 0xffff;
+	cpu.ss.setDoubleWord(offset, data);
+	cpu.esp = (cpu.esp & ~0xffff) | offset;
     }
 
-    private final void pusha()
+    private final void pusha_a16()
     {
-        int offset, offmask;
-        if (cpu.ss.getDefaultSizeFlag()) {
-            offset = cpu.esp;
-            offmask = 0xffffffff;
-        } else {
-            offset = cpu.esp & 0xffff;
-            offmask = 0xffff;
-        }
+	int offset = cpu.esp & 0xffff;
 	//it seems that it checks at every push (we will simulate this)
 	if ((offset < 16) && ((offset & 0x1) == 0x1)) {
 	    if (offset < 6)
                 LOGGING.log(Level.WARNING, "Should shutdown machine (PUSHA with small ESP");
 	    throw ProcessorException.GENERAL_PROTECTION_0;
 	}
+
 	int temp = cpu.esp;
 
 	offset -= 2;
@@ -2036,19 +1972,12 @@ public class Virtual8086ModeUBlock implements Virtual8086ModeCodeBlock
 	offset -= 2;
 	cpu.ss.setWord(offset & 0xffff, (short) cpu.edi);
         
-	cpu.esp = (cpu.esp & ~offmask) | (offset & offmask);
+	cpu.esp = (cpu.esp & ~0xffff) | (offset & 0xffff);
     }
 
-    private final void pushad()
+    private final void pushad_a16()
     {
-        int offset, offmask;
-        if (cpu.ss.getDefaultSizeFlag()) {
-            offset = cpu.esp;
-            offmask = 0xffffffff;
-        } else {
-            offset = cpu.esp & 0xffff;
-            offmask = 0xffff;
-        }
+	int offset = cpu.esp & 0xffff;
 	int temp = cpu.esp;
 	if ((offset < 32) && (offset > 0)) {
             LOGGING.log(Level.INFO, "Throwing dodgy pushad exception");
@@ -2072,73 +2001,59 @@ public class Virtual8086ModeUBlock implements Virtual8086ModeCodeBlock
 	offset -= 4;
 	cpu.ss.setDoubleWord(offset, cpu.edi);
         
-	cpu.esp = (cpu.esp & ~offmask) | (offset & offmask);
+	cpu.esp = (cpu.esp & ~0xffff) | offset;
     }
 
-    private final void popa()
+    private final void popa_a16()
     {
-	int offset, offmask;
-        if (cpu.ss.getDefaultSizeFlag()) {
-            offset = cpu.esp;
-            offmask = 0xffffffff;
-        } else {
-            offset = cpu.esp & 0xffff;
-            offmask = 0xffff;
-        }
+	int offset = 0xffff & cpu.esp;
 
 	//Bochs claims no checking need on POPs
 	//if (offset + 16 >= cpu.ss.limit)
 	//    throw ProcessorException.STACK_SEGMENT_0;
-	cpu.edi = (cpu.edi & ~0xffff) | (0xffff & cpu.ss.getWord(offmask & offset));
+	cpu.edi = (cpu.edi & ~0xffff) | (0xffff & cpu.ss.getWord(0xffff & offset));
 	offset += 2;
-	cpu.esi = (cpu.esi & ~0xffff) | (0xffff & cpu.ss.getWord(offmask & offset));
+	cpu.esi = (cpu.esi & ~0xffff) | (0xffff & cpu.ss.getWord(0xffff & offset));
 	offset += 2;
-	cpu.ebp = (cpu.ebp & ~0xffff) | (0xffff & cpu.ss.getWord(offmask & offset));
+	cpu.ebp = (cpu.ebp & ~0xffff) | (0xffff & cpu.ss.getWord(0xffff & offset));
 	offset += 4;// yes - skip 2 bytes in order to skip SP	
-	cpu.ebx = (cpu.ebx & ~0xffff) | (0xffff & cpu.ss.getWord(offmask & offset));
+	cpu.ebx = (cpu.ebx & ~0xffff) | (0xffff & cpu.ss.getWord(0xffff & offset));
 	offset += 2;
-	cpu.edx = (cpu.edx & ~0xffff) | (0xffff & cpu.ss.getWord(offmask & offset));
+	cpu.edx = (cpu.edx & ~0xffff) | (0xffff & cpu.ss.getWord(0xffff & offset));
 	offset += 2;
-	cpu.ecx = (cpu.ecx & ~0xffff) | (0xffff & cpu.ss.getWord(offmask & offset));
+	cpu.ecx = (cpu.ecx & ~0xffff) | (0xffff & cpu.ss.getWord(0xffff & offset));
 	offset += 2;
-	cpu.eax = (cpu.eax & ~0xffff) | (0xffff & cpu.ss.getWord(offmask & offset));
+	cpu.eax = (cpu.eax & ~0xffff) | (0xffff & cpu.ss.getWord(0xffff & offset));
 	offset += 2;
 		
-	cpu.esp = (cpu.esp & ~offmask) | (offset & offmask);
+	cpu.esp = (cpu.esp & ~0xffff) | (offset & 0xffff);
     }
 
-    private final void popad()
+    private final void popad_a16()
     {
-	int offset, offmask;
-        if (cpu.ss.getDefaultSizeFlag()) {
-            offset = cpu.esp;
-            offmask = 0xffffffff;
-        } else {
-            offset = cpu.esp & 0xffff;
-            offmask = 0xffff;
-        }
+	int offset = 0xffff & cpu.esp;
 
 	//Bochs claims no checking need on POPs
 	//if (offset + 16 >= cpu.ss.limit)
 	//    throw ProcessorException.STACK_SEGMENT_0;
 
-	cpu.edi = cpu.ss.getDoubleWord(offmask & offset);
+	cpu.edi = cpu.ss.getDoubleWord(0xffff & offset);
 	offset += 4;
-	cpu.esi = cpu.ss.getDoubleWord(offmask & offset);
+	cpu.esi = cpu.ss.getDoubleWord(0xffff & offset);
 	offset += 4;
-	cpu.ebp = cpu.ss.getDoubleWord(offmask & offset);
+	cpu.ebp = cpu.ss.getDoubleWord(0xffff & offset);
 	offset += 8;// yes - skip an extra 4 bytes in order to skip SP
 
-	cpu.ebx = cpu.ss.getDoubleWord(offmask & offset);
+	cpu.ebx = cpu.ss.getDoubleWord(0xffff & offset);
 	offset += 4;
-	cpu.edx = cpu.ss.getDoubleWord(offmask & offset);
+	cpu.edx = cpu.ss.getDoubleWord(0xffff & offset);
 	offset += 4;
-	cpu.ecx = cpu.ss.getDoubleWord(offmask & offset);
+	cpu.ecx = cpu.ss.getDoubleWord(0xffff & offset);
 	offset += 4;
-	cpu.eax = cpu.ss.getDoubleWord(offmask & offset);
+	cpu.eax = cpu.ss.getDoubleWord(0xffff & offset);
 	offset += 4;
 	
-	cpu.esp = (cpu.esp & ~offmask) | (offset & offmask);
+	cpu.esp = (cpu.esp & ~0xffff) | (offset & 0xffff);
     }
 
     private final void jump_far_o16(int targetEIP, int targetSelector)

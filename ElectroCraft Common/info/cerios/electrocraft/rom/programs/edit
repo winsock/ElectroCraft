@@ -1,0 +1,285 @@
+local tArgs = {...}
+
+if #tArgs < 1 then
+	print("Usage: edit <file>")
+	return;
+end
+
+if type(tArgs[1]) ~= "string" then
+	print("Usage: edit <file>")
+	return;
+end
+
+local fileHandle
+local startChar = tArgs[1]:sub(1, 1)
+
+if startChar == "/" then
+	fileHandle = file.createNewFileHandle(tArgs[1])
+else
+	fileHandle = file.createNewFileHandle(shell.getPath() .. "/" .. tArgs[1])
+end
+
+if not fileHandle then
+	print("Unable to open or create file!")
+	return;
+end
+
+if not fileHandle:exists() then
+	fileHandle:createNewFile()
+end
+
+if not fileHandle:canRead() or not fileHandle:canWrite() or fileHandle:isDirectory() then
+	print("Unable to open or create file!")
+	return;
+end
+
+os.getTerminal():clear()
+
+local data = {}
+local running = true
+local inMenu = false
+local col = 1
+local row = 1
+local rowOffset = 0
+local menuIndex = 1;
+local menuItems = { "quit", "exit", "save" }
+local term = os.getTerminal()
+
+function save()
+	local write = fileHandle:open("w")
+	local first = true
+	for i, v in ipairs(data) do
+		if not first then
+			write:newLine()
+		end
+		write:write(v, 0, v:len())
+		first = false
+	end
+	write:flush()
+	write:close()
+end
+
+local read = fileHandle:open("r")
+local first = true
+while read:ready() do
+	if not first then
+		write("\n")
+	end
+	local line = read:readLine()
+	table.insert(data, line)
+	write(line)
+	first = false
+end
+read:close()
+
+function displayMenu()
+	term:setPosition(term:getRows() - 1, 0);
+	write("Menu: ")
+	for i, v in ipairs(menuItems) do
+		if i == menuIndex then
+			write("[" .. v .. "] ")
+		else
+			write(v .. " ")
+		end
+	end
+	term:setPosition(row - 1, col)
+end
+
+function redrawScreen()
+	term:clear()
+	local first = true
+	for i=0, term:getRows() do
+		if not first then
+			write("\n")
+		end
+		if data[i + rowOffset] then
+			write(data[i + rowOffset])
+		end
+		first = false
+	end
+	term:setPosition(row - 1, col)
+end
+
+if #data <= 0 then
+	table.insert(data, "")
+else
+	row = #data
+	rowOffset = row - term:getRows()
+	if rowOffset < 0 then
+		rowOffset = 0
+	end
+	col = data[#data]:len()
+end
+
+while running do
+	local event, key = os.waitForEvent("key", "code")
+	term:setEditing(true)
+	if inMenu then
+		if key == "\n" then
+			if menuIndex == 1 then
+				save()
+				running = false
+			elseif menuIndex == 2 then
+				running = false
+			elseif menuIndex == 3 then
+				save()
+			end
+			inMenu = not inMenu
+		elseif key == kbrd.keycodes.left then
+			if menuIndex > 1 then
+				menuIndex = menuIndex - 1
+			end
+		elseif key == kbrd.keycodes.right then
+			if menuIndex < #menuItems then
+				menuIndex = menuIndex + 1
+			end
+		end
+		if key == kbrd.keycodes.ctrl then
+			if #data >= term:getRows() and data[term:getRows() + rowOffset] then
+				term:setPosition(term:getRows() + rowOffset - 1, 0);
+				write(data[term:getRows() + rowOffset])
+				term:setPosition(row - 1, col)
+			else
+				term:setPosition(term:getRows() - 1, 0);
+				term:clearLine()
+				term:setPosition(row - 1, col)
+			end
+			inMenu = not inMenu
+		else
+			displayMenu()
+		end
+	elseif event == "key" then
+		if key == "\n" then
+			if data[row + rowOffset] and data[row + rowOffset]:len() > col then
+				local part = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
+				data[row + rowOffset] = data[row + rowOffset]:sub(0, col)
+				term:clearLine()
+				write(data[row + rowOffset])
+				table.insert(data, row + rowOffset + 1, part)
+				write("\n")
+				term:setPosition(row, 0)
+				write(part)
+				col = 0	
+			else
+				col = 0
+				table.insert(data, row + rowOffset + 1, "")
+				write("\n")
+			end
+			if row + 1 > term:getRows() then
+				rowOffset = rowOffset + 1
+			else
+				row = row + 1
+			end
+			term:setPosition(row - 1, col)
+		elseif term:isCharVisible(key) or key == "\t" then
+			local front = ""
+			local back = ""
+			if col >= 1 and data[row + rowOffset] then
+				front = data[row + rowOffset]:sub(1, col)
+			end
+			if data[row + rowOffset] and data[row + rowOffset]:len() >= col + 1 then
+				back = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
+			end
+			if key == "\t" then
+				key = "    "
+				col = col + 4
+			else
+				col = col + 1
+			end
+			data[row + rowOffset] = front .. key .. back
+			term:clearLine()
+			write(data[row + rowOffset])
+			term:setPosition(row - 1, col)
+		end
+	elseif event == "code" then
+		if key == kbrd.keycodes.backspace then
+			if col > 0 and data[row + rowOffset] and data[row + rowOffset]:len() > 0 then
+				local front = ""
+				local back = ""
+				if col - 1 > 0 then
+					front = data[row + rowOffset]:sub(1, col - 1)
+				end
+				if data[row + rowOffset]:len() >= col + 1 then
+					back = data[row + rowOffset]:sub(col + 1, data[row + rowOffset]:len())
+				end
+				data[row + rowOffset] = front..back
+				term:clearLine()
+				write(data[row + rowOffset])
+				col = col - 1
+				term:setPosition(row - 1, col)
+			elseif #data > 1 and row > 1 then
+				local part = ""
+				
+				if data[row + rowOffset] and data[row + rowOffset]:len() > 0 then
+					part = data[row + rowOffset]:sub(0, data[row + rowOffset]:len())
+				end
+				term:deleteRow(row - 1)
+				if data[row + rowOffset - 1] and part:len() > 0 then
+					col = data[row + rowOffset - 1]:len()
+					data[row + rowOffset - 1] = data[row + rowOffset - 1] .. part
+					term:setPosition(row - 2, col)
+					write(data[row + rowOffset - 1])
+				elseif part:len() > 0 then
+					data[row + rowOffset - 1] = part
+					col = 0
+					term:setPosition(row - 2, col)
+					write(part)
+				elseif data[row + rowOffset - 1] then
+					col = data[row + rowOffset - 1]:len()
+				end
+				
+				table.remove(data, row + rowOffset)
+				row = row - 1
+				term:setPosition(row - 1, col)
+			end
+		elseif key == kbrd.keycodes.ctrl then
+			inMenu = not inMenu
+			if inMenu then
+				displayMenu()
+			end
+		elseif key == kbrd.keycodes.left then
+			if col > 0 then
+				col = col - 1
+				term:setPosition(row - 1, col)
+			end
+		elseif key == kbrd.keycodes.right then
+			if data[row + rowOffset] and col < data[row + rowOffset]:len() then
+				col = col + 1
+				term:setPosition(row - 1, col)
+			end
+		elseif key == kbrd.keycodes.up then
+			if (rowOffset > 0) and (row <= 1) then
+				if data[row + rowOffset - 1] then
+					rowOffset = rowOffset - 1
+					term:insertRow(0)
+					term:setPosition(0, 0)
+					write(data[row + rowOffset])
+				end
+			elseif row > 1 then
+				if data[row + rowOffset - 1] and data[row + rowOffset - 1]:len() < col then
+					col = data[row + rowOffset - 1]:len()
+				end
+				row = row - 1
+				term:setPosition(row - 1, col)
+			end
+		elseif key == kbrd.keycodes.down then
+			if row < term:getRows() then
+				row = row + 1
+				if not data[row + rowOffset] then
+					row = row - 1
+				elseif data[row + rowOffset]:len() < col then
+					col = data[row + rowOffset]:len()
+				end
+				term:setPosition(row - 1, col)
+			elseif rowOffset < #data then
+				if data[row + rowOffset + 1] then
+					rowOffset = rowOffset + 1
+					write("\n" .. data[row + rowOffset])
+				end
+			end
+		end
+	end
+	term:setEditing(false)
+end
+
+term:clear()

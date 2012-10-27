@@ -91,7 +91,7 @@ public class TileEntityRedstoneAdapter extends NetworkBlock {
 	@Override
 	public void tick(Computer computer) {
 		if (inputChanged) {
-//			computer.postEvent("rs", dataAddress, externalPower);
+			computer.postEvent("rs", dataAddress, externalPower);
 			inputChanged = false;
 		}
 	}

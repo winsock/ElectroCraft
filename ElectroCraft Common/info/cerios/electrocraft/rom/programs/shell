@@ -1,0 +1,163 @@
+local tArgs = {...}
+local path = ""
+local currentFile
+shell = {}
+
+function saveShell(nbttagcompound)
+	if path:len() > 0 then
+		nbttagcompound:setString("path", path)
+	end
+	if currentFile and currentFile:len() > 0 then
+		nbttagcompound:setString("currentFile", currentFile)
+	end
+end
+
+os.registerSaveHandler(saveShell)
+
+function shell.run(file, ...)
+	local found, func, err = loadfile(path .. "/" .. file)
+	if not found then
+		found, func, err = loadfile("/rom/programs/" .. file)
+	end
+	if (not found) and (drone ~= nil) then
+		found, func, err = loadfile("/rom/drone/programs/" .. file)
+	end
+	if err or not found then
+		return false, err
+	end
+	if func then
+		currentFile = file
+		local ok, err = os.run(func, ...)
+		currentFile = nil
+		return ok, err
+	end
+end
+
+function shell.getPath()
+	return path
+end
+
+function shell.setPath(newPath)
+	path = newPath
+end
+
+if (#tArgs > 1) and (tArgs[1] == "resume") and (type(tArgs[2]) == "userdata") then
+	path = tArgs[2]:getString("path")
+	currentFile = tArgs[2]:getString("currentFile")
+	if currentFile and currentFile:len() > 0 then
+		shell.run(currentFile, tArgs[2])
+	end
+end
+
+local history = {}
+local line = ""
+local col = 1
+local historyNumber = 0
+local prompt = path .. "> "
+local term = os.getTerminal()
+
+write(prompt)
+while true do
+	local event, key = os.waitForEvent("key", "code", "resume")
+	prompt = path .. "> "
+	term:setEditing(true)
+	if event == "resume" then
+		for i=1, #history do
+			print(history[i])
+		end
+		print(prompt .. line)
+	elseif event == "key" then
+		if key == "\n" then
+			write("\n")
+			local params = {}
+			for match in string.gmatch(line, "[^%s]+") do
+				table.insert(params, match)
+			end
+			if #params > 0 then
+				term:setEditing(false)
+				local ok, err = shell.run(params[1], unpack(params, 2))
+				if not ok and err then
+					if type(err) == "string" then
+						print(err)
+					else
+						print("Unknown error!")
+					end
+				end
+				os.getComputer():setGraphicsMode(false)
+				term:setEditing(true)
+			end
+			if table[#table] ~= line then
+				table.insert(history, line)
+			end
+			historyNumber = #history + 1
+			line = ""
+			col = 1
+			prompt = path .. "> "
+			write(prompt)
+		else
+			local front = ""
+			local back = ""
+			if col - 1 > 0 then
+				front = line:sub(1, col - 1)
+			end
+			if line:len() >= col + 1 then
+				back = line:sub(col + 1, line:len())
+			end
+			line = front .. key .. back
+			col = col + 1
+			term:clearLine()
+			write(prompt .. line)
+			term:setPosition(term:getCurrentRow(), col + prompt:len())
+		end
+	elseif event == "code" then
+		if key == kbrd.keycodes.backspace then
+			if line:len() > 0 then
+				local front = ""
+				local back = ""
+				col = col - 1
+				if col - 1 > 0 then
+					front = line:sub(1, col - 1)
+				end
+				if line:len() >= col + 1 then
+					back = line:sub(col + 1, line:len())
+				end
+				line = front .. back
+				term:clearLine()
+				write(prompt .. line)
+			end
+		elseif key == kbrd.keycodes.left then
+			if col > 0 then
+				col = col - 1
+				term:setPosition(term:getCurrentRow(), col + prompt:len() - 1)
+			end
+		elseif key == kbrd.keycodes.right then
+			if col < line:len() then
+				col = col + 1
+				term:setPosition(term:getCurrentRow(), col + prompt:len() - 1)
+			end
+		elseif key == kbrd.keycodes.up then
+			if historyNumber >= #history then
+				historyNumber = historyNumber - 1
+				line = history[historyNumber]
+				if not line then
+					line = ""
+				end
+				col = line:len() + 1 
+				term:clearLine()
+				write(prompt .. line)
+			end
+		elseif key == kbrd.keycodes.down then
+			if historyNumber < #history then
+				historyNumber = historyNumber + 1
+				line = history[historyNumber]
+				if not line then
+					line = ""
+				end
+				term:clearLine()
+				col = line:len() + 1
+				write(prompt .. line)
+			end
+		end
+	end
+	term:setEditing(false)
+end

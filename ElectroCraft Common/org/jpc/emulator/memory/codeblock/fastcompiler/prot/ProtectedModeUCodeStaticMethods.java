@@ -1,10 +1,10 @@
 /*
-    JPC: An x86 PC Hardware Emulator for a pure Java Virtual Machine
-    Release Version 2.4
+    JPC: A x86 PC Hardware Emulator for a pure Java Virtual Machine
+    Release Version 2.0
 
     A project from the Physics Dept, The University of Oxford
 
-    Copyright (C) 2007-2010 The University of Oxford
+    Copyright (C) 2007-2009 Isis Innovation Limited
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as published by
@@ -18,17 +18,10 @@
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- 
+
     Details (including contact information) can be found at: 
 
-    jpc.sourceforge.net
-    or the developer website
-    sourceforge.net/projects/jpc/
-
-    Conceived and Developed by:
-    Rhys Newman, Ian Preston, Chris Dennis
-
-    End of licence header
+    www-jpc.physics.ox.ac.uk
 */
 
 package org.jpc.emulator.memory.codeblock.fastcompiler.prot;
@@ -4329,7 +4322,7 @@ public class ProtectedModeUCodeStaticMethods
 // 	ss.setWord(offset & 0xffff, (short) edi);
 //     }
 
-    /*public static int eax_hef_POPA_A16_eax_ss_esp(int eax, Segment ss, int esp)
+    public static int eax_hef_POPA_A16_eax_ss_esp(int eax, Segment ss, int esp)
     {
         return eax_hef_POPA_A32_eax_ss_esp(eax, ss, esp);
     }
@@ -4367,7 +4360,7 @@ public class ProtectedModeUCodeStaticMethods
     public static int esp_nef_POPA_A16_ss_esp(Segment ss, int esp)
     {
         return esp_nef_POPA_A32_ss_esp(ss, esp);
-        }*/
+    }
     
     public static int eax_hef_POPA_A32_eax_ss_esp(int eax, Segment ss, int esp)
     {

@@ -1,0 +1,54 @@
+local tArgs = {...}
+
+local folder
+if #tArgs > 0 then
+	if type(tArgs[1]) ~= "string" then
+		print("Usage: ls <optional path>")
+		return
+	end
+	local startChar = tArgs[1]:sub(1, 1)
+	if startChar == "/" then
+		folder = file.createNewFileHandle(tArgs[1])
+	else
+		folder = file.createNewFileHandle(shell.getPath() .. "/" .. tArgs[1])
+	end
+else
+	folder = file.createNewFileHandle(shell.getPath())
+end
+
+local files = folder:listFiles()
+local makeNewLine = false
+for i=1,#files do
+	local file = files[i]
+	local isFile = not file:isDirectory()
+	local size = file:length()
+	local suffix = "B"
+	if size > 1024 then
+		size = size / 1024
+		suffix = "KB"
+		if size > 1024 then
+			size = size / 1024
+			suffix = "MB"
+		end
+	end
+	if makeNewLine then
+		if isFile then
+			write("\n    F:" .. file:getName() .. " - " .. tostring(size) .. suffix)
+		else
+			write("\n    D:" .. file:getName() .. " - " .. tostring(size) .. suffix)
+		end
+	else
+		if isFile then
+			write("    F:" .. file:getName() .. " - " .. tostring(size) .. suffix)
+		else
+			write("    D:" .. file:getName() .. " - " .. tostring(size) .. suffix)
+		end
+	end
+	if i % 3 == 0 then
+		makeNewLine = true
+	else
+		makeNewLine = false
+	end 
+end
+
+write("\n")

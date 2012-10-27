@@ -1,10 +1,10 @@
 /*
-    JPC: An x86 PC Hardware Emulator for a pure Java Virtual Machine
-    Release Version 2.4
+    JPC: A x86 PC Hardware Emulator for a pure Java Virtual Machine
+    Release Version 2.0
 
     A project from the Physics Dept, The University of Oxford
 
-    Copyright (C) 2007-2010 The University of Oxford
+    Copyright (C) 2007-2009 Isis Innovation Limited
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 as published by
@@ -18,17 +18,10 @@
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- 
+
     Details (including contact information) can be found at: 
 
-    jpc.sourceforge.net
-    or the developer website
-    sourceforge.net/projects/jpc/
-
-    Conceived and Developed by:
-    Rhys Newman, Ian Preston, Chris Dennis
-
-    End of licence header
+    www-jpc.physics.ox.ac.uk
 */
 
 package org.jpc.emulator;
@@ -59,8 +52,7 @@ import org.jpc.j2se.VirtualClock;
  */
 public class PC {
 
-    public static int SYS_RAM_SIZE;
-    public static final int DEFAULT_RAM_SIZE = 256 * 1024 * 1024;
+    public static final int SYS_RAM_SIZE = 256 * 1024 * 1024;
     public static final int INSTRUCTIONS_BETWEEN_INTERRUPTS = 1; 
 
     public static volatile boolean compile = true;
@@ -83,20 +75,6 @@ public class PC {
      * @throws java.io.IOException propogated from bios resource loading
      */
     public PC(Clock clock, DriveSet drives) throws IOException {
-        this(clock, drives, DEFAULT_RAM_SIZE);
-    }
-
-
-    /**
-     * Constructs a new <code>PC</code> instance with the specified external time-source and
-     * drive set.
-     * @param clock <code>Clock</code> object used as a time source
-     * @param drives drive set for this instance.
-     * @param ramSize the size of the system ram for the virtual machine in bytes.
-     * @throws java.io.IOException propogated from bios resource loading
-     */
-    public PC(Clock clock, DriveSet drives, int ramSize) throws IOException {
-        SYS_RAM_SIZE = ramSize;
         parts = new HashSet<HardwareComponent>();
 
         vmClock = clock;
@@ -142,8 +120,8 @@ public class PC {
         parts.add(new PCIBus());
 
         //BIOSes
-        parts.add(new SystemBIOS("/org/jpc/bios/bios.bin"));
-        parts.add(new VGABIOS("/org/jpc/bios/vgabios.bin"));
+        parts.add(new SystemBIOS("/resources/bios/bios.bin"));
+        parts.add(new VGABIOS("/resources/bios/vgabios.bin"));
 
         if (!configure()) {
             throw new IllegalStateException("PC Configuration failed");
@@ -159,18 +137,6 @@ public class PC {
      */
     public PC(Clock clock, String[] args) throws IOException {
         this(clock, DriveSet.buildFromArgs(args));
-    }
-
-    /**
-     * Constructs a new <code>PC</code> instance with the specified external time-source and
-     * a drive set constructed by parsing args.
-     * @param clock <code>Clock</code> object used as a time source
-     * @param args command-line args specifying the drive set to use.
-     * @param ramSize the size of the system ram for the virtual machine in bytes.
-     * @throws java.io.IOException propogates from <code>DriveSet</code> construction
-     */
-    public PC(Clock clock, String[] args, int ramSize) throws IOException {
-        this(clock, DriveSet.buildFromArgs(args), ramSize);
     }
 
     /**
@@ -457,7 +423,7 @@ public class PC {
         }
         catch (ModeSwitchException e)
         {
-            LOGGING.log(Level.FINE, "Mode switch in RM @ cs:eip " + Integer.toHexString(processor.cs.getBase()) + ":" + Integer.toHexString(processor.eip));
+            LOGGING.log(Level.FINE, "Switching mode", e);
         }
         return x86Count;
     }
@@ -486,7 +452,7 @@ public class PC {
         }
         catch (ModeSwitchException e)
         {
-            LOGGING.log(Level.FINE, "Mode switch in PM @ cs:eip " + Integer.toHexString(processor.cs.getBase()) + ":" + Integer.toHexString(processor.eip));
+            LOGGING.log(Level.FINE, "Switching mode", e);
         }
         return x86Count;
     }
@@ -517,8 +483,71 @@ public class PC {
         }
         catch (ModeSwitchException e)
         {
-            LOGGING.log(Level.FINE, "Mode switch in VM8086 @ cs:eip " + Integer.toHexString(processor.cs.getBase()) + ":" + Integer.toHexString(processor.eip));
+            LOGGING.log(Level.FINE, "Switching mode", e);
         }
         return x86Count;
+    }
+
+    public static void main(String[] args) {
+        try {
+            if (args.length == 0) {
+                ClassLoader cl = PC.class.getClassLoader();
+                if (cl instanceof URLClassLoader) {
+                    for (URL url : ((URLClassLoader) cl).getURLs()) {
+                        InputStream in = url.openStream();
+                        try {
+                            JarInputStream jar = new JarInputStream(in);
+                            Manifest manifest = jar.getManifest();
+                            if (manifest == null) {
+                                continue;
+                            }
+
+                            String defaultArgs = manifest.getMainAttributes().getValue("Default-Args");
+                            if (defaultArgs == null) {
+                                continue;
+                            }
+
+                            args = defaultArgs.split("\\s");
+                            break;
+                        } catch (IOException e) {
+                            System.err.println("Not a JAR file " + url);
+                        } finally {
+                            try {
+                                in.close();
+                            } catch (IOException e) {
+                            }
+                        }
+                    }
+                }
+
+                if (args.length == 0) {
+                    LOGGING.log(Level.INFO, "No configuration specified, using defaults");
+                    args = new String[]{"-fda", "mem:resources/images/floppy.img",
+                                "-hda", "mem:resources/images/dosgames.img", "-boot", "fda"
+                            };
+                } else {
+                    LOGGING.log(Level.INFO, "Using configuration specified in manifest");
+                }
+            } else {
+                LOGGING.log(Level.INFO, "Using configuration specified on command line");
+            }
+            
+            if (ArgProcessor.findVariable(args, "compile", "yes").equalsIgnoreCase("no")) {
+                compile = false;
+            }
+            PC pc = new PC(new VirtualClock(), args);
+            pc.start();
+            try {
+                while (true) {
+                    pc.execute();
+                }
+            } finally {
+                pc.stop();
+                LOGGING.log(Level.INFO, "PC Stopped");
+                pc.getProcessor().printState();
+            }
+        } catch (IOException e) {
+            System.err.println("IOError starting PC");
+        }
     }
 }

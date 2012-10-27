@@ -4,10 +4,6 @@ import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -15,24 +11,17 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import net.minecraft.src.EntityPlayer;
 
-import org.jpc.emulator.PC;
-import org.jpc.emulator.pci.peripheral.DefaultVGACard;
-import org.jpc.emulator.peripheral.Keyboard;
-import org.jpc.j2se.VirtualClock;
-import org.jpc.support.ArrayBackedSeekableIODevice;
-import org.jpc.support.DriveSet;
-import org.jpc.support.DriveSet.BootType;
-import org.jpc.support.FloppyBlockDevice;
-import org.jpc.support.TreeBlockDevice;
-
-import cpw.mods.fml.common.FMLCommonHandler;
-
 public class Computer implements Runnable {
 
 	private volatile boolean running = false;
+	private SoundCard soundCard;
+	private VideoCard videoCard;
+	private Keyboard keyboard;
 	private List<EntityPlayer> clients;
 	private File baseDirectory;
-	private PC internalComputer;
+	/**
+	 * The current directory of the computer relative to the baseDirectory
+	 */
 	private volatile boolean wasResumed = false;
 	private Object sleepLock = new Object();
 	private volatile boolean finishedSleeping = true;
@@ -45,6 +34,7 @@ public class Computer implements Runnable {
 	private volatile boolean ticked = false;
 
 	public Computer(List<EntityPlayer> clients, String baseDirectory) {
+		this.soundCard = new SoundCard();
 		this.clients = clients;
 		this.baseDirectory = new File(baseDirectory);
 		if (!this.baseDirectory.exists()) {
@@ -54,19 +44,9 @@ public class Computer implements Runnable {
 		finalizeGuardian = new Object() {
 			@Override
 			public void finalize() {
-				//shutdown();
+				thisThread.interrupt();
 			}
 		};
-		try {
-			InputStream resource = this.getClass().getResourceAsStream("/info/cerios/electrocraft/images/floppy.img");
-			FloppyBlockDevice floppy = new FloppyBlockDevice(new ArrayBackedSeekableIODevice("floppy", resource));
-			TreeBlockDevice userFolder = new TreeBlockDevice(this.baseDirectory, true);
-			DriveSet set = new DriveSet(BootType.FLOPPY, floppy, userFolder);
-			internalComputer = new PC(new VirtualClock(), set);
-			getVideoCard().resizeDisplay(720, 480);
-		} catch (IOException e) {
-			FMLCommonHandler.instance().raiseException(e, "Error making an internal JPC emulator", true);
-		}
 	}
 
 	public List<EntityPlayer> getClients() {
@@ -86,41 +66,36 @@ public class Computer implements Runnable {
 			ticked = true;
 	}
 
+	public void postEvent(String eventName, Object... args) {
+		synchronized (eventLock) {
+			Event e = new Event();
+			e.eventName = eventName;
+			e.args = args;
+			eventQueue.add(e);
+		}
+	}
+
+	protected void loadBios() {
+	}
+
 	public void callSave() {
-//		try {
-//			FileOutputStream fos = new FileOutputStream(new File(baseDirectory, ".state"));
-//			internalComputer.saveState(fos);
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
+		
 	}
 
 	public void callLoad() {
-//		File stateFile = new File(baseDirectory, ".state");
-//		if (stateFile.exists()) {
-//			stateLock.lock();
-//			wasResumed = true;
-//			stateLock.unlock();
-//			FileInputStream fis;
-//			try {
-//				fis = new FileInputStream(stateFile);
-//				internalComputer.loadState(fis);
-//			} catch (FileNotFoundException e) {
-//				e.printStackTrace();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
-		start();
+		if (running) {
+			stateLock.lock();
+			wasResumed = true;
+			stateLock.unlock();
+			thisThread = new Thread(this);
+			thisThread.start();
+		}
 	}
 
 	public void shutdown() {
 		running = false;
 		sleepTimer.cancel();
 		Thread.currentThread().interrupt();
-		internalComputer.stop();
 	}
 
 	public void start() {
@@ -130,8 +105,16 @@ public class Computer implements Runnable {
 			stateLock.unlock();
 			thisThread = new Thread(this);
 			thisThread.start();
-			internalComputer.start();
+			postEvent("start");
 		}
+	}
+
+	public void setRunning(boolean value) {
+		stateLock.lock();
+		running = value;
+		if (value == false && thisThread != null)
+			thisThread.interrupt();
+		stateLock.unlock();
 	}
 
 	public File getBaseDirectory() {
@@ -142,12 +125,16 @@ public class Computer implements Runnable {
 		return running;
 	}
 	
-	public DefaultVGACard getVideoCard() {
-		return (DefaultVGACard) internalComputer.getComponent(DefaultVGACard.class);
+	public SoundCard getSoundCard() {
+		return soundCard;
+	}
+	
+	public VideoCard getVideoCard() {
+		return videoCard;
 	}
 
 	public Keyboard getKeyboard() {
-		return (Keyboard) internalComputer.getComponent(Keyboard.class);
+		return keyboard;
 	}
 
 	public void registerNetworkBlock(NetworkBlock block) {
@@ -158,11 +145,32 @@ public class Computer implements Runnable {
 
 	@Override
 	public void run() {
+		boolean first = true;
 		// Register the Lua thread with the security manager
-		//ElectroCraft.instance.getSecurityManager().registerThread(this);
+		ElectroCraft.instance.getSecurityManager().registerThread(this);
+
+		int ticksSinceLastSave = 0;
 
 		while (isRunning() && ElectroCraft.instance.isRunning()) {
-			internalComputer.execute();
+			stateLock.lock();
+			if (!isRunning() && ElectroCraft.instance.isRunning()) {
+				stateLock.unlock();
+				break;
+			}
+
+			if (!ticked) {
+				stateLock.unlock();
+				continue;
+			}
+
+			if (eventQueue.size() > 0) {
+				List<Event> copy;
+				synchronized (eventLock) {
+					copy = new ArrayList<Event>(eventQueue);
+					eventQueue.clear();
+				}
+			}
+			stateLock.unlock();
 		}
 		sleepTimer.cancel();
 		this.running = false;
