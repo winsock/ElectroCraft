@@ -1,7 +1,6 @@
 package info.cerios.electrocraft.core.blocks.tileentities;
 
 import info.cerios.electrocraft.api.IComputer;
-import info.cerios.electrocraft.api.computer.ExposedToLua;
 import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
@@ -19,7 +18,6 @@ import net.minecraftforge.common.ForgeDirection;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Side;
 
-@ExposedToLua
 public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock, IComputer {
 
     private Computer computer;
@@ -49,12 +47,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         nbttagcompound.setInteger("direction", direction.ordinal());
         if (computer != null && computer.isRunning()) {
             nbttagcompound.setBoolean("isOn", computer.isRunning());
-            nbttagcompound.setString("currentDirectory", computer.getCurrentDirectory());
-            nbttagcompound.setString("runningProgram", computer.getRunningProgram() == null ? "" : computer.getRunningProgram());
-            
             computer.callSave();
-            if (computer.getProgramStorage() != null)
-            	nbttagcompound.setTag("programStorage", computer.getProgramStorage());
             
             /*
              * Old code pertaining to persistence
@@ -94,7 +87,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	loadingState = true;
         	if (computer == null)
         		createComputer();
-        	computer.setProgramStorage((NBTTagCompound) nbttagcompound.getTag("programStorage"));
         	computer.setRunning(true);
         	computer.callLoad();
         	        	
@@ -150,7 +142,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     
     public void createComputer() {
     	if (worldObj == null || worldObj.isRemote) {
-			computer = new Computer(activePlayers, "", baseDirectory, false, 320, 240, 15, 50);
+			computer = new Computer(activePlayers, baseDirectory);
 			return;
     	}
     	if (this.baseDirectory.isEmpty()) {
@@ -163,10 +155,9 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     		this.id = String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
     		this.baseDirectory = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
     	}
-		computer = new Computer(activePlayers, "", baseDirectory, true, 320, 240, 15, 50);
+		computer = new Computer(activePlayers, baseDirectory);
     }
     
-    @ExposedToLua
     public void startComputer() {
     	if (computer != null) {
 	    	for (NetworkBlock ioPort : ioPorts) {
@@ -176,7 +167,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     	}
     }
     
-    @ExposedToLua
     public void stopComputer() {
     	if (computer != null && computer.isRunning()) {
 	    	computer.postEvent("kill");
@@ -184,7 +174,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     	}
     }
     
-    @ExposedToLua
     public String getId() {
     	return id;
     }

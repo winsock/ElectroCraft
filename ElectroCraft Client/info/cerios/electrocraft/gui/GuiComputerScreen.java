@@ -1,20 +1,14 @@
 package info.cerios.electrocraft.gui;
 
-import info.cerios.electrocraft.ElectroCraftClient;
-import info.cerios.electrocraft.api.computer.IComputerCallback;
-import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.network.ComputerInputPacket;
-import info.cerios.electrocraft.core.network.ComputerProtocol;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -32,7 +26,7 @@ import org.lwjgl.opengl.GL11;
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
 
-public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
+public class GuiComputerScreen extends GuiScreen {
 
 	public static final int CLOSE_BUTTON = 0;
 
@@ -55,13 +49,9 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
 	public GuiComputerScreen() {
 		Keyboard.enableRepeatEvents(true);
-		if (ElectroCraftClient.instance.usingComputerClient()) {
-			ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.DISPLAY, this);
-			ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.TERMINAL, this);
-			ElectroCraftClient.instance.getComputerClient().registerCallback(ComputerProtocol.MODE, this);
-		}
 	}
 
+	@Override
 	public void initGui() {
 		controlList.add(new GuiButton(CLOSE_BUTTON, width - 5 - 4 - 17, 5 + 4, 17, 17, "X"));
 	}
@@ -103,10 +93,10 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 				float scaleFactorX = 1f;
 				float scaleFactorY = 1f;
 				if (fontRenderer.getStringWidth(line) > (halfScreenWidth * 2)) {
-					scaleFactorX = (float) ((halfScreenWidth * 2) / fontRenderer.getStringWidth(line));
+					scaleFactorX = (halfScreenWidth * 2) / fontRenderer.getStringWidth(line);
 				}
 				if ((fontRenderer.FONT_HEIGHT * columns) > (halfScreenHeight * 2)) {
-					scaleFactorY = (float) ((halfScreenHeight * 2) / (pixelsPerLineHeight * rows));
+					scaleFactorY = (halfScreenHeight * 2) / (pixelsPerLineHeight * rows);
 				}
 				GL11.glPushMatrix();
 				GL11.glScalef(scaleFactorX, scaleFactorY, 1);
@@ -171,14 +161,10 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 							}
 						}
 						// Ask for another screen packet
-						if (ElectroCraftClient.instance.usingComputerClient()) {
-							ElectroCraftClient.instance.getComputerClient().sendPacket(ComputerProtocol.DISPLAY);
-						} else {
-							CustomPacket packet = new CustomPacket();
-							packet.id = 1;
-							packet.data = new byte[] {};
-							PacketDispatcher.sendPacketToServer(packet.getMCPacket());
-						}
+						CustomPacket packet = new CustomPacket();
+						packet.id = 1;
+						packet.data = new byte[] {};
+						PacketDispatcher.sendPacketToServer(packet.getMCPacket());
 						shouldAskForScreenPacket = false;
 //					} else {
 //						for (int i = 0; i < rows; i++) {
@@ -394,65 +380,6 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 			}
 		} catch (IOException e) {
 			ElectroCraft.instance.getLogger().severe("Unable to read custom client computer packet!");
-		}
-	}
-
-	@Override
-	public Object onTaskComplete(Object... objects) {
-		synchronized (syncObject) {
-			if (objects[0] instanceof ComputerProtocol) {
-				ComputerProtocol type = (ComputerProtocol)objects[0];	
-				if (type == ComputerProtocol.MODE) {
-					terminalMode = ((Integer) objects[1]) == 0 ? false : true; 
-				} else if (type == ComputerProtocol.DISPLAY) {
-					lastWidth = displayWidth;
-					lastHeight = displayHeight;
-					displayWidth = (Integer) objects[2];
-					displayHeight = (Integer) objects[3];
-
-					if (displayBuffer == null || displayBuffer.capacity() < (displayWidth * displayHeight * 3))
-						displayBuffer = ByteBuffer.allocateDirect(displayWidth * displayHeight * 3);
-
-					if (((ByteBuffer) objects[1]).capacity() * 3 != (displayWidth * displayHeight * 3)) {
-						ElectroCraft.instance.getLogger().severe("Error! Got corupted screen packet!");
-						return null;
-					}
-
-					((ByteBuffer) objects[1]).rewind();
-					displayBuffer.rewind();
-					for (int i = 0; i < ((ByteBuffer) objects[1]).capacity(); i++) {
-						int rgb = ElectroCraft.colorPalette[((ByteBuffer) objects[1]).get() & 0xFF];
-						byte red = (byte) ((rgb >> 16) & 0xFF);
-						byte green = (byte) ((rgb >> 8) & 0xFF);
-						byte blue = (byte) (rgb & 0xFF);
-						displayBuffer.put(red);
-						displayBuffer.put(green);
-						displayBuffer.put(blue);
-					}
-					displayBuffer.rewind();
-					shouldAskForScreenPacket = true;
-				} else if (type == ComputerProtocol.TERMINAL) {
-					rows = (Integer) objects[2];
-					columns = (Integer) objects[3];
-					currentCol = (Integer) objects[4];
-					currentRow = (Integer) objects[5];
-					if (((Integer)objects[1]) == 0) {
-						Object[] data = (Object[])objects[6];
-						int rowNumber = (Integer)data[0];
-						String rowData = (String)data[1];
-						terminalList.put(rowNumber, rowData);
-					} else if (((Integer)objects[1]) == 1) {
-						Object[] data = (Object[])objects[6];
-						int numberOfRowsChanged = (Integer) data[0];
-						ObjectPair<Integer, String>[] changedRows = (ObjectPair[])data[1];
-
-						for (int i = 0; i < numberOfRowsChanged; i++) {
-							terminalList.put(changedRows[i].getValue1(), changedRows[i].getValue2());
-						}
-					}
-				}
-			}
-			return null;
 		}
 	}
 }

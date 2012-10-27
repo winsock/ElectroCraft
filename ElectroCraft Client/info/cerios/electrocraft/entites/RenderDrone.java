@@ -1,21 +1,12 @@
 package info.cerios.electrocraft.entites;
 
-import static net.minecraftforge.client.IItemRenderer.ItemRenderType.EQUIPPED;
-import static net.minecraftforge.client.IItemRenderer.ItemRendererHelper.BLOCK_3D;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 
 import org.lwjgl.opengl.GL11;
 
-import net.minecraft.src.Block;
 import net.minecraft.src.EntityLiving;
-import net.minecraft.src.EnumAction;
-import net.minecraft.src.Item;
-import net.minecraft.src.ItemBlock;
 import net.minecraft.src.ModelBase;
-import net.minecraft.src.RenderBlocks;
 import net.minecraft.src.RenderLiving;
-import net.minecraftforge.client.IItemRenderer;
-import net.minecraftforge.client.MinecraftForgeClient;
 
 public class RenderDrone extends RenderLiving {
 
@@ -67,9 +58,9 @@ public class RenderDrone extends RenderLiving {
         		for (int var25 = 0; var25 < par1EntityLiving.getHeldItem().getItem().getRenderPasses(par1EntityLiving.getHeldItem().getItemDamage()); ++var25) {
         			// func_82790_a used to be getColorFromDamage
         			int var24 = par1EntityLiving.getHeldItem().getItem().func_82790_a(par1EntityLiving.getHeldItem(), var25);
-        			float var26 = (float)(var24 >> 16 & 255) / 255.0F;
-        			float var9 = (float)(var24 >> 8 & 255) / 255.0F;
-        			float var10 = (float)(var24 & 255) / 255.0F;
+        			float var26 = (var24 >> 16 & 255) / 255.0F;
+        			float var9 = (var24 >> 8 & 255) / 255.0F;
+        			float var10 = (var24 & 255) / 255.0F;
         			GL11.glColor4f(var26, var9, var10, 1.0F);
         			this.renderManager.itemRenderer.renderItem(par1EntityLiving, par1EntityLiving.getHeldItem(), var25);
         		}

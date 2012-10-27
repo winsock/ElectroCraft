@@ -19,7 +19,6 @@ public abstract class ElectroPacket {
         GUI(GuiPacket.class),
         ADDRESS(NetworkAddressPacket.class),
         INPUT(ComputerInputPacket.class),
-        PORT(ServerPortPacket.class),
         CUSTOM(CustomPacket.class);
 
         private Class<? extends ElectroPacket> packetClass;

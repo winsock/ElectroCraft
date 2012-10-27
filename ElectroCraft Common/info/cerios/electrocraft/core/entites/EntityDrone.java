@@ -69,7 +69,6 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			drone.setFlying(nbt.getBoolean("flying"));
 			if (nbt.getBoolean("isOn")) {
 				drone.setRunning(true);
-				drone.setProgramStorage(nbt.getCompoundTag("programStorage"));
 				drone.callLoad();
 			}
 		}
@@ -87,8 +86,6 @@ public class EntityDrone extends EntityLiving implements IComputer {
 			nbt.setBoolean("isOn", drone.isRunning());
 			
 			drone.callSave();
-            if (drone.getProgramStorage() != null)
-            	nbt.setTag("programStorage", drone.getProgramStorage());
 		}
 	}
 
@@ -361,7 +358,7 @@ public class EntityDrone extends EntityLiving implements IComputer {
 				}
 			}
 			dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
-			drone = new Drone(new ArrayList<EntityPlayer>(), "", dir, true, 320, 240, 15, 50);
+			drone = new Drone(new ArrayList<EntityPlayer>(), dir);
 			drone.setDrone(this);
 		}
 	}

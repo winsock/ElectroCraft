@@ -6,15 +6,11 @@ import info.cerios.electrocraft.core.network.ModifierPacket;
 import java.io.IOException;
 import java.util.EnumSet;
 
-import net.minecraft.src.World;
-
 import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.IScheduledTickHandler;
 import cpw.mods.fml.common.TickType;
-import cpw.mods.fml.common.network.PacketDispatcher;
 
 public class ClientTickHandler implements IScheduledTickHandler {
 	

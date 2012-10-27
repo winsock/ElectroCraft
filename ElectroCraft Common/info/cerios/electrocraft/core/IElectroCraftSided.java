@@ -38,9 +38,7 @@ public interface IElectroCraftSided {
     public int getFreeRenderId();
     
     public boolean isShiftHeld();
-    
-    public void startComputerClient(int port, SocketAddress address);
-    
+        
     public void handleClientCustomPacket(CustomPacket packet);
     
     public Object getClientGuiFor(Gui gui, Object... args);
