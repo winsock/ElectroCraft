@@ -72,7 +72,7 @@ import cpw.mods.fml.common.registry.TickRegistry;
 @NetworkMod(channels = {"electrocraft"}, clientSideRequired = true, serverSideRequired = false, packetHandler=UniversialPacketHandler.class, connectionHandler = ConnectionHandler.class)
 public class ElectroCraft implements IElectroCraft {
 
-	@Mod.Instance
+	@Mod.Instance("electrocraft")
 	public static ElectroCraft instance;
 	@SidedProxy(clientSide = "info.cerios.electrocraft.ElectroCraftClient", serverSide = "info.cerios.electrocraft.ElectroCraftSidedServer")
 	public static IElectroCraftSided electroCraftSided;
