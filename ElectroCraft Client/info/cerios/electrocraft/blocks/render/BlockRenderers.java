@@ -4,6 +4,7 @@ import net.minecraft.src.TileEntity;
 import net.minecraft.src.TileEntitySpecialRenderer;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
+import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 
 public enum BlockRenderers {

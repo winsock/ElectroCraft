@@ -9,6 +9,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
+import com.naef.jnlua.LuaState;
+import com.naef.jnlua.NamedJavaFunction;
+
 import cpw.mods.fml.common.network.PacketDispatcher;
 
 import net.minecraft.src.Block;
@@ -36,8 +39,8 @@ public class Drone extends Computer {
 	private ObjectPair<ICard, ItemStack> leftCard;
 	private ObjectPair<ICard, ItemStack> rightCard;
 
-	public Drone(List<EntityPlayer> clients, String baseDirectory) {
-		super(clients, baseDirectory);
+	public Drone(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
+		super(clients, script, baseDirectory, isInternal, width, height, rows, columns);
 	}
 
 	@Override
@@ -57,11 +60,474 @@ public class Drone extends Computer {
 		return drone;
 	}
 
+	@Override
+	public void loadLuaDefaults() {
+		super.loadLuaDefaults();
+		luaStateLock.lock();
+		NamedJavaFunction[] droneAPI = new NamedJavaFunction[] {
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						Callable<Integer[]> callable;
+						if (luaState.isNumber(-1)) {
+							final int intDir = luaState.checkInteger(-1);
+							callable = new Callable<Integer[]>() {
+								@Override
+								public Integer[] call() throws Exception {
+									ForgeDirection dir = ForgeDirection.getOrientation(intDir);
+									drone.drone.move(dir.offsetX, dir.offsetY, dir.offsetZ, 5);
+									return new Integer[] {dir.offsetX, dir.offsetY, dir.offsetZ};
+								}
+							};
+						} else {
+							callable = new Callable<Integer[]>() {
+								@Override
+								public Integer[] call() throws Exception {
+									ForgeDirection dir = getDirection(drone.drone.rotationYaw);
+									drone.drone.move(dir.offsetX, dir.offsetY, dir.offsetZ, 5);
+									return new Integer[] {dir.offsetX, dir.offsetY, dir.offsetZ};
+								}
+							};
+						}
+						FutureTask<Integer[]> task = new FutureTask<Integer[]>(callable);
+						ElectroCraft.instance.registerRunnable(task);
+						try {
+							Integer[] location = task.get();
+							while (drone.drone.isStillMovingOrRotating()) {
+								try {
+									Thread.sleep(1);
+								} catch (InterruptedException e) {
+								}
+							}
+
+							callable = new Callable<Integer[]>() {
+								@Override
+								public Integer[] call() throws Exception {
+									int afterX = (int)(Math.floor(drone.getDrone().posX));
+									int afterY = (int)(Math.floor(drone.getDrone().posY));
+									int afterZ = (int)(Math.floor(drone.getDrone().posZ));
+									return new Integer[] {afterX, afterY, afterZ};
+								}
+							};
+							task = new FutureTask<Integer[]>(callable);
+							ElectroCraft.instance.registerRunnable(task);
+							Integer[] afterLocation = task.get();
+
+							if (location[0] == afterLocation[0] && location[1] == afterLocation[1] && location[2] == afterLocation[2]) {
+								luaState.pushBoolean(false);
+							} else {
+								luaState.pushBoolean(true);
+							}
+						} catch (InterruptedException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						}
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "move";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						Callable<Boolean> callable;
+						if (luaState.isNumber(-1)) {
+							final int number = luaState.checkInteger(-1);
+							callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									if (drone.drone.getRotationTicks() <= 0) {
+										drone.drone.setDigDirection(ForgeDirection.getOrientation(number));
+										drone.drone.setRotationTicks(60);
+										CustomPacket packet = new CustomPacket();
+										packet.id = 5;
+										ByteArrayOutputStream bos = new ByteArrayOutputStream();
+										DataOutputStream dos = new DataOutputStream(bos);
+										try {
+											dos.writeInt(drone.drone.entityId);
+											dos.writeInt(drone.drone.getRotationTicks());
+											packet.id = 5;
+											packet.data = bos.toByteArray();
+											PacketDispatcher.sendPacketToAllAround(drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20, drone.drone.worldObj.provider.dimensionId, packet.getMCPacket());
+										} catch (IOException e) {
+											ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
+										}
+									}
+									return true;
+								}
+							};
+						} else {
+							callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									if (drone.drone.getRotationTicks() <= 0) {
+										drone.drone.setRotationTicks(60);
+										CustomPacket packet = new CustomPacket();
+										packet.id = 5;
+										ByteArrayOutputStream bos = new ByteArrayOutputStream();
+										DataOutputStream dos = new DataOutputStream(bos);
+										try {
+											dos.writeInt(drone.drone.entityId);
+											dos.writeInt(drone.drone.getRotationTicks());
+											packet.id = 5;
+											packet.data = bos.toByteArray();
+											PacketDispatcher.sendPacketToAllAround(drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20, drone.drone.worldObj.provider.dimensionId, packet.getMCPacket());
+										} catch (IOException e) {
+											ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
+										}
+									}
+									return true;
+								}
+							};
+						}
+						final FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+						ElectroCraft.instance.registerRunnable(task);
+						try {
+							task.get();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							e.printStackTrace();
+						}
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "useTool";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						final int slot1 = luaState.checkInteger(-1), slot2 = luaState.checkInteger(-2);
+						Callable<ItemStack> getStack = new Callable<ItemStack>() {
+							@Override
+							public ItemStack call() throws Exception {
+								return drone.drone.getInventory().getStackInSlot(slot1);
+							}
+						};
+						final FutureTask<ItemStack> task = new FutureTask<ItemStack>(getStack);
+						ElectroCraft.instance.registerRunnable(task);
+						try {
+							if (task.get() == null) {
+								Callable<Boolean> setStack = new Callable<Boolean>() {
+									@Override
+									public Boolean call() throws Exception {
+										drone.drone.getInventory().setInventorySlotContents(slot1, task.get());
+										drone.drone.getInventory().setInventorySlotContents(slot2, null);
+										return true;
+									}
+								};
+								final FutureTask<Boolean> setTask = new FutureTask<Boolean>(setStack);
+								ElectroCraft.instance.registerRunnable(setTask);
+								luaState.pushBoolean(setTask.get());
+							} else {
+								luaState.pushBoolean(false);
+							}
+						} catch (InterruptedException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						}
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "moveStack";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						final int amount = luaState.checkInteger(-1), slot2 = luaState.checkInteger(-2), slot1 = luaState.checkInteger(-3);
+						Callable<Boolean> callable = new Callable<Boolean>() {
+							@Override
+							public Boolean call() throws Exception {
+								ItemStack stack = drone.drone.getInventory().getStackInSlot(slot2);
+								if (stack == null) {
+									return false;
+								}
+								int remainder = 0;
+								if (stack.stackSize <= amount) {
+									remainder = stack.stackSize - amount;
+									stack.stackSize = amount;
+								} else {
+									stack.stackSize = 0;
+									remainder = amount;
+								}
+								if (drone.drone.getInventory().getStackInSlot(-2) == null) {
+									drone.drone.getInventory().setInventorySlotContents(slot2, stack);
+									if (remainder > 0) {
+										ItemStack newStack = stack.copy();
+										newStack.stackSize = remainder;
+										drone.drone.getInventory().setInventorySlotContents(slot1, newStack);
+									} else {
+										drone.drone.getInventory().setInventorySlotContents(slot1, null);
+									}
+									return true;
+								} else {
+									return false;
+								}
+							}
+						};
+						final FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+						ElectroCraft.instance.registerRunnable(task);
+						try {
+							luaState.pushBoolean(task.get());
+						} catch (InterruptedException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						}
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "moveItems";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						Callable<Boolean> callable;
+
+						if (luaState.getTop() == 3) {
+							final int int1 = luaState.checkInteger(-1), int2 = luaState.checkInteger(-2), int3 = luaState.checkInteger(-3);
+							callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									ForgeDirection dir;
+									dir = ForgeDirection.getOrientation(int1);
+
+
+									int amount = 0;
+									ItemStack stack = null;
+									amount = int2;
+									stack = drone.drone.getInventory().getStackInSlot(int3);
+									ItemStack remainder = stack.copy();
+									remainder.stackSize = stack.stackSize - amount;
+									if (remainder.stackSize <= 0) {
+										amount -= Math.abs(remainder.stackSize);
+										remainder = null;
+									}
+									drone.drone.getInventory().setInventorySlotContents(int3, remainder);
+									stack.stackSize = amount;
+
+									if (stack == null || amount <= 0) {
+										return false;
+									}
+
+									int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+									int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+									int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+									if (drone.drone.worldObj.getBlockTileEntity(x, y, z) != null && drone.drone.worldObj.getBlockTileEntity(x, y, z) instanceof IInventory) {
+										IInventory inv = (IInventory) drone.drone.worldObj.getBlockTileEntity(x, y, z);
+										if (inv instanceof ISidedInventory) {
+											ISidedInventory sidedInv = (ISidedInventory) inv;
+											if (!addToInventory(sidedInv, sidedInv.getStartInventorySide(dir.getOpposite()), sidedInv.getSizeInventorySide(dir.getOpposite()), stack)) {
+												drone.drone.entityDropItem(stack, 0f);
+											}
+										} else {
+											if (!addToInventory(inv, 0, inv.getSizeInventory(), stack)) {
+												drone.drone.entityDropItem(stack, 0f);
+											}
+										}
+									} else {
+										drone.drone.entityDropItem(stack, 0f);
+									}
+									return true;
+								}
+							};
+						} else if (luaState.getTop() == 2) {
+							final int int1 = luaState.checkInteger(-1), int2 = luaState.checkInteger(-2);
+							callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									ForgeDirection dir;
+									dir = ForgeDirection.getOrientation(int1);
+
+									int amount = 0;
+									ItemStack stack = null;
+									stack = drone.drone.getInventory().getStackInSlot(int2);
+									if (stack != null) {
+										amount = stack.stackSize;
+									}
+									drone.drone.getInventory().setInventorySlotContents(int2, null);
+
+									if (stack == null || amount <= 0) {
+										return false;
+									}
+
+									int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+									int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+									int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+									if (drone.drone.worldObj.getBlockTileEntity(x, y, z) != null && drone.drone.worldObj.getBlockTileEntity(x, y, z) instanceof IInventory) {
+										IInventory inv = (IInventory) drone.drone.worldObj.getBlockTileEntity(x, y, z);
+										if (inv instanceof ISidedInventory) {
+											ISidedInventory sidedInv = (ISidedInventory) inv;
+											if (!addToInventory(sidedInv, sidedInv.getStartInventorySide(dir.getOpposite()), sidedInv.getSizeInventorySide(dir.getOpposite()), stack)) {
+												drone.drone.entityDropItem(stack, 0f);
+											}
+										} else {
+											if (!addToInventory(inv, 0, inv.getSizeInventory(), stack)) {
+												drone.drone.entityDropItem(stack, 0f);
+											}
+										}
+									} else {
+										drone.drone.entityDropItem(stack, 0f);
+									}
+									return true;
+								}
+							};
+						} else {
+							final int int1 = luaState.checkInteger(-1);
+							callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									ForgeDirection dir;
+									dir = getDirection(drone.drone.rotationYaw);
+
+									int amount = 0;
+									ItemStack stack = null;
+									stack = drone.drone.getInventory().getStackInSlot(int1);
+									if (stack != null) {
+										amount = stack.stackSize;
+									}
+									drone.drone.getInventory().setInventorySlotContents(int1, null);
+
+									if (stack == null || amount <= 0) {
+										return false;
+									}
+
+									int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+									int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+									int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+									if (drone.drone.worldObj.getBlockTileEntity(x, y, z) != null && drone.drone.worldObj.getBlockTileEntity(x, y, z) instanceof IInventory) {
+										IInventory inv = (IInventory) drone.drone.worldObj.getBlockTileEntity(x, y, z);
+										if (inv instanceof ISidedInventory) {
+											ISidedInventory sidedInv = (ISidedInventory) inv;
+											if (!addToInventory(sidedInv, sidedInv.getStartInventorySide(dir.getOpposite()), sidedInv.getSizeInventorySide(dir.getOpposite()), stack)) {
+												drone.drone.entityDropItem(stack, 0f);
+											}
+										} else {
+											if (!addToInventory(inv, 0, inv.getSizeInventory(), stack)) {
+												drone.drone.entityDropItem(stack, 0f);
+											}
+										}
+									} else {
+										drone.drone.entityDropItem(stack, 0f);
+									}
+									return true;
+								}
+							};
+						}
+						final FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+						ElectroCraft.instance.registerRunnable(task);
+						try {
+							luaState.pushBoolean(task.get());
+						} catch (InterruptedException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						}
+
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "drop";
+					}
+				}.init(this),
+		};
+		this.luaState.register("drone", droneAPI);
+		luaState.pop(1);
+		if (luaState != null && luaState.isOpen() && leftCard != null) {
+			luaState.register(leftCard.getValue1().getName(leftCard.getValue2()), leftCard.getValue1().getFunctions(leftCard.getValue2(), this));
+			luaState.pop(1);
+		}
+		if (luaState != null && luaState.isOpen() && rightCard != null) {
+			luaState.register(rightCard.getValue1().getName(rightCard.getValue2()), rightCard.getValue1().getFunctions(rightCard.getValue2(), this));
+			luaState.pop(1);
+		}
+		luaStateLock.unlock();
+	}
+
 	public void setLeftCard(ICard card, ItemStack stack) {
+		luaStateLock.lock();
+		if (luaState != null && luaState.isOpen() && card == null && this.leftCard != null && (this.rightCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
+			luaState.pushNil();
+			luaState.setGlobal(leftCard.getValue1().getName(leftCard.getValue2()));
+		}
+		if ((leftCard == null || (card != leftCard.getValue1() && luaState != null && luaState.isOpen())) && card != null && luaState != null) {
+			luaState.register(card.getName(stack), card.getFunctions(stack, this));
+			luaState.setGlobal(card.getName(stack));
+		}
+		luaStateLock.unlock();
 		this.leftCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
 	}
 
 	public void setRightCard(ICard card, ItemStack stack) {
+		luaStateLock.lock();
+		if (luaState != null && luaState.isOpen() && card == null && this.rightCard != null && (this.leftCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
+			luaState.pushNil();
+			luaState.setGlobal(rightCard.getValue1().getName(rightCard.getValue2()));
+		}
+		if ((rightCard == null || (card != rightCard.getValue1() && luaState != null && luaState.isOpen())) && card != null && luaState != null) {
+			luaState.register(card.getName(stack), card.getFunctions(stack, this));
+			luaState.setGlobal(card.getName(stack));
+		}
+		luaStateLock.unlock();
 		this.rightCard = (card == null ? null : new ObjectPair<ICard, ItemStack>(card, stack));
 	}
 

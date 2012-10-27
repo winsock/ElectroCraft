@@ -64,6 +64,9 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 	}
 	
 	@Override
+	public void startComputerClient(int port, SocketAddress address) { }
+
+	@Override
 	public void handleClientCustomPacket(CustomPacket packet) { }
 
 	@Override

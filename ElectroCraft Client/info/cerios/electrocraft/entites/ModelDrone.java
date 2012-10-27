@@ -63,7 +63,6 @@ public class ModelDrone extends ModelBase
 	    setRotation(BodyConnector3, 0F, 0F, 0F);
 	}
 
-	@Override
 	public void render(Entity entity, float f, float f1, float f2, float f3, float f4, float f5)
 	{
 		setRotationAngles(entity.rotationYaw, ((EntityDrone)entity).renderYawOffset, f2, f3, f4, f5);

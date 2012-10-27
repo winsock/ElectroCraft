@@ -2,6 +2,7 @@ package info.cerios.electrocraft.gui;
 
 import java.io.IOException;
 
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.common.network.PacketDispatcher;
@@ -9,6 +10,7 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 import info.cerios.electrocraft.core.container.ContainerDrone;
 import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
+import net.minecraft.src.Container;
 import net.minecraft.src.GuiContainer;
 
 public class GuiDroneInventory extends GuiContainer {

@@ -3,10 +3,17 @@ package info.cerios.electrocraft.blocks.render;
 import org.lwjgl.opengl.GL11;
 
 import info.cerios.electrocraft.blocks.render.models.SerialCableModel;
+import info.cerios.electrocraft.core.blocks.BlockSerialCable;
+import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
+import net.minecraft.src.Block;
+import net.minecraft.src.IBlockAccess;
+import net.minecraft.src.RenderBlocks;
+import net.minecraft.src.Tessellator;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.TileEntitySpecialRenderer;
 import net.minecraftforge.common.ForgeDirection;
+import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
 public class SerialCableRenderer extends TileEntitySpecialRenderer {
     private SerialCableModel model;
