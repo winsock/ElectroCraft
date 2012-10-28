@@ -109,7 +109,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushInteger(task.get());
 							} catch (InterruptedException e) {
 								luaState.pushBoolean(false);
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								luaState.pushBoolean(false);
 								e.printStackTrace();
@@ -144,7 +143,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushInteger(task.get());
 							} catch (InterruptedException e) {
 								luaState.pushBoolean(false);
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								luaState.pushBoolean(false);
 								e.printStackTrace();
@@ -179,7 +177,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushNumber(task.get());
 							} catch (InterruptedException e) {
 								luaState.pushBoolean(false);
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								luaState.pushBoolean(false);
 								e.printStackTrace();
@@ -215,7 +212,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 							try {
 								task.get();
 							} catch (InterruptedException e) {
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								e.printStackTrace();
 							}
@@ -256,7 +252,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 							try {
 								task.get();
 							} catch (InterruptedException e) {
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								e.printStackTrace();
 							}
@@ -302,7 +297,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushInteger(values[2]);
 								return 3;
 							} catch (InterruptedException e) {
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								e.printStackTrace();
 							}
@@ -339,7 +333,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushNumber(values[2]);
 								return 3;
 							} catch (InterruptedException e) {
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								e.printStackTrace();
 							}
@@ -377,7 +370,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushInteger(task.get());
 								return 3;
 							} catch (InterruptedException e) {
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								e.printStackTrace();
 							}
@@ -417,7 +409,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushInteger(values[1]);
 								return 2;
 							} catch (InterruptedException e) {
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								e.printStackTrace();
 							}
@@ -458,7 +449,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 							try {
 								task.get();
 							} catch (InterruptedException e) {
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								e.printStackTrace();
 							}
@@ -514,7 +504,6 @@ public class ItemDroneUpgrade extends Item implements ICard {
 								luaState.pushBoolean(task.get());
 							} catch (InterruptedException e) {
 								luaState.pushBoolean(false);
-								e.printStackTrace();
 							} catch (ExecutionException e) {
 								luaState.pushBoolean(false);
 								e.printStackTrace();

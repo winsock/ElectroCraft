@@ -12,11 +12,15 @@ import java.util.concurrent.FutureTask;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
 
 import net.minecraft.src.Block;
 import net.minecraft.src.EntityPlayer;
+import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.IInventory;
+import net.minecraft.src.ItemBlock;
+import net.minecraft.src.ItemInWorldManager;
 import net.minecraft.src.ItemStack;
 import net.minecraft.src.MathHelper;
 import net.minecraft.src.Packet32EntityLook;
@@ -35,6 +39,7 @@ import info.cerios.electrocraft.core.network.CustomPacket;
 public class Drone extends Computer {
 
 	private EntityDrone drone;
+	private EntityPlayerMP fakePlayer;
 	private boolean flying = false;
 	private ObjectPair<ICard, ItemStack> leftCard;
 	private ObjectPair<ICard, ItemStack> rightCard;
@@ -50,10 +55,20 @@ public class Drone extends Computer {
 			leftCard.getValue1().passiveFunctionTick(leftCard.getValue2());
 		if (rightCard != null)
 			rightCard.getValue1().passiveFunctionTick(rightCard.getValue2());
+		if (fakePlayer != null) {
+			fakePlayer.posX = drone.posX;
+			fakePlayer.posY = drone.posY;
+			fakePlayer.posZ = drone.posZ;
+		}
 	}
 
 	public void setDrone(EntityDrone drone) {
 		this.drone = drone;
+		if (!drone.worldObj.isRemote) {
+			ItemInWorldManager itemManager = new ItemInWorldManager(drone.worldObj);
+			fakePlayer = new EntityPlayerMP(FMLCommonHandler.instance().getMinecraftServerInstance(), drone.worldObj, "FakePlayerEC" + getBaseDirectory().getName(), itemManager);
+			fakePlayer.preventEntitySpawning = true;
+		}
 	}
 
 	public EntityDrone getDrone() {
@@ -127,7 +142,6 @@ public class Drone extends Computer {
 							}
 						} catch (InterruptedException e) {
 							luaState.pushBoolean(false);
-							e.printStackTrace();
 						} catch (ExecutionException e) {
 							luaState.pushBoolean(false);
 							e.printStackTrace();
@@ -205,7 +219,6 @@ public class Drone extends Computer {
 						try {
 							task.get();
 						} catch (InterruptedException e) {
-							e.printStackTrace();
 						} catch (ExecutionException e) {
 							e.printStackTrace();
 						}
@@ -254,7 +267,6 @@ public class Drone extends Computer {
 							}
 						} catch (InterruptedException e) {
 							luaState.pushBoolean(false);
-							e.printStackTrace();
 						} catch (ExecutionException e) {
 							luaState.pushBoolean(false);
 							e.printStackTrace();
@@ -314,7 +326,6 @@ public class Drone extends Computer {
 							luaState.pushBoolean(task.get());
 						} catch (InterruptedException e) {
 							luaState.pushBoolean(false);
-							e.printStackTrace();
 						} catch (ExecutionException e) {
 							luaState.pushBoolean(false);
 							e.printStackTrace();
@@ -475,7 +486,6 @@ public class Drone extends Computer {
 							luaState.pushBoolean(task.get());
 						} catch (InterruptedException e) {
 							luaState.pushBoolean(false);
-							e.printStackTrace();
 						} catch (ExecutionException e) {
 							luaState.pushBoolean(false);
 							e.printStackTrace();
@@ -487,6 +497,109 @@ public class Drone extends Computer {
 					@Override
 					public String getName() {
 						return "drop";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						final ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+						final int slot = luaState.checkInteger(-2);
+						Callable<Boolean> callable = new Callable<Boolean>() {
+							@Override
+							public Boolean call() throws Exception {
+								int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+								int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+								int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+								Block block = Block.blocksList[drone.getDrone().worldObj.getBlockId(x, y, z)];
+								if (drone.getDrone().getInventory().getStackInSlot(slot).getItem() instanceof ItemBlock) {
+									if ((block == null || block.isBlockReplaceable(drone.getDrone().worldObj, x, y, z)) && drone.getDrone().getInventory().getStackInSlot(slot) != null) {
+										((ItemBlock)drone.getDrone().getInventory().getStackInSlot(slot).getItem()).placeBlockAt(drone.getDrone().getInventory().getStackInSlot(slot), fakePlayer, drone.getDrone().worldObj, x, y, z, dir.getOpposite().ordinal(), 0, 0, 0);
+									}
+								} else {
+									drone.getDrone().getInventory().getStackInSlot(slot).tryPlaceItemIntoWorld(fakePlayer, drone.getDrone().worldObj, x, y, z, dir.getOpposite().ordinal(), 0, 0, 0);
+								}
+								return true;
+							}
+						};
+					
+						FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+						ElectroCraft.instance.registerRunnable(task);
+						try {
+							luaState.pushBoolean(task.get());
+						} catch (InterruptedException e) {
+							luaState.pushBoolean(false);
+						} catch (ExecutionException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						}
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "place";
+					}
+				}.init(this),
+				new NamedJavaFunction() {
+					Drone drone;
+
+					public NamedJavaFunction init(Drone drone) {
+						this.drone = drone;
+						return this;
+					}
+
+					@Override
+					public int invoke(LuaState luaState) {
+						final ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+						Callable<Boolean> callable;
+						if (luaState.getTop() == 1) {
+							callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+									int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+									int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+									Block block = Block.blocksList[drone.getDrone().worldObj.getBlockId(x, y, z)];
+									return fakePlayer.theItemInWorldManager.activateBlockOrUseItem(fakePlayer, drone.getDrone().worldObj, null, x, y, z, dir.getOpposite().ordinal(), 0, 0, 0);
+								}
+							};
+						} else {
+							final int slot = luaState.checkInteger(-2);
+							callable = new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									int x = (int)(Math.floor(drone.getDrone().posX) + dir.offsetX);
+									int y = (int)(Math.floor(drone.getDrone().posY) + dir.offsetY);
+									int z = (int)(Math.floor(drone.getDrone().posZ) + dir.offsetZ);
+									Block block = Block.blocksList[drone.getDrone().worldObj.getBlockId(x, y, z)];
+									return fakePlayer.theItemInWorldManager.activateBlockOrUseItem(fakePlayer, drone.getDrone().worldObj, drone.getDrone().getInventory().getStackInSlot(slot), x, y, z, dir.getOpposite().ordinal(), 0, 0, 0);
+								}
+							};
+						}
+					
+						FutureTask<Boolean> task = new FutureTask<Boolean>(callable);
+						ElectroCraft.instance.registerRunnable(task);
+						try {
+							luaState.pushBoolean(task.get());
+						} catch (InterruptedException e) {
+							luaState.pushBoolean(false);
+						} catch (ExecutionException e) {
+							luaState.pushBoolean(false);
+							e.printStackTrace();
+						}
+						return 1;
+					}
+
+					@Override
+					public String getName() {
+						return "use";
 					}
 				}.init(this),
 		};
