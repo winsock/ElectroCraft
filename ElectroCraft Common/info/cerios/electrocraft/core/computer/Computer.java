@@ -888,8 +888,6 @@ public class Computer implements Runnable {
 	public void shutdown() {
 		running = false;
 		sleepTimer.cancel();
-		if (luaState != null && luaState.isOpen())
-			luaState.close();
 		thisThread.interrupt();
 	}
 
