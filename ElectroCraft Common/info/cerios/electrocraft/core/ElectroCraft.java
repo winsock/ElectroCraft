@@ -68,7 +68,7 @@ import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.common.registry.TickRegistry;
 
-@Mod(modid = "electrocraft", name = "ElectroCraft", version = "Beta 0.30")
+@Mod(modid = "electrocraft", name = "ElectroCraft", version = "@VERSION@", useMetadata = true)
 @NetworkMod(channels = {"electrocraft"}, clientSideRequired = true, serverSideRequired = false, packetHandler=UniversialPacketHandler.class, connectionHandler = ConnectionHandler.class)
 public class ElectroCraft implements IElectroCraft {
 

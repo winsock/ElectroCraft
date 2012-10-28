@@ -1,8 +1,8 @@
 [
 {
-  "modid" : "mod_ElectroCraft",
+  "modid" : "electrocraft",
   "name" : "ElectroCraft",
-  "version" : "Beta 0.30",
+  "version" : "@VERSION@",
   "credits" : "People who helped on the IRC channel #minecraftforge",
   "url" : "#electrocraft on irc.esper.net",
   "authors": [
