@@ -6,6 +6,7 @@ import info.cerios.electrocraft.api.computer.luaapi.LuaAPI;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
+import info.cerios.electrocraft.core.computer.luaapi.EndNet;
 import info.cerios.electrocraft.core.computer.luaapi.Network;
 import info.cerios.electrocraft.core.computer.luaapi.MinecraftInterface;
 import info.cerios.electrocraft.core.network.ComputerServerClient;
@@ -823,6 +824,7 @@ public class Computer implements Runnable {
 		// Load ElectroCraft default libraries
 		loadAPI(new ComputerFile());
 		loadAPI(new Network());
+		loadAPI(new EndNet());
 		loadAPI(mcIO = new MinecraftInterface());
 
 		luaStateLock.unlock();
@@ -886,7 +888,9 @@ public class Computer implements Runnable {
 	public void shutdown() {
 		running = false;
 		sleepTimer.cancel();
-		Thread.currentThread().interrupt();
+		if (luaState != null && luaState.isOpen())
+			luaState.close();
+		thisThread.interrupt();
 	}
 
 	@ExposedToLua
@@ -1012,7 +1016,6 @@ public class Computer implements Runnable {
 			try {
 				termTask.get();
 			} catch (InterruptedException e1) {
-				e1.printStackTrace();
 			} catch (ExecutionException e1) {
 				e1.printStackTrace();
 			} catch (CancellationException e1) {
