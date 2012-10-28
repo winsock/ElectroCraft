@@ -1152,16 +1152,14 @@ public class Computer implements Runnable {
 						luaState.pop(luaState.getTop());
 						if (luaStateLock.isHeldByCurrentThread())
 							luaStateLock.unlock();
-						this.setRunning(false);
 						stateLock.unlock();
-						sleepTimer.cancel();
+						this.shutdown();
 						return;
 					}
 				}
 			}
 			stateLock.unlock();
 		}
-		sleepTimer.cancel();
 		this.running = false;
 	}
 
