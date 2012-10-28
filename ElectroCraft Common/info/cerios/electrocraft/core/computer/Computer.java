@@ -887,7 +887,9 @@ public class Computer implements Runnable {
 	@ExposedToLua
 	public void shutdown() {
 		running = false;
-		sleepTimer.cancel();
+		if (sleepTimer != null)
+			sleepTimer.cancel();
+		sleepTimer = null;
 		thisThread.interrupt();
 	}
 
@@ -1091,14 +1093,15 @@ public class Computer implements Runnable {
 									throw new LuaRuntimeException("Runtime error!");
 							if (luaState.isNumber(-1)) {
 								finishedSleeping = false;
-								sleepTimer.schedule(new TimerTask() {
-									@Override
-									public void run() {
-										synchronized(sleepLock) {
-											finishedSleeping = true;
-											killYielded = true;
-										}
-									}}, luaState.checkInteger(-1, 0));
+								if (sleepTimer != null)
+									sleepTimer.schedule(new TimerTask() {
+										@Override
+										public void run() {
+											synchronized(sleepLock) {
+												finishedSleeping = true;
+												killYielded = true;
+											}
+										}}, luaState.checkInteger(-1, 0));
 							} else if (luaState.getTop() == 1) {
 								killYielded = true;
 							}
