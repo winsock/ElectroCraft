@@ -1004,145 +1004,147 @@ public class Computer implements Runnable {
 
 					if (killYielded)
 						postEvent("killyield");
-
+					List<Event> copy;
 					synchronized (eventLock) {
-						List<Event> copy = new ArrayList<Event>(eventQueue);
-						if (copy.size() > 0) {						
-							for (Event event : copy) {
-								String eventName = event.eventName;
-								Object[] args = event.args;
+						copy = new ArrayList<Event>(eventQueue);
+					}
+					if (copy.size() > 0) {						
+						for (Event event : copy) {
+							String eventName = event.eventName;
+							Object[] args = event.args;
 
-								if (!finishedSleeping) {
-									Thread.sleep(5);
-									break;
-								}
-								if (killYielded)
-									killYielded = false;
-								if (!running) {
-									stateLock.unlock();
-									return;
-								}
-								try {
-									if (luaStateLock.tryLock(0, TimeUnit.SECONDS)) {
-										if (!luaState.isOpen()) {
-											luaStateLock.unlock();
-											stateLock.unlock();
-											return;
-										}
-
-										luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
-										luaState.getField(-1, "resume");
-										luaState.remove(-2);
-										int argSize = 0;
-
-										luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
-										if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
-											// Oops we must of shutdown or something
-											luaState.pop(luaState.getTop());
-											luaStateLock.unlock();
-											stateLock.unlock();
-											return;
-										} else {
-											// Its a valid thread
-											argSize += 1;
-										}
-
-										if (argSize <= 0) {
-											// the thread is non existent
-											luaState.pop(luaState.getTop());
-											luaStateLock.unlock();
-											stateLock.unlock();
-											return;
-										}
-										// Lets check if we should push arguments
-										if (!eventName.equalsIgnoreCase("resume") && !eventName.equalsIgnoreCase("killyield")) {
-											// Its not a blacklisted event name lets push the arguments
-											luaState.pushString(eventName);
-											for (Object arg : args) {
-												luaState.pushJavaObject(arg);
-											}
-											argSize += 1 + args.length;
-										}
-
-										// Lets call the coroutine
-										luaState.call(argSize, LuaState.MULTRET);
-										// Reset the yield kill line counter to 100 lines
-										luaState.reset_kill(100);
-
-										// Check the results
-										if (luaState.isBoolean(1))
-											if (!luaState.checkBoolean(1, true))
-												throw new LuaRuntimeException("Runtime error!");
-										if (luaState.isNumber(-1)) {
-											finishedSleeping = false;
-											if (sleepTimer != null)
-												sleepTimer.schedule(new TimerTask() {
-													@Override
-													public void run() {
-														synchronized(sleepLock) {
-															finishedSleeping = true;
-															killYielded = true;
-														}
-													}}, luaState.checkInteger(-1, 0));
-										} else if (luaState.getTop() == 1) {
-											killYielded = true;
-										}
-
-										// Lets make sure the stack is clean
-										luaState.pop(luaState.getTop());
-
-										// Load the pluto state
-//										if (eventName.equalsIgnoreCase("resume")) {
-//											loadPlutoState();
-//										}
-
-										// System memory check
-										if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
-											stateLock.unlock();
-											shutdown();
-											getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
-											luaStateLock.unlock();
-											return;
-										}
-
-										// Extra backup check in case my wrapped file manager doesn't catch it
-										if (getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
-											stateLock.unlock();
-											shutdown();
-											getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
-											luaStateLock.unlock();
-											return;
-										}
-
-										if (ticksSinceLastSave % 900 == 0) {
-											callSave();
-											ticksSinceLastSave = 0;
-										} else {
-											ticksSinceLastSave++;
-										}
-
+							if (!finishedSleeping) {
+								Thread.sleep(5);
+								break;
+							}
+							if (killYielded)
+								killYielded = false;
+							if (!running) {
+								stateLock.unlock();
+								return;
+							}
+							try {
+								if (luaStateLock.tryLock(0, TimeUnit.SECONDS)) {
+									if (!luaState.isOpen()) {
 										luaStateLock.unlock();
+										stateLock.unlock();
+										return;
 									}
-								} catch (LuaSyntaxException e) {
-									getTerminal().print("Syntax Error!");
-									e.printStackTrace(new PrintWriter(getTerminal()));
-									throw e;
-								} catch (LuaRuntimeException e) {
-									getTerminal().print("Runtime Error!");
-									if (luaState.isString(-1)) {
-										getTerminal().print(luaState.checkString(-1));
-										ElectroCraft.instance.getLogger().severe(luaState.checkString(-1));
+
+									luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+									luaState.getField(-1, "resume");
+									luaState.remove(-2);
+									int argSize = 0;
+
+									luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+									if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
+										// Oops we must of shutdown or something
+										luaState.pop(luaState.getTop());
+										luaStateLock.unlock();
+										stateLock.unlock();
+										return;
 									} else {
-										e.printLuaStackTrace(new PrintWriter(getTerminal()));
-										e.printLuaStackTrace();
+										// Its a valid thread
+										argSize += 1;
 									}
-									throw e;
-								} finally {
+
+									if (argSize <= 0) {
+										// the thread is non existent
+										luaState.pop(luaState.getTop());
+										luaStateLock.unlock();
+										stateLock.unlock();
+										return;
+									}
+									// Lets check if we should push arguments
+									if (!eventName.equalsIgnoreCase("resume") && !eventName.equalsIgnoreCase("killyield")) {
+										// Its not a blacklisted event name lets push the arguments
+										luaState.pushString(eventName);
+										for (Object arg : args) {
+											luaState.pushJavaObject(arg);
+										}
+										argSize += 1 + args.length;
+									}
+
+									// Lets call the coroutine
+									luaState.call(argSize, LuaState.MULTRET);
+									// Reset the yield kill line counter to 100 lines
+									luaState.reset_kill(100);
+
+									// Check the results
+									if (luaState.isBoolean(1))
+										if (!luaState.checkBoolean(1, true))
+											throw new LuaRuntimeException("Runtime error!");
+									if (luaState.isNumber(-1)) {
+										finishedSleeping = false;
+										if (sleepTimer != null)
+											sleepTimer.schedule(new TimerTask() {
+												@Override
+												public void run() {
+													synchronized(sleepLock) {
+														finishedSleeping = true;
+														killYielded = true;
+													}
+												}}, luaState.checkInteger(-1, 0));
+									} else if (luaState.getTop() == 1) {
+										killYielded = true;
+									}
+
 									// Lets make sure the stack is clean
 									luaState.pop(luaState.getTop());
-									if (luaStateLock.isHeldByCurrentThread())
+
+									// Load the pluto state
+//									if (eventName.equalsIgnoreCase("resume")) {
+//										loadPlutoState();
+//									}
+
+									// System memory check
+									if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
+										stateLock.unlock();
+										shutdown();
+										getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
 										luaStateLock.unlock();
+										return;
+									}
+
+									// Extra backup check in case my wrapped file manager doesn't catch it
+									if (getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
+										stateLock.unlock();
+										shutdown();
+										getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
+										luaStateLock.unlock();
+										return;
+									}
+
+									if (ticksSinceLastSave % 900 == 0) {
+										callSave();
+										ticksSinceLastSave = 0;
+									} else {
+										ticksSinceLastSave++;
+									}
+
+									luaStateLock.unlock();
 								}
+							} catch (LuaSyntaxException e) {
+								getTerminal().print("Syntax Error!");
+								e.printStackTrace(new PrintWriter(getTerminal()));
+								throw e;
+							} catch (LuaRuntimeException e) {
+								getTerminal().print("Runtime Error!");
+								if (luaState.isString(-1)) {
+									getTerminal().print(luaState.checkString(-1));
+									ElectroCraft.instance.getLogger().severe(luaState.checkString(-1));
+								} else {
+									e.printLuaStackTrace(new PrintWriter(getTerminal()));
+									e.printLuaStackTrace();
+								}
+								throw e;
+							} finally {
+								// Lets make sure the stack is clean
+								luaState.pop(luaState.getTop());
+								if (luaStateLock.isHeldByCurrentThread())
+									luaStateLock.unlock();
+							}
+							synchronized (eventLock) {
 								eventQueue.remove(event);
 							}
 						}

@@ -176,7 +176,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 	}
 
 	public boolean isStillMovingOrRotating() {
-		return this.newPosRotationIncrements > 0;
+		return this.newPosRotationIncrements > 0 && drone.isRunning();
 	}
 
 	@Override
@@ -322,6 +322,8 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 
 	public void setRotationTicks(int ticks) {
 		this.rotationTicks = ticks;
+		if (ticks == 0)
+			this.newPosRotationIncrements = 0;
 	}
 
 	public void setDigDirection(ForgeDirection dir) {

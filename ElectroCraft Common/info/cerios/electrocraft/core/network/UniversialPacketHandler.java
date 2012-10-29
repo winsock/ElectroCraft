@@ -148,7 +148,6 @@ public class UniversialPacketHandler implements IPacketHandler {
 	            	} else if (customPacket.id == 3) {
 	            		if (customPacket.data[0] == 0) {
 	            			if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null && ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer() != null) {
-	            				ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().postEvent("kill");
 	            				ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().shutdown();
 	            			}
 	            		}

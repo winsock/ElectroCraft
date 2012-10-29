@@ -76,6 +76,12 @@ public class Drone extends Computer {
 	}
 
 	@Override
+	public void shutdown() {
+		super.shutdown();
+		drone.setRotationTicks(0);
+	}
+	
+	@Override
 	public void loadLuaDefaults() {
 		super.loadLuaDefaults();
 		luaStateLock.lock();
