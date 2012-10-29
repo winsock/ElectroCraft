@@ -107,6 +107,7 @@ public class ElectroCraft implements IElectroCraft {
 		// Create and load the config
 		ConfigHandler.loadOrCreateConfigFile("default.cfg");
 		ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "useMCServer", true);
+		ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "deleteFiles", true);
 		ConfigHandler.getCurrentConfig().save();
 	}
 

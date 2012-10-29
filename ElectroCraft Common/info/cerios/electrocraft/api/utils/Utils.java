@@ -22,145 +22,162 @@ import net.minecraft.src.IBlockAccess;
 import net.minecraftforge.common.ForgeDirection;
 
 public class Utils {
-    public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
-        for (Entry<T, E> entry : map.entrySet()) {
-            if (value.equals(entry.getValue())) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
+	public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
+		for (Entry<T, E> entry : map.entrySet()) {
+			if (value.equals(entry.getValue())) {
+				return entry.getKey();
+			}
+		}
+		return null;
+	}
 
-    public static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
-        Set<T> keys = new HashSet<T>();
-        for (Entry<T, E> entry : map.entrySet()) {
-            if (value.equals(entry.getValue())) {
-                keys.add(entry.getKey());
-            }
-        }
-        return keys;
-    }
+	public static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
+		Set<T> keys = new HashSet<T>();
+		for (Entry<T, E> entry : map.entrySet()) {
+			if (value.equals(entry.getValue())) {
+				keys.add(entry.getKey());
+			}
+		}
+		return keys;
+	}
 
-    public static byte[] compressBytes(byte[] data) throws UnsupportedEncodingException, IOException {
-        Deflater df = new Deflater();
-        df.setLevel(Deflater.BEST_COMPRESSION);
-        df.setInput(data);
+	public static byte[] compressBytes(byte[] data) throws UnsupportedEncodingException, IOException {
+		Deflater df = new Deflater();
+		df.setLevel(Deflater.BEST_COMPRESSION);
+		df.setInput(data);
 
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
-        df.finish();
-        byte[] buff = new byte[1024];
-        while (!df.finished()) {
-            int count = df.deflate(buff);
-            bos.write(buff, 0, count);
-        }
-        bos.close();
-        byte[] output = bos.toByteArray();
-        return output;
-    }
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
+		df.finish();
+		byte[] buff = new byte[1024];
+		while (!df.finished()) {
+			int count = df.deflate(buff);
+			bos.write(buff, 0, count);
+		}
+		bos.close();
+		byte[] output = bos.toByteArray();
+		return output;
+	}
 
-    public static byte[] extractBytes(byte[] input) throws UnsupportedEncodingException, IOException, DataFormatException {
-        Inflater ifl = new Inflater();
-        ifl.setInput(input);
+	public static byte[] extractBytes(byte[] input) throws UnsupportedEncodingException, IOException, DataFormatException {
+		Inflater ifl = new Inflater();
+		ifl.setInput(input);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(input.length);
-        byte[] buff = new byte[1024];
-        while (!ifl.finished()) {
-            int count = ifl.inflate(buff);
-            baos.write(buff, 0, count);
-        }
-        baos.close();
-        byte[] output = baos.toByteArray();
-        return output;
-    }
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(input.length);
+		byte[] buff = new byte[1024];
+		while (!ifl.finished()) {
+			int count = ifl.inflate(buff);
+			baos.write(buff, 0, count);
+		}
+		baos.close();
+		byte[] output = baos.toByteArray();
+		return output;
+	}
 
-    public static void copyResource(String sourceFile, File destFile) throws IOException {
-        if (!destFile.exists()) {
-            destFile.createNewFile();
-        }
+	public static void copyResource(String sourceFile, File destFile) throws IOException {
+		if (!destFile.exists()) {
+			destFile.createNewFile();
+		}
 
-        ReadableByteChannel source = null;
-        FileChannel destination = null;
-        FileOutputStream fileOutput = null;
-        InputStream resource = null;
+		ReadableByteChannel source = null;
+		FileChannel destination = null;
+		FileOutputStream fileOutput = null;
+		InputStream resource = null;
 
-        try {
-            resource = Utils.class.getClassLoader().getResourceAsStream(sourceFile);
-            source = Channels.newChannel(resource);
-            fileOutput = new FileOutputStream(destFile);
-            destination = fileOutput.getChannel();
-            destination.transferFrom(source, 0, resource.available());
-        } finally {
-            if (source != null)
-                source.close();
-            if (destination != null)
-                destination.close();
-            if (fileOutput != null)
-                fileOutput.close();
-            if (resource != null)
-                resource.close();
-        }
-    }
+		try {
+			resource = Utils.class.getClassLoader().getResourceAsStream(sourceFile);
+			source = Channels.newChannel(resource);
+			fileOutput = new FileOutputStream(destFile);
+			destination = fileOutput.getChannel();
+			destination.transferFrom(source, 0, resource.available());
+		} finally {
+			if (source != null)
+				source.close();
+			if (destination != null)
+				destination.close();
+			if (fileOutput != null)
+				fileOutput.close();
+			if (resource != null)
+				resource.close();
+		}
+	}
 
-    public static String loadUncompiledAssembly(String file) {
-        File javaFile = new File(file);
-        if (!javaFile.exists()) {
-            return "";
-        }
+	public static String loadUncompiledAssembly(String file) {
+		File javaFile = new File(file);
+		if (!javaFile.exists()) {
+			return "";
+		}
 
-        StringBuffer buffer = new StringBuffer();
-        try {
-            FileReader reader = new FileReader(javaFile);
-            while (reader.ready()) {
-                buffer.append((char)reader.read());
-            }
-            reader.close();
-        } catch (IOException e) {
-            ElectroCraft.instance.getLogger().severe("Error! Unable to open specified ASM file: " + file);
-        }
-        return  buffer.toString();
-    }
-    
-    public static ForgeDirection isBlockOnOpaqueBlock(IBlockAccess access, int x, int y, int z) {
-    	if (access.isBlockOpaqueCube(x + 1, y, z)) {
-    		return ForgeDirection.EAST;
-    	} else if (access.isBlockOpaqueCube(x - 1, y, z)) {
-    		return ForgeDirection.WEST;
-    	} else if (access.isBlockOpaqueCube(x, y + 1, z)) {
-    		return ForgeDirection.UP;
-    	} else if (access.isBlockOpaqueCube(x, y - 1, z)) {
-    		return ForgeDirection.DOWN;
-    	} else if (access.isBlockOpaqueCube(x, y, z + 1)) {
-    		return ForgeDirection.SOUTH;
-    	} else if (access.isBlockOpaqueCube(x, y, z - 1)) {
-    		return ForgeDirection.NORTH;
-    	} else {
-    		return ForgeDirection.UNKNOWN;
-    	}
-    }
-        
-    /**
-     * Checks, whether the child directory is a subdirectory of the base directory.
-     * Or a file inside the base directory
-     *
-     * @param base the base directory.
-     * @param child the suspected child directory or file.
-     * @return true, if the child is a subdirectory of the base directory, or a file in the base directory
-     * @throws IOException if an IOError occurred during the test.
-     */
-    public static boolean baseDirectoryContains(File base, File child) throws IOException {
-        base = base.getCanonicalFile();
-        child = child.getCanonicalFile();
+		StringBuffer buffer = new StringBuffer();
+		try {
+			FileReader reader = new FileReader(javaFile);
+			while (reader.ready()) {
+				buffer.append((char)reader.read());
+			}
+			reader.close();
+		} catch (IOException e) {
+			ElectroCraft.instance.getLogger().severe("Error! Unable to open specified ASM file: " + file);
+		}
+		return  buffer.toString();
+	}
 
-        File parentFile = child;
-        while (parentFile != null) {
-            if (base.equals(parentFile)) {
-                return true;
-            }
-            parentFile = parentFile.getParentFile();
-        }
-        return false;
-    }
-    
+	public static ForgeDirection isBlockOnOpaqueBlock(IBlockAccess access, int x, int y, int z) {
+		if (access.isBlockOpaqueCube(x + 1, y, z)) {
+			return ForgeDirection.EAST;
+		} else if (access.isBlockOpaqueCube(x - 1, y, z)) {
+			return ForgeDirection.WEST;
+		} else if (access.isBlockOpaqueCube(x, y + 1, z)) {
+			return ForgeDirection.UP;
+		} else if (access.isBlockOpaqueCube(x, y - 1, z)) {
+			return ForgeDirection.DOWN;
+		} else if (access.isBlockOpaqueCube(x, y, z + 1)) {
+			return ForgeDirection.SOUTH;
+		} else if (access.isBlockOpaqueCube(x, y, z - 1)) {
+			return ForgeDirection.NORTH;
+		} else {
+			return ForgeDirection.UNKNOWN;
+		}
+	}
+
+	/**
+	 * Checks, whether the child directory is a subdirectory of the base directory.
+	 * Or a file inside the base directory
+	 *
+	 * @param base the base directory.
+	 * @param child the suspected child directory or file.
+	 * @return true, if the child is a subdirectory of the base directory, or a file in the base directory
+	 * @throws IOException if an IOError occurred during the test.
+	 */
+	public static boolean baseDirectoryContains(File base, File child) throws IOException {
+		base = base.getCanonicalFile();
+		child = child.getCanonicalFile();
+
+		File parentFile = child;
+		while (parentFile != null) {
+			if (base.equals(parentFile)) {
+				return true;
+			}
+			parentFile = parentFile.getParentFile();
+		}
+		return false;
+	}
+
+	/**
+	 * By default File#delete fails for non-empty directories, it works like "rm". 
+	 * We need something a little more brutual - this does the equivalent of "rm -r"
+	 * @param path Root File Path
+	 * @return true iff the file and all sub files/directories have been removed
+	 * @throws FileNotFoundException
+	 */
+	public static boolean deleteRecursive(File path) throws FileNotFoundException{
+		if (!path.exists()) throw new FileNotFoundException(path.getAbsolutePath());
+		boolean ret = true;
+		if (path.isDirectory()){
+			for (File f : path.listFiles()){
+				ret = ret && deleteRecursive(f);
+			}
+		}
+		return ret && path.delete();
+	}
 
 	/**
 	 * Compares array1 to array two and gets the ChangedBytes
@@ -213,7 +230,7 @@ public class Utils {
 			return changedBytes;
 		}
 	}
-	
+
 	public static class ChangedBytes {
 		public byte[] b;
 		public int offset;

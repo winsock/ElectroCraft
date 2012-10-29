@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.blocks;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -7,6 +8,8 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
+import info.cerios.electrocraft.api.utils.Utils;
+import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityComputer;
 import info.cerios.electrocraft.core.network.GuiPacket;
@@ -19,6 +22,7 @@ import net.minecraft.src.Material;
 import net.minecraft.src.MathHelper;
 import net.minecraft.src.TileEntity;
 import net.minecraft.src.World;
+import net.minecraftforge.common.Configuration;
 import net.minecraftforge.common.ForgeDirection;
 
 public class BlockComputer extends BlockNetwork {
@@ -107,8 +111,14 @@ public class BlockComputer extends BlockNetwork {
 			if (computerTileEntity != null) {
 				if (computerTileEntity.getComputer() != null) {
 					if (computerTileEntity.getComputer().isRunning())
-						computerTileEntity.getComputer().setRunning(false);
-					computerTileEntity.getComputer().getBaseDirectory().delete();
+						computerTileEntity.stopComputer();
+					if (!computerTileEntity.getComputer().getBaseDirectory().delete() && ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "deleteFiles", true).getBoolean(true)) {
+						try {
+							Utils.deleteRecursive(computerTileEntity.getComputer().getBaseDirectory());
+						} catch (FileNotFoundException e) {
+							ElectroCraft.instance.getLogger().severe("Unable to delete removed computers files! Path: " + computerTileEntity.getComputer().getBaseDirectory().getAbsolutePath());
+						}
+					}
 				}
 			}
 		}

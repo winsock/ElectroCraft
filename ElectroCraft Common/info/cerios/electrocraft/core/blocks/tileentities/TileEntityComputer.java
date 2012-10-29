@@ -95,7 +95,6 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         	if (computer == null)
         		createComputer();
         	computer.setProgramStorage((NBTTagCompound) nbttagcompound.getTag("programStorage"));
-        	computer.setRunning(true);
         	computer.callLoad();
         	        	
         	for (NetworkBlock ioPort : ioPorts) {
@@ -180,7 +179,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     public void stopComputer() {
     	if (computer != null && computer.isRunning()) {
 	    	computer.postEvent("kill");
-    		computer.setRunning(false);
+    		computer.shutdown();
     	}
     }
     

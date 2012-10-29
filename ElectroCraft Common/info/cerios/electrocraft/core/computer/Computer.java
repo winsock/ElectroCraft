@@ -87,7 +87,7 @@ public class Computer implements Runnable {
 	private Object sleepLock = new Object();
 	private volatile boolean finishedSleeping = true;
 	private boolean killYielded = false;
-	private Timer sleepTimer = new Timer();
+	private Timer sleepTimer;
 	private List<Event> eventQueue = new ArrayList<Event>();
 	private Object eventLock = new Object();
 	private Object finalizeGuardian;
@@ -535,17 +535,6 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua(value = false)
-	public LuaState getAndLockLuaState() {
-		luaStateLock.lock();
-		return luaState;
-	}
-
-	public void tryUnlockLuaState() {
-		if (luaStateLock.isHeldByCurrentThread())
-			luaStateLock.unlock();
-	}
-
-	@ExposedToLua(value = false)
 	public void tick() {
 		if (getKeyboard().getKeysInBuffer() > 0) {
 			if (getKeyboard().peak() > Character.MAX_VALUE)
@@ -590,11 +579,12 @@ public class Computer implements Runnable {
 
 	@ExposedToLua(value = false)
 	public void callSave() {
-		if (running && luaState.isOpen()) {
+		if (running && luaState != null && luaState.isOpen()) {
 			if (luaStateLock.tryLock()) {
-//				savePlutoState();
+				//				savePlutoState();
 				programStorage = new NBTTagCompound(currentProgram);
-				for (String m : onSaveMethods) {
+				List<String> saveMethods = new ArrayList<String>(onSaveMethods);
+				for (String m : saveMethods) {
 					try {
 						luaState.getGlobal(m);
 						if (luaState.type(-1) != LuaType.FUNCTION) {
@@ -606,50 +596,36 @@ public class Computer implements Runnable {
 						luaState.newThread();
 						luaState.setField(LuaState.REGISTRYINDEX, "save_thread");
 
-						try {
+						luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+						luaState.getField(-1, "resume");
+						luaState.remove(-2);
+						luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+						luaState.pushJavaObject(programStorage);
+						luaState.call(2, 0);
+						luaState.reset_kill(1000);
+						if (luaState.isBoolean(1))
+							if (!luaState.checkBoolean(1, true))
+								throw new LuaRuntimeException("Runtime error!");
+						luaState.pop(luaState.getTop());
+
+						luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+						while (luaState.status(-1) == LuaState.YIELD) {
 							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
 							luaState.getField(-1, "resume");
 							luaState.remove(-2);
 							luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
-							luaState.pushJavaObject(programStorage);
-							luaState.call(2, 0);
+							luaState.call(1, 0);
 							luaState.reset_kill(1000);
 							if (luaState.isBoolean(1))
 								if (!luaState.checkBoolean(1, true))
 									throw new LuaRuntimeException("Runtime error!");
+							if (luaState.getTop() == 1) {
+								break;
+							}
 							luaState.pop(luaState.getTop());
-
 							luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
-							while (luaState.status(-1) == LuaState.YIELD) {
-								luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
-								luaState.getField(-1, "resume");
-								luaState.remove(-2);
-								luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
-								luaState.call(1, 0);
-								luaState.reset_kill(1000);
-								if (luaState.isBoolean(1))
-									if (!luaState.checkBoolean(1, true))
-										throw new LuaRuntimeException("Runtime error!");
-								if (luaState.getTop() == 1) {
-									break;
-								}
-								luaState.pop(luaState.getTop());
-								luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
-							}
-							luaState.pop(luaState.getTop());
-						} catch (LuaSyntaxException e) {
-							getTerminal().print("Syntax Error!");
-							e.printStackTrace(new PrintWriter(getTerminal()));
-						} catch (LuaRuntimeException e) {
-							getTerminal().print("Runtime Error!");
-							if (luaState.isString(-1))
-								getTerminal().print(luaState.checkString(-1));
-							else {
-								e.printLuaStackTrace(new PrintWriter(getTerminal()));
-							}
-							e.printLuaStackTrace();
-							this.setRunning(false);
 						}
+						luaState.pop(luaState.getTop());
 					} catch (LuaSyntaxException e) {
 						System.out.println("Error running lua script: Syntax Error!");
 						System.out.println(e.getLocalizedMessage());
@@ -657,9 +633,10 @@ public class Computer implements Runnable {
 						System.out.println("Error running lua script: Runtime Error!");
 						System.out.println("Possibly went to long without yielding?");
 						e.printLuaStackTrace();
+					} finally {
+						luaState.reset_kill(100);
+						luaStateLock.unlock();
 					}
-					luaState.reset_kill(100);
-					luaStateLock.unlock();
 				}
 			}
 		}
@@ -667,14 +644,11 @@ public class Computer implements Runnable {
 
 	@ExposedToLua(value = false)
 	public void callLoad() {
-		if (running) {
-			stateLock.lock();
-			wasResumed = true;
-			stateLock.unlock();
-			thisThread = new Thread(this);
-			thisThread.start();
-			postEvent("resume", programStorage);
-		}
+		stateLock.lock();
+		wasResumed = true;
+		stateLock.unlock();
+		start();
+		postEvent("resume", programStorage);
 	}
 
 	@ExposedToLua(value = false)
@@ -827,6 +801,7 @@ public class Computer implements Runnable {
 		loadAPI(new EndNet());
 		loadAPI(mcIO = new MinecraftInterface());
 
+		onSaveMethods = new ArrayList<String>();
 		luaStateLock.unlock();
 	}
 
@@ -886,11 +861,18 @@ public class Computer implements Runnable {
 
 	@ExposedToLua
 	public void shutdown() {
+		stateLock.lock();
+		thisThread.interrupt();
 		running = false;
 		if (sleepTimer != null)
 			sleepTimer.cancel();
 		sleepTimer = null;
-		thisThread.interrupt();
+		stateLock.unlock();
+		synchronized (eventLock) {
+			if (eventQueue.size() > 0) {
+				eventQueue.clear();
+			}
+		}
 	}
 
 	@ExposedToLua
@@ -903,17 +885,6 @@ public class Computer implements Runnable {
 			thisThread.start();
 			postEvent("start");
 		}
-	}
-
-	@ExposedToLua(value = false)
-	public void setRunning(boolean value) {
-		stateLock.lock();
-		running = value;
-		if (value == false && luaState != null && luaState.isOpen())
-			luaState.close();
-		if (value == false && thisThread != null)
-			thisThread.interrupt();
-		stateLock.unlock();
 	}
 
 	@ExposedToLua(value = false)
@@ -984,186 +955,210 @@ public class Computer implements Runnable {
 		// Register the Lua thread with the security manager
 		ElectroCraft.instance.getSecurityManager().registerThread(this);
 
-		int ticksSinceLastSave = 0;
+		// Reset the sleep indicator
+		finishedSleeping = true;
+		sleepTimer = new Timer();
 
-		while (isRunning() && ElectroCraft.instance.isRunning()) {
-			if (luaStateLock.tryLock() && first) {
-				loadLuaDefaults();
-				loadBios();
-				first = false;
-				luaStateLock.unlock();
-			} else if (first) {
+		int ticksSinceLastSave = 0;
+		try {
+			while (isRunning() && ElectroCraft.instance.isRunning()) {
+				if (luaStateLock.tryLock(0, TimeUnit.SECONDS) && first) {
+					loadLuaDefaults();
+					loadBios();
+					first = false;
+					luaStateLock.unlock();
+				} else if (first && !Thread.interrupted()) {
+					if (luaStateLock.isHeldByCurrentThread())
+						luaStateLock.unlock();
+					continue;
+				} else if (Thread.interrupted()) {
+					if (luaStateLock.isHeldByCurrentThread())
+						luaStateLock.unlock();
+					break;
+				}
+
 				if (luaStateLock.isHeldByCurrentThread())
 					luaStateLock.unlock();
-				continue;
+				if (stateLock.tryLock(0, TimeUnit.SECONDS)) {
+					if (!isRunning() && ElectroCraft.instance.isRunning()) {
+						stateLock.unlock();
+						break;
+					}
+					// Update the terminal to send any pending terminal packets
+					FutureTask<Boolean> termTask = new FutureTask<Boolean>(new Callable<Boolean>() {
+						@Override
+						public Boolean call() throws Exception {
+							terminal.updateTick();
+							return true;
+						}
+					});
+					ElectroCraft.instance.registerRunnable(termTask);
+
+					if (!ticked) {
+						stateLock.unlock();
+						Thread.sleep(5);
+						continue;
+					} else {
+						ticked = false;
+					}
+
+					if (killYielded)
+						postEvent("killyield");
+
+					synchronized (eventLock) {
+						List<Event> copy = new ArrayList<Event>(eventQueue);
+						if (copy.size() > 0) {						
+							for (Event event : copy) {
+								String eventName = event.eventName;
+								Object[] args = event.args;
+
+								if (!finishedSleeping) {
+									Thread.sleep(5);
+									break;
+								}
+								if (killYielded)
+									killYielded = false;
+								if (!running) {
+									stateLock.unlock();
+									return;
+								}
+								try {
+									if (luaStateLock.tryLock(0, TimeUnit.SECONDS)) {
+										if (!luaState.isOpen()) {
+											luaStateLock.unlock();
+											stateLock.unlock();
+											return;
+										}
+
+										luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+										luaState.getField(-1, "resume");
+										luaState.remove(-2);
+										int argSize = 0;
+
+										luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+										if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
+											// Oops we must of shutdown or something
+											luaState.pop(luaState.getTop());
+											luaStateLock.unlock();
+											stateLock.unlock();
+											return;
+										} else {
+											// Its a valid thread
+											argSize += 1;
+										}
+
+										if (argSize <= 0) {
+											// the thread is non existent
+											luaState.pop(luaState.getTop());
+											luaStateLock.unlock();
+											stateLock.unlock();
+											return;
+										}
+										// Lets check if we should push arguments
+										if (!eventName.equalsIgnoreCase("resume") && !eventName.equalsIgnoreCase("killyield")) {
+											// Its not a blacklisted event name lets push the arguments
+											luaState.pushString(eventName);
+											for (Object arg : args) {
+												luaState.pushJavaObject(arg);
+											}
+											argSize += 1 + args.length;
+										}
+
+										// Lets call the coroutine
+										luaState.call(argSize, LuaState.MULTRET);
+										// Reset the yield kill line counter to 100 lines
+										luaState.reset_kill(100);
+
+										// Check the results
+										if (luaState.isBoolean(1))
+											if (!luaState.checkBoolean(1, true))
+												throw new LuaRuntimeException("Runtime error!");
+										if (luaState.isNumber(-1)) {
+											finishedSleeping = false;
+											if (sleepTimer != null)
+												sleepTimer.schedule(new TimerTask() {
+													@Override
+													public void run() {
+														synchronized(sleepLock) {
+															finishedSleeping = true;
+															killYielded = true;
+														}
+													}}, luaState.checkInteger(-1, 0));
+										} else if (luaState.getTop() == 1) {
+											killYielded = true;
+										}
+
+										// Lets make sure the stack is clean
+										luaState.pop(luaState.getTop());
+
+										// Load the pluto state
+//										if (eventName.equalsIgnoreCase("resume")) {
+//											loadPlutoState();
+//										}
+
+										// System memory check
+										if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
+											stateLock.unlock();
+											shutdown();
+											getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
+											luaStateLock.unlock();
+											return;
+										}
+
+										// Extra backup check in case my wrapped file manager doesn't catch it
+										if (getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
+											stateLock.unlock();
+											shutdown();
+											getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
+											luaStateLock.unlock();
+											return;
+										}
+
+										if (ticksSinceLastSave % 900 == 0) {
+											callSave();
+											ticksSinceLastSave = 0;
+										} else {
+											ticksSinceLastSave++;
+										}
+
+										luaStateLock.unlock();
+									}
+								} catch (LuaSyntaxException e) {
+									getTerminal().print("Syntax Error!");
+									e.printStackTrace(new PrintWriter(getTerminal()));
+									throw e;
+								} catch (LuaRuntimeException e) {
+									getTerminal().print("Runtime Error!");
+									if (luaState.isString(-1)) {
+										getTerminal().print(luaState.checkString(-1));
+										ElectroCraft.instance.getLogger().severe(luaState.checkString(-1));
+									} else {
+										e.printLuaStackTrace(new PrintWriter(getTerminal()));
+										e.printLuaStackTrace();
+									}
+									throw e;
+								} finally {
+									// Lets make sure the stack is clean
+									luaState.pop(luaState.getTop());
+									if (luaStateLock.isHeldByCurrentThread())
+										luaStateLock.unlock();
+								}
+								eventQueue.remove(event);
+							}
+						}
+					}
+					stateLock.unlock();
+				}
 			}
+		} catch (Exception e) {
+		} finally {
+			this.running = false;
+			finishedSleeping = true;
 			if (luaStateLock.isHeldByCurrentThread())
 				luaStateLock.unlock();
-			stateLock.lock();
-			if (!isRunning() && ElectroCraft.instance.isRunning()) {
+			if (stateLock.isHeldByCurrentThread())
 				stateLock.unlock();
-				break;
-			}
-			// Update the terminal to send any pending terminal packets
-			FutureTask<Boolean> termTask = new FutureTask<Boolean>(new Callable<Boolean>() {
-				@Override
-				public Boolean call() throws Exception {
-					terminal.updateTick();
-					return true;
-				}
-			});
-			ElectroCraft.instance.registerRunnable(termTask);
-			try {
-				termTask.get();
-			} catch (InterruptedException e1) {
-			} catch (ExecutionException e1) {
-				e1.printStackTrace();
-			} catch (CancellationException e1) {
-			}
-
-			if (!ticked) {
-				stateLock.unlock();
-				continue;
-			}
-
-			if (killYielded)
-				postEvent("killyield");
-
-			if (eventQueue.size() > 0) {
-				List<Event> copy;
-				synchronized (eventLock) {
-					copy = new ArrayList<Event>(eventQueue);
-					eventQueue.clear();
-				}
-				for (Event event : copy) {
-					String eventName = event.eventName;
-					Object[] args = event.args;
-
-					if (!finishedSleeping)
-						return;
-					if (killYielded)
-						killYielded = false;
-					if (!running)
-						return;
-					try {
-						if (luaStateLock.tryLock()) {
-							if (!luaState.isOpen())
-								return;
-
-							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
-							luaState.getField(-1, "resume");
-							luaState.remove(-2);
-							int argSize = 0;
-
-							luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
-							if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
-								// Oops we must of shutdown or something
-								luaState.pop(luaState.getTop());
-								return;
-							} else {
-								// Its a valid thread
-								argSize += 1;
-							}
-
-							if (argSize <= 0) {
-								// the thread is non existent
-								luaState.pop(luaState.getTop());
-								return;
-							}
-							// Lets check if we should push arguments
-							if (!eventName.equalsIgnoreCase("resume") && !eventName.equalsIgnoreCase("killyield")) {
-								// Its not a blacklisted event name lets push the arguments
-								luaState.pushString(eventName);
-								for (Object arg : args) {
-									luaState.pushJavaObject(arg);
-								}
-								argSize += 1 + args.length;
-							}
-
-							// Lets call the coroutine
-							luaState.call(argSize, LuaState.MULTRET);
-							// Reset the yield kill line counter to 100 lines
-							luaState.reset_kill(100);
-							if (killYielded)
-								killYielded = false;
-
-							// Check the results
-							if (luaState.isBoolean(1))
-								if (!luaState.checkBoolean(1, true))
-									throw new LuaRuntimeException("Runtime error!");
-							if (luaState.isNumber(-1)) {
-								finishedSleeping = false;
-								if (sleepTimer != null)
-									sleepTimer.schedule(new TimerTask() {
-										@Override
-										public void run() {
-											synchronized(sleepLock) {
-												finishedSleeping = true;
-												killYielded = true;
-											}
-										}}, luaState.checkInteger(-1, 0));
-							} else if (luaState.getTop() == 1) {
-								killYielded = true;
-							}
-
-							// Lets make sure the stack is clean
-							luaState.pop(luaState.getTop());
-
-							// Load the pluto state
-//							if (eventName.equalsIgnoreCase("resume")) {
-//								loadPlutoState();
-//							}
-
-							// System memory check
-							if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
-								setRunning(false);
-								getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
-							}
-
-							// Extra backup check in case my wrapped file manager doesn't catch it
-							if (getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
-								setRunning(false);
-								getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
-							}
-
-							if (ticksSinceLastSave % 900 == 0) {
-								callSave();
-								ticksSinceLastSave = 0;
-							} else {
-								ticksSinceLastSave++;
-							}
-
-							luaStateLock.unlock();
-						}
-					} catch (LuaSyntaxException e) {
-						getTerminal().print("Syntax Error!");
-						e.printStackTrace(new PrintWriter(getTerminal()));
-						// Lets make sure the stack is clean
-						luaState.pop(luaState.getTop());
-						if (luaStateLock.isHeldByCurrentThread())
-							luaStateLock.unlock();
-						return;
-					} catch (LuaRuntimeException e) {
-						getTerminal().print("Runtime Error!");
-						if (luaState.isString(-1))
-							getTerminal().print(luaState.checkString(-1));
-						else {
-							e.printLuaStackTrace(new PrintWriter(getTerminal()));
-							e.printLuaStackTrace();
-						}
-						// Lets make sure the stack is clean
-						luaState.pop(luaState.getTop());
-						if (luaStateLock.isHeldByCurrentThread())
-							luaStateLock.unlock();
-						stateLock.unlock();
-						this.shutdown();
-						return;
-					}
-				}
-			}
-			stateLock.unlock();
 		}
-		this.running = false;
 	}
 
 	private class Event {

@@ -3,6 +3,7 @@ package info.cerios.electrocraft.core.entites;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -16,6 +17,8 @@ import info.cerios.electrocraft.api.IComputerHost;
 import info.cerios.electrocraft.api.computer.IComputerCallback;
 import info.cerios.electrocraft.api.computer.IComputerRunnable;
 import info.cerios.electrocraft.api.drone.tools.IDroneTool;
+import info.cerios.electrocraft.api.utils.Utils;
+import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.drone.Drone;
@@ -37,6 +40,7 @@ import net.minecraft.src.MathHelper;
 import net.minecraft.src.NBTBase;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.World;
+import net.minecraftforge.common.Configuration;
 import net.minecraftforge.common.ForgeDirection;
 
 public class EntityDrone extends EntityLiving implements IComputerHost {
@@ -68,7 +72,6 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 		if (drone != null) {
 			drone.setFlying(nbt.getBoolean("flying"));
 			if (nbt.getBoolean("isOn")) {
-				drone.setRunning(true);
 				drone.setProgramStorage(nbt.getCompoundTag("programStorage"));
 				drone.callLoad();
 			}
@@ -135,8 +138,17 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 	@Override
 	public void setDead() {
 		this.dead = true;
-		if (drone != null)
+		if (drone != null) {
+			drone.postEvent("kill");
 			drone.shutdown();
+			if (!drone.getBaseDirectory().delete() && ConfigHandler.getCurrentConfig().get(Configuration.CATEGORY_GENERAL, "deleteFiles", true).getBoolean(true)) {
+				try {
+					Utils.deleteRecursive(drone.getBaseDirectory());
+				} catch (FileNotFoundException e) {
+					ElectroCraft.instance.getLogger().severe("Unable to delete dead drones files! Path: " + drone.getBaseDirectory().getAbsolutePath());
+				}
+			}
+		}
 	}
 
 	public void setClientFlying(boolean fly) {
@@ -343,6 +355,8 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 				drone.addClient(player);
 			}
 			return true;
+		} else {
+			super.interact(player);
 		}
 		return true;
 	}
