@@ -646,8 +646,8 @@ public class Computer implements Runnable {
 								getTerminal().print(luaState.checkString(-1));
 							else {
 								e.printLuaStackTrace(new PrintWriter(getTerminal()));
-								e.printLuaStackTrace();
 							}
+							e.printLuaStackTrace();
 							this.setRunning(false);
 						}
 					} catch (LuaSyntaxException e) {

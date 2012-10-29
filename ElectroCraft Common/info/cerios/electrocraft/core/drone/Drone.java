@@ -618,7 +618,7 @@ public class Drone extends Computer {
 
 	public void setLeftCard(ICard card, ItemStack stack) {
 		luaStateLock.lock();
-		if (luaState != null && luaState.isOpen() && card == null && this.leftCard != null && (this.rightCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
+		if (luaState != null && luaState.isOpen() && card == null && this.leftCard != null && (this.rightCard != null ? (rightCard.getValue2() != leftCard.getValue2()) : true)) {
 			luaState.pushNil();
 			luaState.setGlobal(leftCard.getValue1().getName(leftCard.getValue2()));
 		}
@@ -632,7 +632,7 @@ public class Drone extends Computer {
 
 	public void setRightCard(ICard card, ItemStack stack) {
 		luaStateLock.lock();
-		if (luaState != null && luaState.isOpen() && card == null && this.rightCard != null && (this.leftCard != null ? (this.rightCard.getValue1().getName(rightCard.getValue2()) != this.leftCard.getValue1().getName(leftCard.getValue2())) : true)) {
+		if (luaState != null && luaState.isOpen() && card == null && this.rightCard != null && (this.leftCard != null ? (rightCard.getValue2() != leftCard.getValue2()) : true)) {
 			luaState.pushNil();
 			luaState.setGlobal(rightCard.getValue1().getName(rightCard.getValue2()));
 		}

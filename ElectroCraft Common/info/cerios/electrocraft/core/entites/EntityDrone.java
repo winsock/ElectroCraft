@@ -85,10 +85,10 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 		if (drone != null) {
 			nbt.setBoolean("flying", drone.getFlying());
 			nbt.setBoolean("isOn", drone.isRunning());
-			
+
 			drone.callSave();
-            if (drone.getProgramStorage() != null)
-            	nbt.setTag("programStorage", drone.getProgramStorage());
+			if (drone.getProgramStorage() != null)
+				nbt.setTag("programStorage", drone.getProgramStorage());
 		}
 	}
 
@@ -131,18 +131,18 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 			}
 		}
 	}
-	
+
 	@Override
 	public void setDead() {
 		this.dead = true;
 		if (drone != null)
 			drone.shutdown();
 	}
-	
+
 	public void setClientFlying(boolean fly) {
 		this.clientFlying = fly;
 	}
-	
+
 	public void rotate(final float yaw, final int ticks) {
 		newPosRotationIncrements = ticks;
 		newPosX = posX;
@@ -151,20 +151,22 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 		newRotationYaw = rotationYawHead = yaw;
 		newRotationPitch = 0f;
 	}
-	
+
 	public void move(final int x, final int y, final int z, final int ticks) {
-		newPosRotationIncrements = ticks;
-		newPosX = posX + x;
-		newPosY = posY + y;
-		newPosZ = posZ + z;
-		newRotationYaw = rotationYawHead = rotationYaw;
-		newRotationPitch = 0f;
+		if (Block.blocksList[worldObj.getBlockId((int)posX + x, (int)posY + y, (int)posZ + z)] == null || Block.blocksList[worldObj.getBlockId((int)posX + x, (int)posY + y, (int)posZ + z)].isAirBlock(worldObj, (int)posX + x, (int)posY + y, (int)posZ + z)) {
+			newPosRotationIncrements = ticks;
+			newPosX = posX + x;
+			newPosY = posY + y;
+			newPosZ = posZ + z;
+			newRotationYaw = rotationYawHead = rotationYaw;
+			newRotationPitch = 0f;
+		}
 	}
-	
+
 	public boolean isStillMovingOrRotating() {
 		return this.newPosRotationIncrements > 0;
 	}
-	
+
 	@Override
 	protected void fall(float par1) {
 		if (worldObj.isRemote) {
@@ -175,12 +177,12 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 			super.fall(par1);
 		}
 	}
-	
+
 	@Override
-    public boolean isOnLadder() {
-        return false;
-    }
-	
+	public boolean isOnLadder() {
+		return false;
+	}
+
 	@Override
 	public void moveEntityWithHeading(float par1, float par2) {
 		if (worldObj.isRemote) {
@@ -193,89 +195,92 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 			return;
 		}
 		// Flying code from EntityFlying
-        if (this.isInWater()) {
-            this.moveFlying(par1, par2, 0.02F);
-            this.moveEntity(this.motionX, this.motionY, this.motionZ);
-            this.motionX *= 0.800000011920929D;
-            this.motionY *= 0.800000011920929D;
-            this.motionZ *= 0.800000011920929D;
-        }
-        else if (this.handleLavaMovement()) {
-            this.moveFlying(par1, par2, 0.02F);
-            this.moveEntity(this.motionX, this.motionY, this.motionZ);
-            this.motionX *= 0.5D;
-            this.motionY *= 0.5D;
-            this.motionZ *= 0.5D;
-        }
-        else {
-            float var3 = 0.91F;
+		if (this.isInWater()) {
+			this.moveFlying(par1, par2, 0.02F);
+			this.moveEntity(this.motionX, this.motionY, this.motionZ);
+			this.motionX *= 0.800000011920929D;
+			this.motionY *= 0.800000011920929D;
+			this.motionZ *= 0.800000011920929D;
+		}
+		else if (this.handleLavaMovement()) {
+			this.moveFlying(par1, par2, 0.02F);
+			this.moveEntity(this.motionX, this.motionY, this.motionZ);
+			this.motionX *= 0.5D;
+			this.motionY *= 0.5D;
+			this.motionZ *= 0.5D;
+		}
+		else {
+			float var3 = 0.91F;
 
-            if (this.onGround) {
-                var3 = 0.54600006F;
-                int var4 = this.worldObj.getBlockId(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+			if (this.onGround) {
+				var3 = 0.54600006F;
+				int var4 = this.worldObj.getBlockId(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
 
-                if (var4 > 0) {
-                    var3 = Block.blocksList[var4].slipperiness * 0.91F;
-                }
-            }
+				if (var4 > 0) {
+					var3 = Block.blocksList[var4].slipperiness * 0.91F;
+				}
+			}
 
-            float var8 = 0.16277136F / (var3 * var3 * var3);
-            this.moveFlying(par1, par2, this.onGround ? 0.1F * var8 : 0.02F);
-            var3 = 0.91F;
+			float var8 = 0.16277136F / (var3 * var3 * var3);
+			this.moveFlying(par1, par2, this.onGround ? 0.1F * var8 : 0.02F);
+			var3 = 0.91F;
 
-            if (this.onGround) {
-                var3 = 0.54600006F;
-                int var5 = this.worldObj.getBlockId(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+			if (this.onGround) {
+				var3 = 0.54600006F;
+				int var5 = this.worldObj.getBlockId(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
 
-                if (var5 > 0) {
-                    var3 = Block.blocksList[var5].slipperiness * 0.91F;
-                }
-            }
+				if (var5 > 0) {
+					var3 = Block.blocksList[var5].slipperiness * 0.91F;
+				}
+			}
 
-            this.moveEntity(this.motionX, this.motionY, this.motionZ);
-            this.motionX *= (double)var3;
-            this.motionY *= (double)var3;
-            this.motionZ *= (double)var3;
-        }
+			this.moveEntity(this.motionX, this.motionY, this.motionZ);
+			this.motionX *= (double)var3;
+			this.motionY *= (double)var3;
+			this.motionZ *= (double)var3;
+		}
 
-        this.prevLegYaw = this.legYaw;
-        double var10 = this.posX - this.prevPosX;
-        double var9 = this.posZ - this.prevPosZ;
-        float var7 = MathHelper.sqrt_double(var10 * var10 + var9 * var9) * 4.0F;
+		this.prevLegYaw = this.legYaw;
+		double var10 = this.posX - this.prevPosX;
+		double var9 = this.posZ - this.prevPosZ;
+		float var7 = MathHelper.sqrt_double(var10 * var10 + var9 * var9) * 4.0F;
 
-        if (var7 > 1.0F)
-        {
-            var7 = 1.0F;
-        }
+		if (var7 > 1.0F)
+		{
+			var7 = 1.0F;
+		}
 
-        this.legYaw += (var7 - this.legYaw) * 0.4F;
-        this.legSwing += this.legYaw;
-    }
+		this.legYaw += (var7 - this.legYaw) * 0.4F;
+		this.legSwing += this.legYaw;
+	}
 
 	public Drone getDrone() {
 		return drone;
 	}
-	
+
 	public void doToolAction() {
+		if (getHeldItem() == null)
+			return;
+		
 		ForgeDirection dir = drone.getDirection(rotationYaw);
 		if (digDirection != ForgeDirection.UNKNOWN) {
 			dir = digDirection;
 			digDirection = ForgeDirection.UNKNOWN;
 		}
-		
+
 		int x = (int)(Math.floor(posX) + dir.offsetX);
 		int y = (int)(Math.floor(posY) + dir.offsetY);
 		int z = (int)(Math.floor(posZ) + dir.offsetZ);
 
 		IDroneTool tool = defaultTool;
-		
+
 		for (IDroneTool t : ElectroCraft.instance.getDroneTools()) {
 			if (t.isRightTool(getHeldItem())) {
 				tool = t;
 				break;
 			}
 		}
-		
+
 		if (tool.appliesToBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))){
 			for (ItemStack item : tool.preformAction(getHeldItem(), this, worldObj, x, y, z)) {
 				drone.addToInventory(inventory, 0, 36, item);
@@ -286,7 +291,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 			drone.postEvent("tool", false);
 		}
 	}
-	
+
 	public ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
 		int id = world.getBlockId(x, y, z);
 		Block block = Block.blocksList[id];
@@ -306,7 +311,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 	public void setRotationTicks(int ticks) {
 		this.rotationTicks = ticks;
 	}
-	
+
 	public void setDigDirection(ForgeDirection dir) {
 		this.digDirection = dir;
 	}
