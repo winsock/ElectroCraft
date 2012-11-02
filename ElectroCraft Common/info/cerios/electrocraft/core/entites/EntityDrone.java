@@ -340,6 +340,8 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 			ElectroCraft.instance.setComputerForPlayer(player, this);
 			if (player.isSneaking()) {
 				player.openGui(ElectroCraft.instance, this.entityId, worldObj, (int)posX, (int)posY, (int)posZ);
+			} else if ((player.ridingEntity != null) || (player.getHeldItem() != null && player.getHeldItem().itemID == Item.saddle.shiftedIndex)) {
+				player.mountEntity(this);
 			} else {
 				if (drone == null)
 					createDrone();
