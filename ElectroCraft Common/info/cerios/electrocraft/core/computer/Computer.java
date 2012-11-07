@@ -63,7 +63,6 @@ public class Computer implements Runnable {
 	private boolean isInternal = true;
 	private volatile boolean running = false;
 	private final String bootScript;
-	private SoundCard soundCard;
 	private Terminal terminal;
 	private VideoCard videoCard;
 	private Keyboard keyboard;
@@ -98,7 +97,6 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	public Computer(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
 		this.isInternal = isInternal;
-		this.soundCard = new SoundCard();
 		this.videoCard = new VideoCard(width, height);
 		this.terminal = new Terminal(rows, columns, this);
 		this.keyboard = new Keyboard(terminal);
@@ -905,11 +903,6 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	public void setCurrentDirectory(String directory) {
 		this.currentDirectory = directory;
-	}
-
-	@ExposedToLua(value = false)
-	public SoundCard getSoundCard() {
-		return soundCard;
 	}
 
 	@ExposedToLua(value = false)
