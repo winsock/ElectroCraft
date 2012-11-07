@@ -5,40 +5,57 @@ import net.minecraft.src.CreativeTabs;
 import net.minecraft.src.Item;
 
 public enum ElectroItems {
-    // Defaults
-    MAGNETITE_DUST(true, "magnetiteDust", new MagnetiteDust(ConfigHandler.getCurrentConfig().get("item", "magnetiteDust", 30080).getInt(30080)).setIconIndex(3).setItemName("magnetiteDust").setCreativeTab(CreativeTabs.tabMaterials), "Magnetite Dust"),
-    ELECTRO_DUST(false, "electroDust", new ElectroDust(ConfigHandler.getCurrentConfig().get("item", "electroDust", 30081).getInt(30081)).setIconIndex(4).setItemName("electroDust").setCreativeTab(CreativeTabs.tabRedstone), "Electrodust"),
-    DRONE_UPGRADES(false, "droneUpgrades", new ItemDroneUpgrade(ConfigHandler.getCurrentConfig().get("item", "droneUpgrades", 30082).getInt(30082)).setIconIndex(5).setItemName("droneUpgrades").setCreativeTab(CreativeTabs.tabRedstone), "Drone Gyroscope Card", "Drone GPS Card", "Drone Analyzer Card", "Drone Engine Card", "Drone AI Card"),
-    DRONE(false, "itemDrone", new ItemDrone(ConfigHandler.getCurrentConfig().get("item", "itemDrone", 30083).getInt(30083)).setIconIndex(10).setItemName("itemDrone").setCreativeTab(CreativeTabs.tabRedstone), "Drone");
-    
-    private boolean isOreDicItem;
-    private String name;
-    private String[] humanNames;
-    private Item item;
+	// Defaults
+	MAGNETITE_DUST(true, "magnetiteDust", new MagnetiteDust(ConfigHandler
+			.getCurrentConfig().get("item", "magnetiteDust", 30080)
+			.getInt(30080)).setIconIndex(3).setItemName("magnetiteDust")
+			.setCreativeTab(CreativeTabs.tabMaterials), "Magnetite Dust"), ELECTRO_DUST(
+			false, "electroDust", new ElectroDust(ConfigHandler
+					.getCurrentConfig().get("item", "electroDust", 30081)
+					.getInt(30081)).setIconIndex(4).setItemName("electroDust")
+					.setCreativeTab(CreativeTabs.tabRedstone), "Electrodust"), DRONE_UPGRADES(
+			false, "droneUpgrades", new ItemDroneUpgrade(ConfigHandler
+					.getCurrentConfig().get("item", "droneUpgrades", 30082)
+					.getInt(30082)).setIconIndex(5)
+					.setItemName("droneUpgrades")
+					.setCreativeTab(CreativeTabs.tabRedstone),
+			"Drone Gyroscope Card", "Drone GPS Card", "Drone Analyzer Card",
+			"Drone Engine Card", "Drone AI Card"), DRONE(false, "itemDrone",
+			new ItemDrone(ConfigHandler.getCurrentConfig()
+					.get("item", "itemDrone", 30083).getInt(30083))
+					.setIconIndex(10).setItemName("itemDrone")
+					.setCreativeTab(CreativeTabs.tabRedstone), "Drone");
 
-    private ElectroItems(boolean isOreDicItem, String itemName, Item item, String... humanNames) {
-        this.isOreDicItem = isOreDicItem;
-        this.name = itemName;
-        this.humanNames = humanNames;
-        this.item = item;
+	private boolean isOreDicItem;
+	private String name;
+	private String[] humanNames;
+	private Item item;
 
-        // Save the config in case any settings were written from the enum initialization
-        ConfigHandler.getCurrentConfig().save();
-    }
+	private ElectroItems(boolean isOreDicItem, String itemName, Item item,
+			String... humanNames) {
+		this.isOreDicItem = isOreDicItem;
+		this.name = itemName;
+		this.humanNames = humanNames;
+		this.item = item;
 
-    public String getItemName() {
-        return name;
-    }
+		// Save the config in case any settings were written from the enum
+		// initialization
+		ConfigHandler.getCurrentConfig().save();
+	}
 
-    public String[] getHumanNames() {
-        return humanNames;
-    }
+	public String getItemName() {
+		return name;
+	}
 
-    public boolean isOreDicItem() {
-        return isOreDicItem;
-    }
+	public String[] getHumanNames() {
+		return humanNames;
+	}
 
-    public Item getItem() {
-        return item;
-    }
+	public boolean isOreDicItem() {
+		return isOreDicItem;
+	}
+
+	public Item getItem() {
+		return item;
+	}
 }

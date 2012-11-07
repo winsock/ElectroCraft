@@ -1,15 +1,8 @@
 package info.cerios.electrocraft.core;
 
-import info.cerios.electrocraft.api.computer.IComputerCallback;
-import info.cerios.electrocraft.api.computer.IComputerRunnable;
-import info.cerios.electrocraft.api.computer.IMCRunnable;
-import info.cerios.electrocraft.api.utils.ObjectPair;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.FutureTask;
-
-import net.minecraft.src.World;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.IScheduledTickHandler;
@@ -18,14 +11,18 @@ import cpw.mods.fml.common.TickType;
 public class UniversialTickHandler implements IScheduledTickHandler {
 	@Override
 	public void tickStart(EnumSet<TickType> type, Object... tickData) {
-		if (FMLCommonHandler.instance().getMinecraftServerInstance() == null || !FMLCommonHandler.instance().getMinecraftServerInstance().isServerRunning())
+		if (FMLCommonHandler.instance().getMinecraftServerInstance() == null
+				|| !FMLCommonHandler.instance().getMinecraftServerInstance()
+						.isServerRunning())
 			return;
-		FMLCommonHandler.instance().getMinecraftServerInstance().theProfiler.startSection(getLabel());
+		FMLCommonHandler.instance().getMinecraftServerInstance().theProfiler
+				.startSection(getLabel());
 		List<FutureTask<?>> tasks = ElectroCraft.instance.getAndClearTasks();
 		for (FutureTask<?> r : tasks) {
 			r.run();
 		}
-		FMLCommonHandler.instance().getMinecraftServerInstance().theProfiler.endSection();
+		FMLCommonHandler.instance().getMinecraftServerInstance().theProfiler
+				.endSection();
 	}
 
 	@Override

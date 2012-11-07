@@ -1,21 +1,21 @@
 package info.cerios.electrocraft.core.drone;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-
-import cpw.mods.fml.common.network.PacketDispatcher;
-
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.CustomPacket;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.IInventory;
 import net.minecraft.src.ItemStack;
 import net.minecraft.src.NBTBase;
 import net.minecraft.src.NBTTagCompound;
 import net.minecraft.src.NBTTagList;
+import cpw.mods.fml.common.network.PacketDispatcher;
 
 public class InventoryDrone implements IInventory {
 
@@ -37,11 +37,10 @@ public class InventoryDrone implements IInventory {
 	public ItemStack getStackInSlot(int var1) {
 		if (var1 >= 36) {
 			var1 -= 36;
-			if (var1 >= 3) {
+			if (var1 >= 3)
 				return fuel;
-			} else {
+			else
 				return tools[var1];
-			}
 		}
 		return mainInventory[var1];
 	}
@@ -72,8 +71,9 @@ public class InventoryDrone implements IInventory {
 		} else if (var2 > 0 && var2 < slots[var1].stackSize) {
 			returnStack = slots[var1].splitStack(var2);
 		}
-		if (slots[var1] != null && slots[var1].stackSize <= 0)
+		if (slots[var1] != null && slots[var1].stackSize <= 0) {
 			slots[var1] = null;
+		}
 
 		if (slots.length == 36) {
 			mainInventory = slots;
@@ -133,12 +133,14 @@ public class InventoryDrone implements IInventory {
 				if (tools[0] == null) {
 					drone.getDrone().setLeftCard(null, null);
 				} else if (tools[0].getItem() instanceof ICard) {
-					drone.getDrone().setLeftCard((ICard) tools[0].getItem(), tools[0]);
+					drone.getDrone().setLeftCard((ICard) tools[0].getItem(),
+							tools[0]);
 				}
 				if (tools[2] == null) {
 					drone.getDrone().setRightCard(null, null);
 				} else if (tools[2].getItem() instanceof ICard) {
-					drone.getDrone().setRightCard((ICard) tools[2].getItem(), tools[2]);
+					drone.getDrone().setRightCard((ICard) tools[2].getItem(),
+							tools[2]);
 				}
 			}
 			CustomPacket packet = new CustomPacket();
@@ -151,9 +153,12 @@ public class InventoryDrone implements IInventory {
 				NBTBase.writeNamedTag(inventory, dos);
 				packet.id = 4;
 				packet.data = bos.toByteArray();
-				PacketDispatcher.sendPacketToAllInDimension(packet.getMCPacket(), drone.worldObj.provider.dimensionId);
+				PacketDispatcher.sendPacketToAllInDimension(
+						packet.getMCPacket(),
+						drone.worldObj.provider.dimensionId);
 			} catch (IOException e) {
-				ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
+				ElectroCraft.instance.getLogger().fine(
+						"Error sending inventory update to entity!");
 			}
 		}
 	}
@@ -164,10 +169,12 @@ public class InventoryDrone implements IInventory {
 	}
 
 	@Override
-	public void openChest() { }
+	public void openChest() {
+	}
 
 	@Override
-	public void closeChest() { }
+	public void closeChest() {
+	}
 
 	public void readFromNBT(NBTTagCompound tagCompound) {
 		NBTTagList tagList = tagCompound.getTagList("inventory");
@@ -175,19 +182,22 @@ public class InventoryDrone implements IInventory {
 			NBTTagCompound tag = (NBTTagCompound) tagList.tagAt(i);
 			byte slot = tag.getByte("slot");
 			if (slot >= 0 && slot < getSizeInventory()) {
-				setInventorySlotContents(slot, ItemStack.loadItemStackFromNBT(tag));
+				setInventorySlotContents(slot,
+						ItemStack.loadItemStackFromNBT(tag));
 			}
 		}
 		if (!drone.worldObj.isRemote) {
 			if (tools[0] == null) {
 				drone.getDrone().setLeftCard(null, null);
 			} else if (tools[0].getItem() instanceof ICard) {
-				drone.getDrone().setLeftCard((ICard) tools[0].getItem(), tools[0]);
+				drone.getDrone().setLeftCard((ICard) tools[0].getItem(),
+						tools[0]);
 			}
 			if (tools[2] == null) {
 				drone.getDrone().setRightCard(null, null);
 			} else if (tools[2].getItem() instanceof ICard) {
-				drone.getDrone().setRightCard((ICard) tools[2].getItem(), tools[2]);
+				drone.getDrone().setRightCard((ICard) tools[2].getItem(),
+						tools[2]);
 			}
 		}
 	}

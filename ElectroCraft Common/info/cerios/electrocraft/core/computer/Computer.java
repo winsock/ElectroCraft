@@ -7,44 +7,23 @@ import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.computer.luaapi.ComputerFile;
 import info.cerios.electrocraft.core.computer.luaapi.EndNet;
-import info.cerios.electrocraft.core.computer.luaapi.Network;
 import info.cerios.electrocraft.core.computer.luaapi.MinecraftInterface;
-import info.cerios.electrocraft.core.network.ComputerServerClient;
+import info.cerios.electrocraft.core.computer.luaapi.Network;
 import info.cerios.electrocraft.core.network.CustomPacket;
-
-import com.naef.jnlua.DefaultJavaReflector;
-import com.naef.jnlua.JavaFunction;
-import com.naef.jnlua.LuaError;
-import com.naef.jnlua.LuaRuntimeException;
-import com.naef.jnlua.LuaStackTraceElement;
-import com.naef.jnlua.LuaState;
-import com.naef.jnlua.LuaSyntaxException;
-import com.naef.jnlua.LuaType;
-import com.naef.jnlua.LuaValueProxy;
-import com.naef.jnlua.NamedJavaFunction;
-import com.naef.jnlua.JavaReflector.Metamethod;
-import com.naef.jnlua.LuaState.GcAction;
-import com.naef.jnlua.LuaState.Library;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -53,16 +32,21 @@ import net.minecraft.src.EntityPlayer;
 import net.minecraft.src.EntityPlayerMP;
 import net.minecraft.src.NBTTagCompound;
 
-import cpw.mods.fml.common.FMLCommonHandler;
+import com.naef.jnlua.LuaRuntimeException;
+import com.naef.jnlua.LuaState;
+import com.naef.jnlua.LuaState.GcAction;
+import com.naef.jnlua.LuaState.Library;
+import com.naef.jnlua.LuaSyntaxException;
+import com.naef.jnlua.LuaType;
+import com.naef.jnlua.NamedJavaFunction;
+
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.common.network.Player;
 
 @ExposedToLua
 public class Computer implements Runnable {
 
-	private boolean isInternal = true;
 	private volatile boolean running = false;
-	private final String bootScript;
 	private Terminal terminal;
 	private VideoCard videoCard;
 	private Keyboard keyboard;
@@ -70,17 +54,10 @@ public class Computer implements Runnable {
 	private boolean graphicsMode = false;
 	private List<EntityPlayer> clients;
 	private File baseDirectory;
-	/**
-	 * The current directory of the computer relative to the baseDirectory
-	 */
-	private String currentDirectory = "";
-	private String currentProgram = null;
 	private int openFileHandles = 0;
 	protected LuaState luaState;
 	private Set<LuaAPI> apis = new HashSet<LuaAPI>();
 	protected final ReentrantLock luaStateLock = new ReentrantLock();
-	private List<String> previousCommands = new ArrayList<String>();
-	private volatile boolean wasResumed = false;
 	private NBTTagCompound programStorage;
 	private List<String> onSaveMethods = new ArrayList<String>();
 	private Object sleepLock = new Object();
@@ -95,13 +72,12 @@ public class Computer implements Runnable {
 	private volatile boolean ticked = false;
 
 	@ExposedToLua(value = false)
-	public Computer(List<EntityPlayer> clients, String script, String baseDirectory, boolean isInternal, int width, int height, int rows, int columns) {
-		this.isInternal = isInternal;
+	public Computer(List<EntityPlayer> clients, String baseDirectory,
+			int width, int height, int rows, int columns) {
 		this.videoCard = new VideoCard(width, height);
 		this.terminal = new Terminal(rows, columns, this);
 		this.keyboard = new Keyboard(terminal);
 		this.clients = clients;
-		this.bootScript = script;
 		this.baseDirectory = new File(baseDirectory);
 		if (!this.baseDirectory.exists()) {
 			this.baseDirectory.mkdirs();
@@ -127,20 +103,25 @@ public class Computer implements Runnable {
 
 	public void addClient(EntityPlayer client) {
 		clients.add(client);
-		if (!ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false))
-			ElectroCraft.instance.getServer().getClient((EntityPlayerMP) client).changeModes(!graphicsMode);
-		else {
+		if (!ConfigHandler.getCurrentConfig()
+				.get("general", "useMCServer", false).getBoolean(false)) {
+			ElectroCraft.instance.getServer()
+					.getClient((EntityPlayerMP) client)
+					.changeModes(!graphicsMode);
+		} else {
 			CustomPacket packet = new CustomPacket();
 			packet.id = 0;
 			packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
 			try {
-				PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) client);
+				PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(),
+						(Player) client);
 			} catch (IOException e) {
 			}
 		}
 		int[] rows = new int[terminal.getRows()];
-		for (int i = 0; i < terminal.getRows(); i++)
+		for (int i = 0; i < terminal.getRows(); i++) {
 			rows[i] = i;
+		}
 		terminal.sendUpdate(client, rows);
 	}
 
@@ -159,35 +140,26 @@ public class Computer implements Runnable {
 		openFileHandles = value;
 	}
 
-	@ExposedToLua(value = false)
-	public void setRunningProgram(String program) {
-		currentProgram = program;
-	}
-
-	@ExposedToLua(value = false)
-	public String getRunningProgram() {
-		return currentProgram;
-	}
-
 	@ExposedToLua
 	public void dumpStack() {
 		int top = luaState.getTop();
 		for (int i = 1; i <= top; i++) {
 			LuaType type = luaState.type(i);
 			switch (type) {
-			case STRING:  /* strings */
+			case STRING: /* strings */
 				System.out.print(luaState.toString(i) + " | ");
 				break;
 
-			case BOOLEAN:  /* booleans */
-				System.out.print((luaState.toBoolean(i) ? "true" : "false") + " | ");
+			case BOOLEAN: /* booleans */
+				System.out.print((luaState.toBoolean(i) ? "true" : "false")
+						+ " | ");
 				break;
 
-			case NUMBER:  /* numbers */
+			case NUMBER: /* numbers */
 				System.out.print(luaState.toNumber(i) + " | ");
 				break;
 
-			default:  /* other values */
+			default: /* other values */
 				System.out.print(luaState.typeName(i) + " | ");
 				break;
 			}
@@ -201,15 +173,16 @@ public class Computer implements Runnable {
 		while (luaState.next(-2)) { // value key table permanents thread
 			LuaType type = luaState.type(-1);
 			switch (type) {
-			case STRING:  /* strings */
+			case STRING: /* strings */
 				System.out.print(luaState.toString(-1) + " | ");
 				break;
 
-			case BOOLEAN:  /* booleans */
-				System.out.print((luaState.toBoolean(-1) ? "true" : "false") + " | ");
+			case BOOLEAN: /* booleans */
+				System.out.print((luaState.toBoolean(-1) ? "true" : "false")
+						+ " | ");
 				break;
 
-			case NUMBER:  /* numbers */
+			case NUMBER: /* numbers */
 				System.out.print(luaState.toNumber(-1) + " | ");
 				break;
 			case TABLE:
@@ -219,25 +192,26 @@ public class Computer implements Runnable {
 					dumpTable(tablePointers);
 				}
 				break;
-			default:  /* other values */
+			default: /* other values */
 				System.out.print(luaState.typeName(-1) + " | ");
 				break;
 			}
 			type = luaState.type(-2);
 			switch (type) {
-			case STRING:  /* strings */
+			case STRING: /* strings */
 				System.out.print(luaState.toString(-2) + " | ");
 				break;
 
-			case BOOLEAN:  /* booleans */
-				System.out.print((luaState.toBoolean(-2) ? "true" : "false") + " | ");
+			case BOOLEAN: /* booleans */
+				System.out.print((luaState.toBoolean(-2) ? "true" : "false")
+						+ " | ");
 				break;
 
-			case NUMBER:  /* numbers */
+			case NUMBER: /* numbers */
 				System.out.print(luaState.toNumber(-2) + " | ");
 				break;
 
-			default:  /* other values */
+			default: /* other values */
 				System.out.print(luaState.typeName(-2) + " | ");
 				break;
 			}
@@ -247,11 +221,12 @@ public class Computer implements Runnable {
 	}
 
 	/**
-	 * Expects the table to parse to be at the top of the stack
-	 * Expects a table to store the permanents at position 2
+	 * Expects the table to parse to be at the top of the stack Expects a table
+	 * to store the permanents at position 2
 	 */
 	@ExposedToLua(value = false)
-	public void addToPermanentsTable(int base, boolean flip, List<Long> tablePointers) {
+	public void addToPermanentsTable(int base, boolean flip,
+			List<Long> tablePointers) {
 		base -= 4;
 		luaState.pushNil(); // key table permanents thread
 		while (luaState.next(-2)) { // value key table permanents thread
@@ -273,7 +248,9 @@ public class Computer implements Runnable {
 					luaState.pushValue(-3);
 				}
 				luaState.setTable(base);
-			} else if (luaState.type(-1) == LuaType.USERDATA || luaState.isJavaObjectRaw(-1) || luaState.type(-1) == LuaType.LIGHTUSERDATA) {
+			} else if (luaState.type(-1) == LuaType.USERDATA
+					|| luaState.isJavaObjectRaw(-1)
+					|| luaState.type(-1) == LuaType.LIGHTUSERDATA) {
 				if (flip) {
 					luaState.pushValue(-2);
 					luaState.pushValue(-2);
@@ -335,7 +312,8 @@ public class Computer implements Runnable {
 		}
 	}
 
-	public void parseLocals(int base, boolean flip, int threadIndex, List<Long> tablePointers) {
+	public void parseLocals(int base, boolean flip, int threadIndex,
+			List<Long> tablePointers) {
 		int stack = 1;
 		int tries = 0;
 		base -= 3;
@@ -363,7 +341,9 @@ public class Computer implements Runnable {
 						luaState.pushString(name);
 					}
 					luaState.setTable(base);
-				} else if (luaState.type(-1) == LuaType.USERDATA || luaState.isJavaObjectRaw(-1) || luaState.type(-1) == LuaType.LIGHTUSERDATA) {
+				} else if (luaState.type(-1) == LuaType.USERDATA
+						|| luaState.isJavaObjectRaw(-1)
+						|| luaState.type(-1) == LuaType.LIGHTUSERDATA) {
 					if (flip) {
 						luaState.pushString(name);
 						luaState.pushValue(-2);
@@ -379,7 +359,8 @@ public class Computer implements Runnable {
 						if (luaState.getMetatable(-1)) {
 							if (!tablePointers.contains(luaState.toPointer(-1))) {
 								tablePointers.add(luaState.toPointer(-1));
-								addToPermanentsTable(base + 1, flip, tablePointers);
+								addToPermanentsTable(base + 1, flip,
+										tablePointers);
 							}
 							luaState.pop(1);
 						}
@@ -454,7 +435,8 @@ public class Computer implements Runnable {
 			dumpTable(new ArrayList<Long>());
 			// unpersistMap
 			try {
-				File persistFile = new File(baseDirectory.getAbsolutePath() + File.separator + ".persist");
+				File persistFile = new File(baseDirectory.getAbsolutePath()
+						+ File.separator + ".persist");
 				if (!persistFile.exists()) {
 					luaState.pop(1);
 					return;
@@ -463,7 +445,8 @@ public class Computer implements Runnable {
 				luaState.unpersist(fis);
 				fis.close();
 				persistFile.delete();
-				luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+				luaState.getField(LuaState.REGISTRYINDEX,
+						"electrocraft_coroutine");
 				luaState.getFEnv(-2);
 				luaState.newTable();
 				luaState.getFEnv(-3);
@@ -471,16 +454,19 @@ public class Computer implements Runnable {
 				luaState.setMetatable(-2);
 				luaState.setFEnv(-3);
 				luaState.pop(1);
-				luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
+				luaState.setField(LuaState.REGISTRYINDEX,
+						"electrocraft_coroutine");
 				luaState.pop(1);
 				luaState.install_kill_hook(100);
 			} catch (FileNotFoundException e) {
-				ElectroCraft.instance.getLogger().severe("Unable to open the persist file for loading!");
+				ElectroCraft.instance.getLogger().severe(
+						"Unable to open the persist file for loading!");
 			} catch (IOException e) {
 				// Unable to close input stream, oh well
 			}
-			if (luaState.getTop() > 0)
+			if (luaState.getTop() > 0) {
 				luaState.pop(luaState.getTop());
+			}
 		}
 	}
 
@@ -492,9 +478,8 @@ public class Computer implements Runnable {
 				luaState.pop(1);
 				return;
 			}
-			if (luaState.status(-1) != LuaState.YIELD) {
+			if (luaState.status(-1) != LuaState.YIELD)
 				return;
-			}
 			luaState.newTable();
 			luaState.getGlobal("_G");
 			addToPermanentsTable(-2, false, new ArrayList<Long>());
@@ -517,17 +502,20 @@ public class Computer implements Runnable {
 				luaState.remove(-3); // thread perm
 
 				File persistFile = new File(baseDirectory, ".persist");
-				if (!persistFile.exists())
+				if (!persistFile.exists()) {
 					persistFile.createNewFile();
+				}
 				FileOutputStream fos = new FileOutputStream(persistFile);
 				luaState.persist(fos);
 				luaState.pop(2);
 				fos.flush();
 				fos.close();
 			} catch (FileNotFoundException e) {
-				ElectroCraft.instance.getLogger().severe("Unable to open the persist file for saving!");
+				ElectroCraft.instance.getLogger().severe(
+						"Unable to open the persist file for saving!");
 			} catch (IOException e) {
-				ElectroCraft.instance.getLogger().severe("Unable to save a comptuers state!");
+				ElectroCraft.instance.getLogger().severe(
+						"Unable to save a comptuers state!");
 			}
 		}
 	}
@@ -535,10 +523,11 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	public void tick() {
 		if (getKeyboard().getKeysInBuffer() > 0) {
-			if (getKeyboard().peak() > Character.MAX_VALUE)
+			if (getKeyboard().peak() > Character.MAX_VALUE) {
 				postEvent("code", getKeyboard().popKey());
-			else
+			} else {
 				postEvent("key", getKeyboard().popChar());
+			}
 		}
 
 		if (luaStateLock.tryLock()) {
@@ -548,8 +537,9 @@ public class Computer implements Runnable {
 			luaStateLock.unlock();
 		}
 
-		if (!ticked)
+		if (!ticked) {
 			ticked = true;
+		}
 	}
 
 	@ExposedToLua(value = false)
@@ -566,11 +556,15 @@ public class Computer implements Runnable {
 	protected void loadBios() {
 		luaStateLock.lock();
 		try {
-			luaState.load(Computer.class.getResourceAsStream("/info/cerios/electrocraft/rom/bios.lua"), "bios_" + baseDirectory.getName());
+			luaState.load(
+					Computer.class
+							.getResourceAsStream("/info/cerios/electrocraft/rom/bios.lua"),
+					"bios_" + baseDirectory.getName());
 			luaState.newThread();
 			luaState.setField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
 		} catch (IOException e) {
-			getTerminal().print("Unable to load the BIOS check that you have installed ElectroCraft correctly");
+			getTerminal()
+					.print("Unable to load the BIOS check that you have installed ElectroCraft correctly");
 		}
 		luaStateLock.unlock();
 	}
@@ -579,8 +573,8 @@ public class Computer implements Runnable {
 	public void callSave() {
 		if (running && luaState != null && luaState.isOpen()) {
 			if (luaStateLock.tryLock()) {
-				//				savePlutoState();
-				programStorage = new NBTTagCompound(currentProgram);
+				// savePlutoState();
+				programStorage = new NBTTagCompound();
 				List<String> saveMethods = new ArrayList<String>(onSaveMethods);
 				for (String m : saveMethods) {
 					try {
@@ -608,28 +602,35 @@ public class Computer implements Runnable {
 
 						luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
 						while (luaState.status(-1) == LuaState.YIELD) {
-							luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+							luaState.getField(LuaState.GLOBALSINDEX,
+									"coroutine");
 							luaState.getField(-1, "resume");
 							luaState.remove(-2);
-							luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+							luaState.getField(LuaState.REGISTRYINDEX,
+									"save_thread");
 							luaState.call(1, 0);
 							luaState.reset_kill(1000);
 							if (luaState.isBoolean(1))
 								if (!luaState.checkBoolean(1, true))
-									throw new LuaRuntimeException("Runtime error!");
+									throw new LuaRuntimeException(
+											"Runtime error!");
 							if (luaState.getTop() == 1) {
 								break;
 							}
 							luaState.pop(luaState.getTop());
-							luaState.getField(LuaState.REGISTRYINDEX, "save_thread");
+							luaState.getField(LuaState.REGISTRYINDEX,
+									"save_thread");
 						}
 						luaState.pop(luaState.getTop());
 					} catch (LuaSyntaxException e) {
-						System.out.println("Error running lua script: Syntax Error!");
+						System.out
+								.println("Error running lua script: Syntax Error!");
 						System.out.println(e.getLocalizedMessage());
 					} catch (LuaRuntimeException e) {
-						System.out.println("Error running lua script: Runtime Error!");
-						System.out.println("Possibly went to long without yielding?");
+						System.out
+								.println("Error running lua script: Runtime Error!");
+						System.out
+								.println("Possibly went to long without yielding?");
 						e.printLuaStackTrace();
 					} finally {
 						luaState.reset_kill(100);
@@ -643,7 +644,6 @@ public class Computer implements Runnable {
 	@ExposedToLua(value = false)
 	public void callLoad() {
 		stateLock.lock();
-		wasResumed = true;
 		stateLock.unlock();
 		start();
 		postEvent("resume", programStorage);
@@ -662,8 +662,9 @@ public class Computer implements Runnable {
 	protected void loadLuaDefaults() {
 		luaStateLock.lock();
 		// Create a new state
-		if (luaState != null && luaState.isOpen())
+		if (luaState != null && luaState.isOpen()) {
 			luaState.close();
+		}
 		luaState = new LuaState();
 		// Load the allowed libraries
 		luaState.openLib(Library.BASE);
@@ -771,10 +772,7 @@ public class Computer implements Runnable {
 				}.init(this),
 
 				new NamedJavaFunction() {
-					Computer computer;
-
 					public NamedJavaFunction init(Computer computer) {
-						this.computer = computer;
 						return this;
 					}
 
@@ -788,8 +786,7 @@ public class Computer implements Runnable {
 					public String getName() {
 						return "saveCallback";
 					}
-				}.init(this)
-		};
+				}.init(this) };
 		luaState.register("os", osFunctions);
 		luaState.pop(1);
 
@@ -830,25 +827,31 @@ public class Computer implements Runnable {
 
 	@ExposedToLua
 	public int getMaxFileHandles() {
-		return ConfigHandler.getCurrentConfig().get("computer", "maxFileHandlesPerUser", 20).getInt(20);
+		return ConfigHandler.getCurrentConfig()
+				.get("computer", "maxFileHandlesPerUser", 20).getInt(20);
 	}
 
 	@ExposedToLua
 	public void setGraphicsMode(boolean graphicsMode) {
-		if (this.graphicsMode != graphicsMode)
+		if (this.graphicsMode != graphicsMode) {
 			for (EntityPlayer p : clients) {
-				if (!ConfigHandler.getCurrentConfig().get("general", "useMCServer", false).getBoolean(false))
-					ElectroCraft.instance.getServer().getClient((EntityPlayerMP) p).changeModes(!graphicsMode);
-				else {
+				if (!ConfigHandler.getCurrentConfig()
+						.get("general", "useMCServer", false).getBoolean(false)) {
+					ElectroCraft.instance.getServer()
+							.getClient((EntityPlayerMP) p)
+							.changeModes(!graphicsMode);
+				} else {
 					CustomPacket packet = new CustomPacket();
 					packet.id = 0;
 					packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
 					try {
-						PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) p);
+						PacketDispatcher.sendPacketToPlayer(
+								packet.getMCPacket(), (Player) p);
 					} catch (IOException e) {
 					}
 				}
 			}
+		}
 		this.graphicsMode = graphicsMode;
 	}
 
@@ -862,8 +865,9 @@ public class Computer implements Runnable {
 		stateLock.lock();
 		thisThread.interrupt();
 		running = false;
-		if (sleepTimer != null)
+		if (sleepTimer != null) {
 			sleepTimer.cancel();
+		}
 		sleepTimer = null;
 		stateLock.unlock();
 		synchronized (eventLock) {
@@ -891,18 +895,8 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua
-	public String getCurrentDirectory() {
-		return currentDirectory;
-	}
-
-	@ExposedToLua
 	public synchronized boolean isRunning() {
 		return running;
-	}
-
-	@ExposedToLua(value = false)
-	public void setCurrentDirectory(String directory) {
-		this.currentDirectory = directory;
 	}
 
 	@ExposedToLua(value = false)
@@ -921,25 +915,17 @@ public class Computer implements Runnable {
 	}
 
 	@ExposedToLua(value = false)
-	public List<String> getPreviousCommands() {
-		return previousCommands;
-	}
-
-	@ExposedToLua(value = false)
-	public void setPreviousCommands(List<String> commands) {
-		this.previousCommands = commands;
-	}
-
-	@ExposedToLua(value = false)
 	public void registerNetworkBlock(NetworkBlock block) {
-		if (mcIO != null)
+		if (mcIO != null) {
 			mcIO.register(block);
+		}
 	}
 
 	@ExposedToLua(value = false)
 	public void removeNetworkBlock(NetworkBlock block) {
-		if (mcIO != null)
+		if (mcIO != null) {
 			mcIO.remove(block);
+		}
 	}
 
 	@Override
@@ -961,30 +947,34 @@ public class Computer implements Runnable {
 					first = false;
 					luaStateLock.unlock();
 				} else if (first && !Thread.interrupted()) {
-					if (luaStateLock.isHeldByCurrentThread())
+					if (luaStateLock.isHeldByCurrentThread()) {
 						luaStateLock.unlock();
+					}
 					continue;
 				} else if (Thread.interrupted()) {
-					if (luaStateLock.isHeldByCurrentThread())
+					if (luaStateLock.isHeldByCurrentThread()) {
 						luaStateLock.unlock();
+					}
 					break;
 				}
 
-				if (luaStateLock.isHeldByCurrentThread())
+				if (luaStateLock.isHeldByCurrentThread()) {
 					luaStateLock.unlock();
+				}
 				if (stateLock.tryLock(0, TimeUnit.SECONDS)) {
 					if (!isRunning() && ElectroCraft.instance.isRunning()) {
 						stateLock.unlock();
 						break;
 					}
 					// Update the terminal to send any pending terminal packets
-					FutureTask<Boolean> termTask = new FutureTask<Boolean>(new Callable<Boolean>() {
-						@Override
-						public Boolean call() throws Exception {
-							terminal.updateTick();
-							return true;
-						}
-					});
+					FutureTask<Boolean> termTask = new FutureTask<Boolean>(
+							new Callable<Boolean>() {
+								@Override
+								public Boolean call() throws Exception {
+									terminal.updateTick();
+									return true;
+								}
+							});
 					ElectroCraft.instance.registerRunnable(termTask);
 
 					if (!ticked) {
@@ -995,13 +985,14 @@ public class Computer implements Runnable {
 						ticked = false;
 					}
 
-					if (killYielded)
+					if (killYielded) {
 						postEvent("killyield");
+					}
 					List<Event> copy;
 					synchronized (eventLock) {
 						copy = new ArrayList<Event>(eventQueue);
 					}
-					if (copy.size() > 0) {						
+					if (copy.size() > 0) {
 						for (Event event : copy) {
 							String eventName = event.eventName;
 							Object[] args = event.args;
@@ -1010,8 +1001,9 @@ public class Computer implements Runnable {
 								Thread.sleep(5);
 								break;
 							}
-							if (killYielded)
+							if (killYielded) {
 								killYielded = false;
+							}
 							if (!running) {
 								stateLock.unlock();
 								return;
@@ -1024,13 +1016,17 @@ public class Computer implements Runnable {
 										return;
 									}
 
-									luaState.getField(LuaState.GLOBALSINDEX, "coroutine");
+									luaState.getField(LuaState.GLOBALSINDEX,
+											"coroutine");
 									luaState.getField(-1, "resume");
 									luaState.remove(-2);
 									int argSize = 0;
 
-									luaState.getField(LuaState.REGISTRYINDEX, "electrocraft_coroutine");
-									if (luaState.type(-1) != LuaType.THREAD || (luaState.status(-1) != LuaState.YIELD && luaState.status(-1) != 0)) {
+									luaState.getField(LuaState.REGISTRYINDEX,
+											"electrocraft_coroutine");
+									if (luaState.type(-1) != LuaType.THREAD
+											|| (luaState.status(-1) != LuaState.YIELD && luaState
+													.status(-1) != 0)) {
 										// Oops we must of shutdown or something
 										luaState.pop(luaState.getTop());
 										luaStateLock.unlock();
@@ -1049,8 +1045,11 @@ public class Computer implements Runnable {
 										return;
 									}
 									// Lets check if we should push arguments
-									if (!eventName.equalsIgnoreCase("resume") && !eventName.equalsIgnoreCase("killyield")) {
-										// Its not a blacklisted event name lets push the arguments
+									if (!eventName.equalsIgnoreCase("resume")
+											&& !eventName
+													.equalsIgnoreCase("killyield")) {
+										// Its not a blacklisted event name lets
+										// push the arguments
 										luaState.pushString(eventName);
 										for (Object arg : args) {
 											luaState.pushJavaObject(arg);
@@ -1060,24 +1059,30 @@ public class Computer implements Runnable {
 
 									// Lets call the coroutine
 									luaState.call(argSize, LuaState.MULTRET);
-									// Reset the yield kill line counter to 100 lines
+									// Reset the yield kill line counter to 100
+									// lines
 									luaState.reset_kill(100);
 
 									// Check the results
 									if (luaState.isBoolean(1))
 										if (!luaState.checkBoolean(1, true))
-											throw new LuaRuntimeException("Runtime error!");
+											throw new LuaRuntimeException(
+													"Runtime error!");
 									if (luaState.isNumber(-1)) {
 										finishedSleeping = false;
-										if (sleepTimer != null)
-											sleepTimer.schedule(new TimerTask() {
-												@Override
-												public void run() {
-													synchronized(sleepLock) {
-														finishedSleeping = true;
-														killYielded = true;
-													}
-												}}, luaState.checkInteger(-1, 0));
+										if (sleepTimer != null) {
+											sleepTimer.schedule(
+													new TimerTask() {
+														@Override
+														public void run() {
+															synchronized (sleepLock) {
+																finishedSleeping = true;
+																killYielded = true;
+															}
+														}
+													}, luaState.checkInteger(
+															-1, 0));
+										}
 									} else if (luaState.getTop() == 1) {
 										killYielded = true;
 									}
@@ -1086,24 +1091,49 @@ public class Computer implements Runnable {
 									luaState.pop(luaState.getTop());
 
 									// Load the pluto state
-//									if (eventName.equalsIgnoreCase("resume")) {
-//										loadPlutoState();
-//									}
+									// if (eventName.equalsIgnoreCase("resume"))
+									// {
+									// loadPlutoState();
+									// }
 
 									// System memory check
-									if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16) * 1024) {
+									if (luaState.gc(GcAction.COUNT, 0) > ConfigHandler
+											.getCurrentConfig()
+											.get("computer", "MaxMemPerUser",
+													16).getInt(16) * 1024) {
 										stateLock.unlock();
 										shutdown();
-										getTerminal().print("ERROR: Ran out of memory! Max memory is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxMemPerUser", 16).getInt(16)) + "M");
+										getTerminal()
+												.print("ERROR: Ran out of memory! Max memory is: "
+														+ String.valueOf(ConfigHandler
+																.getCurrentConfig()
+																.get("computer",
+																		"MaxMemPerUser",
+																		16)
+																.getInt(16))
+														+ "M");
 										luaStateLock.unlock();
 										return;
 									}
 
-									// Extra backup check in case my wrapped file manager doesn't catch it
-									if (getBaseDirectory().length() > ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10) * 1024 * 1024) {
+									// Extra backup check in case my wrapped
+									// file manager doesn't catch it
+									if (getBaseDirectory().length() > ConfigHandler
+											.getCurrentConfig()
+											.get("computer",
+													"MaxStoragePerUser", 10)
+											.getInt(10) * 1024 * 1024) {
 										stateLock.unlock();
 										shutdown();
-										getTerminal().print("ERROR: Ran out of storage! Max storage space is: " + String.valueOf(ConfigHandler.getCurrentConfig().get("computer", "MaxStoragePerUser", 10).getInt(10)) + "M");
+										getTerminal()
+												.print("ERROR: Ran out of storage! Max storage space is: "
+														+ String.valueOf(ConfigHandler
+																.getCurrentConfig()
+																.get("computer",
+																		"MaxStoragePerUser",
+																		10)
+																.getInt(10))
+														+ "M");
 										luaStateLock.unlock();
 										return;
 									}
@@ -1124,18 +1154,22 @@ public class Computer implements Runnable {
 							} catch (LuaRuntimeException e) {
 								getTerminal().print("Runtime Error!");
 								if (luaState.isString(-1)) {
-									getTerminal().print(luaState.checkString(-1));
-									ElectroCraft.instance.getLogger().severe(luaState.checkString(-1));
+									getTerminal().print(
+											luaState.checkString(-1));
+									ElectroCraft.instance.getLogger().severe(
+											luaState.checkString(-1));
 								} else {
-									e.printLuaStackTrace(new PrintWriter(getTerminal()));
+									e.printLuaStackTrace(new PrintWriter(
+											getTerminal()));
 									e.printLuaStackTrace();
 								}
 								throw e;
 							} finally {
 								// Lets make sure the stack is clean
 								luaState.pop(luaState.getTop());
-								if (luaStateLock.isHeldByCurrentThread())
+								if (luaStateLock.isHeldByCurrentThread()) {
 									luaStateLock.unlock();
+								}
 							}
 							synchronized (eventLock) {
 								eventQueue.remove(event);
@@ -1149,10 +1183,12 @@ public class Computer implements Runnable {
 		} finally {
 			this.running = false;
 			finishedSleeping = true;
-			if (luaStateLock.isHeldByCurrentThread())
+			if (luaStateLock.isHeldByCurrentThread()) {
 				luaStateLock.unlock();
-			if (stateLock.isHeldByCurrentThread())
+			}
+			if (stateLock.isHeldByCurrentThread()) {
 				stateLock.unlock();
+			}
 		}
 	}
 

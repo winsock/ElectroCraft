@@ -4,5 +4,6 @@ import net.minecraftforge.common.ForgeDirection;
 
 public interface IDirectionalBlock {
 	public void setDirection(ForgeDirection direction);
+
 	public ForgeDirection getDirection();
 }
