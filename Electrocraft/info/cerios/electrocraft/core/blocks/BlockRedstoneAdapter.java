@@ -14,12 +14,11 @@ import net.minecraft.world.World;
 
 public class BlockRedstoneAdapter extends BlockNetwork {
 
-    private IIcon redstoneAdapterOn, redstoneAdapterOff, redstoneAdapeterSides;
+    private IIcon redstoneAdapterSide, redstoneAdapterTop, redstoneAdapterBottom;
 
-    public BlockRedstoneAdapter(int id) {
+    public BlockRedstoneAdapter() {
         super(Material.rock);
         this.setBlockBounds(0f, 0f, 0f, 1.0f, 0.55f, 1.0f);
-        Block.blockRegistry.addObject(id, "redstoneAdapter", this);
     }
 
     @Override
@@ -51,11 +50,11 @@ public class BlockRedstoneAdapter extends BlockNetwork {
     public IIcon getIcon(int side, int metadata) {
         switch (side) {
             case 0:
-                return redstoneAdapterOn;
+                return redstoneAdapterBottom;
             case 1:
-                return redstoneAdapterOff;
+                return redstoneAdapterTop;
         }
-        return redstoneAdapeterSides;
+        return redstoneAdapterSide;
     }
 
     // Needed to allow block to emit a redstone signal
@@ -82,9 +81,9 @@ public class BlockRedstoneAdapter extends BlockNetwork {
     @Override
     @SideOnly(Side.CLIENT)
     public void registerBlockIcons(IIconRegister par1IconRegister) {
-        redstoneAdapeterSides = par1IconRegister.registerIcon("electrocraft:redstoneAdapterSide");
-        redstoneAdapterOn = par1IconRegister.registerIcon("electrocraft:redstoneAdapterOff");
-        redstoneAdapterOff = par1IconRegister.registerIcon("electrocraft:redstoneAdapterSideOn");
+        redstoneAdapterSide = par1IconRegister.registerIcon("electrocraft:redstoneAdapterSide");
+        redstoneAdapterTop = par1IconRegister.registerIcon("electrocraft:redstoneAdapterTop");
+        redstoneAdapterBottom = par1IconRegister.registerIcon("electrocraft:redstoneAdapterBottom");
     }
 
     @Override

@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
@@ -63,6 +64,8 @@ public class ItemHandler {
             if (item.getItem() == null) {
                 continue;
             }
+
+            GameRegistry.registerItem(item.getItem(), item.getItemName());
 
             // Create the set and add the item to it
             Set<Item> items;

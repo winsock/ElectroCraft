@@ -1,0 +1,16 @@
+[
+{
+  "modid": "electrocraft",
+  "name": "ElectroCraft",
+  "description": "Mod based on computation.",
+  "version": "2.0",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["winsock"],
+  "credits": "The Forge and FML guys, for making this example",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

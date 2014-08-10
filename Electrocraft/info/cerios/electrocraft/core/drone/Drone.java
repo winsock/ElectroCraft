@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
 import net.minecraft.block.Block;
+import net.minecraft.entity.ai.EntityMoveHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
@@ -39,6 +40,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 public class Drone extends Computer {
 
     private EntityDrone drone;
+    private EntityMoveHelper moveHelper;
     private FakePlayer fakePlayer;
     private boolean flying = false;
     private ObjectPair<ICard, ItemStack> leftCard;
@@ -66,6 +68,7 @@ public class Drone extends Computer {
 
     public void setDrone(EntityDrone drone) {
         this.drone = drone;
+        this.moveHelper = new EntityMoveHelper(drone);
         if (!drone.worldObj.isRemote) {
             ItemInWorldManager itemManager = new ItemInWorldManager(drone.worldObj);
             fakePlayer = new FakePlayer(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(drone.worldObj.provider.dimensionId), new GameProfile(UUID.randomUUID(), "FakePlayerEC" + getBaseDirectory().getName()));
@@ -75,6 +78,10 @@ public class Drone extends Computer {
 
     public EntityDrone getDrone() {
         return drone;
+    }
+
+    public EntityMoveHelper getMoveHelper() {
+        return moveHelper;
     }
 
     @Override
@@ -104,7 +111,10 @@ public class Drone extends Computer {
                         @Override
                         public Integer[] call() throws Exception {
                             ForgeDirection dir = ForgeDirection.getOrientation(intDir);
-                            drone.drone.move(dir.offsetX, dir.offsetY, dir.offsetZ, 5);
+                            double x = dir.offsetX + drone.getDrone().posX;
+                            double y = dir.offsetY + drone.getDrone().posY;
+                            double z = dir.offsetZ + drone.getDrone().posZ;
+                            drone.getMoveHelper().setMoveTo(x, y, z, 5);
                             return new Integer[] { dir.offsetX, dir.offsetY, dir.offsetZ };
                         }
                     };
@@ -113,7 +123,10 @@ public class Drone extends Computer {
                         @Override
                         public Integer[] call() throws Exception {
                             ForgeDirection dir = getDirection(drone.drone.rotationYaw);
-                            drone.drone.move(dir.offsetX, dir.offsetY, dir.offsetZ, 5);
+                            double x = dir.offsetX + drone.getDrone().posX;
+                            double y = dir.offsetY + drone.getDrone().posY;
+                            double z = dir.offsetZ + drone.getDrone().posZ;
+                            drone.getMoveHelper().setMoveTo(x, y, z, 5);
                             return new Integer[] { dir.offsetX, dir.offsetY, dir.offsetZ };
                         }
                     };
@@ -122,8 +135,9 @@ public class Drone extends Computer {
                 ElectroCraft.instance.registerRunnable(task);
                 try {
                     Integer[] location = task.get();
-                    while (drone.drone.isStillMovingOrRotating()) {
+                    while (drone.getMoveHelper().isUpdating()) {
                         try {
+                            drone.getMoveHelper().onUpdateMoveHelper();
                             Thread.sleep(1);
                         } catch (InterruptedException e) {
                         }

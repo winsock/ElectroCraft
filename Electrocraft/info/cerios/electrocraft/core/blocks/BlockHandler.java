@@ -19,6 +19,7 @@ public class BlockHandler {
         for (ElectroBlocks block : ElectroBlocks.values()) {
             if (block.getBlockItem() != null) {
                 GameRegistry.registerBlock(block.getBlock(), block.getBlockItem(), block.getName());
+
             } else {
                 GameRegistry.registerBlock(block.getBlock(), block.getName());
             }

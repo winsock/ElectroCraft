@@ -14,6 +14,7 @@ import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.items.ElectroItems;
 import info.cerios.electrocraft.core.items.ItemHandler;
 import info.cerios.electrocraft.core.network.ComputerServer;
+import info.cerios.electrocraft.core.network.ElectroPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 
 import java.io.FileDescriptor;
@@ -101,6 +102,7 @@ public class ElectroCraft implements IElectroCraft {
 
         // Network Manager
         networkWrapper = NetworkRegistry.INSTANCE.newSimpleChannel("ElectroCraft");
+        ElectroPacket.registerClasses(); // Register our packets
     }
 
     @Mod.EventHandler
@@ -263,15 +265,15 @@ public class ElectroCraft implements IElectroCraft {
 
     private void registerBaseRecipes() {
         GameRegistry.addRecipe(new ShapelessOreRecipe(new ItemStack(ElectroItems.ELECTRO_DUST.getItem(), 4), Item.itemRegistry.getObject("redstone"), "magnetiteDust", "magnetiteDust", "magnetiteDust"));
-        GameRegistry.addRecipe(new ItemStack(ElectroBlocks.SERIAL_CABLE.getBlock(), 16), "WWW", "III", "WWW", 'I', Item.itemRegistry.getObject("ingotIron"), 'W', Block.blockRegistry.getObject("cloth"));
-        GameRegistry.addRecipe(new ItemStack(ElectroBlocks.COMPUTER.getBlock()), "III", "ICI", "IEI", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'I', Item.itemRegistry.getObject("ingotIron"), 'C', Item.itemRegistry.getObject("compass"));
-        GameRegistry.addRecipe(new ItemStack(ElectroBlocks.REDSTONE_ADAPTER.getBlock()), "III", "ICI", "IRI", 'R', Item.itemRegistry.getObject("redstone"), 'I', Item.itemRegistry.getObject("ingotIron"), 'C', Block.blockRegistry.getObject("thinGlass"));
-        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 0), "EDE", "PGP", "DPD", 'E', Item.itemRegistry.getObject("emerald"), 'D', ElectroItems.ELECTRO_DUST.getItem(), 'G', Item.itemRegistry.getObject("ghastTear"), 'P', Item.itemRegistry.getObject("enderPearl"));
-        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 1), "RDR", "PGP", "ETE", 'E', Item.itemRegistry.getObject("emerald"), 'D', ElectroItems.ELECTRO_DUST.getItem(), 'R', Item.itemRegistry.getObject("redstone"), 'D', Block.blockRegistry.getObject("torchRedstoneActive"), 'P', Item.itemRegistry.getObject("enderPearl"), 'G', Item.itemRegistry.getObject("ghastTear"));
-        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 2), "RDR", "EGE", "CPC", 'E', Item.itemRegistry.getObject("oreEmerald"), 'D', Block.blockRegistry.getObject("oreDiamond"), 'P', Item.itemRegistry.getObject("enderPearl"), 'R', Block.blockRegistry.getObject("oreRedstone"), 'G', Item.itemRegistry.getObject("ghastTear"), 'C', Block.blockRegistry.getObject("oreCoal"));
-        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 3), "EPE", "PGP", "EPE", 'E', Item.itemRegistry.getObject("emerald"), 'P', Item.itemRegistry.getObject("ghastTear"), 'G', Item.itemRegistry.getObject("ghastTear"));
-        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 4), "RPR", "GEG", "BPB", 'E', Item.itemRegistry.getObject("emerald"), 'B', Item.itemRegistry.getObject("bone"), 'P', Item.itemRegistry.getObject("enderPearl"), 'R', Item.itemRegistry.getObject("rottenFlesh"), 'G', Item.itemRegistry.getObject("ghastTear"));
-        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE.getItem(), 1), "E E", "CIC", "PPP", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'C', ElectroBlocks.COMPUTER.getBlock(), 'I', Item.itemRegistry.getObject("ingotIron"), 'P', Item.itemRegistry.getObject("enderPearl"));
+        GameRegistry.addRecipe(new ItemStack(ElectroBlocks.SERIAL_CABLE.getBlock(), 16), "WWW", "III", "WWW", 'I', Item.itemRegistry.getObject("iron_ingot"), 'W', Block.blockRegistry.getObject("cloth"));
+        GameRegistry.addRecipe(new ItemStack(ElectroBlocks.COMPUTER.getBlock()), "III", "ICI", "IEI", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'I', Item.itemRegistry.getObject("iron_ingot"), 'C', Item.itemRegistry.getObject("compass"));
+        GameRegistry.addRecipe(new ItemStack(ElectroBlocks.REDSTONE_ADAPTER.getBlock()), "III", "ICI", "IRI", 'R', Item.itemRegistry.getObject("redstone"), 'I', Item.itemRegistry.getObject("iron_ingot"), 'C', Block.blockRegistry.getObject("glass_pane"));
+        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 0), "EDE", "PGP", "DPD", 'E', Item.itemRegistry.getObject("emerald"), 'D', ElectroItems.ELECTRO_DUST.getItem(), 'G', Item.itemRegistry.getObject("ghast_tear"), 'P', Item.itemRegistry.getObject("ender_pearl"));
+        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 1), "RDR", "PGP", "ETE", 'E', Item.itemRegistry.getObject("emerald"), 'D', ElectroItems.ELECTRO_DUST.getItem(), 'R', Item.itemRegistry.getObject("redstone"), 'D', Block.blockRegistry.getObject("redstone_torch"), 'P', Item.itemRegistry.getObject("ender_pearl"), 'G', Item.itemRegistry.getObject("ghast_tear"));
+        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 2), "RDR", "EGE", "CPC", 'E', Item.itemRegistry.getObject("emerald_ore"), 'D', Block.blockRegistry.getObject("diamond_ore"), 'P', Item.itemRegistry.getObject("ender_pearl"), 'R', Block.blockRegistry.getObject("redstone_ore"), 'G', Item.itemRegistry.getObject("ghast_tear"), 'C', Block.blockRegistry.getObject("coal_ore"));
+        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 3), "EPE", "PGP", "EPE", 'E', Item.itemRegistry.getObject("emerald"), 'P', Item.itemRegistry.getObject("ghast_tear"), 'G', Item.itemRegistry.getObject("ghast_tear"));
+        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE_UPGRADES.getItem(), 1, 4), "RPR", "GEG", "BPB", 'E', Item.itemRegistry.getObject("emerald"), 'B', Item.itemRegistry.getObject("bone"), 'P', Item.itemRegistry.getObject("ender_pearl"), 'R', Item.itemRegistry.getObject("rotten_flesh"), 'G', Item.itemRegistry.getObject("ghast_tear"));
+        GameRegistry.addRecipe(new ItemStack(ElectroItems.DRONE.getItem(), 1), "E E", "CIC", "PPP", 'E', ElectroItems.ELECTRO_DUST.getItem(), 'C', ElectroBlocks.COMPUTER.getBlock(), 'I', Item.itemRegistry.getObject("iron_ingot"), 'P', Item.itemRegistry.getObject("ender_pearl"));
     }
 
     public boolean isShiftHeld() {

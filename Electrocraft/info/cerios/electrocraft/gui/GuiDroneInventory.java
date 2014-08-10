@@ -12,7 +12,7 @@ import org.lwjgl.opengl.GL11;
 
 public class GuiDroneInventory extends GuiContainer {
 
-    private ResourceLocation droneInventoryScreen = new ResourceLocation("/info/cerios/electrocraft/gfx/droneinv.png");
+    private ResourceLocation droneInventoryScreen = new ResourceLocation("electrocraft", "textures/gui/droneinv.png");
     public GuiDroneInventory(ContainerDrone container) {
         super(container);
     }

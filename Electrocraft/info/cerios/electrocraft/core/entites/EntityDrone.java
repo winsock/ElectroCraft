@@ -32,8 +32,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.relauncher.Side;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.util.ForgeDirection;
 
@@ -67,7 +65,8 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
         if (drone != null) {
             drone.setFlying(nbt.getBoolean("flying"));
             if (nbt.getBoolean("isOn")) {
-                drone.setProgramStorage(nbt.getCompoundTag("programStorage"));
+                if (nbt.hasKey("programStorage"))
+                    drone.setProgramStorage(nbt.getCompoundTag("programStorage"));
                 drone.callLoad();
             }
         }
@@ -158,17 +157,6 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
         newPosZ = posZ;
         newRotationYaw = rotationYawHead = yaw;
         newRotationPitch = 0f;
-    }
-
-    public void move(final int x, final int y, final int z, final int ticks) {
-        if (worldObj.getBlock((int) posX + x, (int) posY + y, (int) posZ + z) == null || !worldObj.getBlock((int) posX + x, (int) posY + y, (int) posZ + z).getBlocksMovement(worldObj, (int) posX + x, (int) posY + y, (int) posZ + z)) {
-            newPosRotationIncrements = ticks;
-            newPosX = posX + x;
-            newPosY = posY + y;
-            newPosZ = posZ + z;
-            newRotationYaw = rotationYawHead = rotationYaw;
-            newRotationPitch = 0f;
-        }
     }
 
     public boolean isStillMovingOrRotating() {
@@ -302,9 +290,11 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
     public ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
         Block block = world.getBlock(x, y, z);
         int metadata = world.getBlockMetadata(x, y, z);
-        for (int i = 0; i < getHeldItem().getEnchantmentTagList().tagCount(); i++) {
-            if (getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("id") == Enchantment.fortune.effectId) {
-                return block.getDrops(world, x, y, z, metadata, getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("lvl"));
+        if (getHeldItem().getEnchantmentTagList() != null) {
+            for (int i = 0; i < getHeldItem().getEnchantmentTagList().tagCount(); i++) {
+                if (getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("id") == Enchantment.fortune.effectId) {
+                    return block.getDrops(world, x, y, z, metadata, getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("lvl"));
+                }
             }
         }
         return block.getDrops(world, x, y, z, metadata, 0);

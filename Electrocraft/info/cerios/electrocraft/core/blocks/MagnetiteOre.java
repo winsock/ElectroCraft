@@ -18,12 +18,11 @@ import net.minecraftforge.common.MinecraftForge;
 
 public class MagnetiteOre extends Block {
 
-    public MagnetiteOre(int blockId) {
+    public MagnetiteOre() {
         super(Material.rock);
         this.setHardness(1.0f);
         this.setResistance(2.0f);
         this.setHarvestLevel("pickaxe", 0);
-        Block.blockRegistry.addObject(blockId, "magnetiteOre", this);
     }
 
     @Override
@@ -31,7 +30,7 @@ public class MagnetiteOre extends Block {
         ItemStack stack = player.inventory.getCurrentItem();
         if (stack == null)
             return 0f;
-        if (Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("pickaxeGold")) || Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("pickaxeSteel")))
+        if (Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("golden_pickaxe")) || Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("iron_pickaxe")))
             return 0f;
         return super.getPlayerRelativeBlockHardness(player, world, par3, par4, par5);
     }

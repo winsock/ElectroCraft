@@ -1,8 +1,17 @@
 package info.cerios.electrocraft.core.network;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import cpw.mods.fml.relauncher.Side;
+import info.cerios.electrocraft.api.computer.NetworkBlock;
+import info.cerios.electrocraft.core.ElectroCraft;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
 
-public class NetworkAddressPacket extends ElectroPacket {
+public class NetworkAddressPacket extends ElectroPacket implements IMessageHandler<NetworkAddressPacket, IMessage> {
 
     private int dataAddress;
     private int controlAddress;
@@ -14,7 +23,6 @@ public class NetworkAddressPacket extends ElectroPacket {
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeByte(type.ordinal());
         buf.writeInt(x);
         buf.writeInt(y);
         buf.writeInt(z);
@@ -25,7 +33,6 @@ public class NetworkAddressPacket extends ElectroPacket {
 
     @Override
     public void fromBytes(ByteBuf data) {
-        data.readByte(); // Throw away the type info
         x = data.readInt();
         y = data.readInt();
         z = data.readInt();
@@ -71,5 +78,20 @@ public class NetworkAddressPacket extends ElectroPacket {
 
     public int getZ() {
         return z;
+    }
+
+    @Override
+    public IMessage onMessage(NetworkAddressPacket message, MessageContext ctx) {
+        if (ctx.side == Side.CLIENT) {
+            ElectroCraft.electroCraftSided.openNetworkGui(message);
+        } else {
+            World world = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(message.getWorldId());
+            TileEntity tileEntity = world.getTileEntity(message.getX(), message.getY(), message.getZ());
+            if (tileEntity instanceof NetworkBlock) {
+                ((NetworkBlock) tileEntity).setControlAddress(message.getControlAddress());
+                ((NetworkBlock) tileEntity).setDataAddress(message.getDataAddress());
+            }
+        }
+        return null;
     }
 }

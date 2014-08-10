@@ -50,7 +50,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
     private int ticksSinceLastBlink = 0;
     private int delayTicks = 0;
     private int ticksControlComboPressed = 0;
-    private ResourceLocation computerScreenResource = new ResourceLocation("/info/cerios/electrocraft/gfx/computerscreen.png");
+    private ResourceLocation computerScreenResource = new ResourceLocation("electrocraft", "textures/gui/computerscreen.png");
 
     public GuiComputerScreen() {
         Keyboard.enableRepeatEvents(true);

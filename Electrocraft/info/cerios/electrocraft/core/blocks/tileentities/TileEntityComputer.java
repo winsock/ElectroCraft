@@ -100,7 +100,8 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
             if (computer == null) {
                 createComputer();
             }
-            computer.setProgramStorage((NBTTagCompound) nbttagcompound.getTag("programStorage"));
+            if (nbttagcompound.hasKey("programStorage"))
+                computer.setProgramStorage((NBTTagCompound) nbttagcompound.getTag("programStorage"));
             computer.callLoad();
 
             for (NetworkBlock ioPort : ioPorts) {

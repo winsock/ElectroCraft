@@ -7,10 +7,6 @@ import net.minecraft.item.Item;
 
 public class ElectroDust extends Item {
 
-    protected ElectroDust(int id) {
-        Item.itemRegistry.addObject(id, "electroDust", this);
-    }
-
     @Override
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister par1IconRegister) {

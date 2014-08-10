@@ -17,10 +17,9 @@ public class BlockSerialCable extends BlockNetwork {
 
     public static final int renderId = ElectroCraft.electroCraftSided.getFreeRenderId();
 
-    public BlockSerialCable(int id) {
+    public BlockSerialCable() {
         super(Material.cloth);
         this.setBlockBounds(0.20F, 0.20F, 0.20F, 0.70F, 0.70F, 0.70F);
-        Block.blockRegistry.addObject(id, "serialCable", this);
     }
 
     @Override

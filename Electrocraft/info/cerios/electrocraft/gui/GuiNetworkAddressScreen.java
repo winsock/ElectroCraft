@@ -20,7 +20,7 @@ public class GuiNetworkAddressScreen extends GuiScreen {
     private NetworkBlock device;
     private boolean isSmp = false;
     private NetworkAddressPacket packetInProgress;
-    private ResourceLocation genericWindowResource = new ResourceLocation("/info/cerios/electrocraft/gfx/genericWindow.png");
+    private ResourceLocation genericWindowResource = new ResourceLocation("electrocraft", "textures/gui/genericWindow.png");
 
     public GuiNetworkAddressScreen(NetworkAddressPacket packetInProgress) {
         isSmp = true;

@@ -27,11 +27,10 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 public class BlockComputer extends BlockNetwork {
 
-    public BlockComputer(int id) {
-        super(Material.wood);
-        Block.blockRegistry.addObject(id, "computer", this);
+    public BlockComputer() {
+        super(Material.iron);
     }
-    private IIcon computerFront, computerSides;
+    private IIcon computerFront, computerLeft, computerRight, computerBottom, computerTop, computerBack;
 
     @Override
     public IIcon getIcon(int side, int metadata) {
@@ -43,7 +42,9 @@ public class BlockComputer extends BlockNetwork {
         }
 
         if (side == 0)
-            return computerSides;
+            return computerBottom;
+        if (side == 1)
+            return computerTop;
 
         switch (metadata) {
             case 4:
@@ -51,43 +52,49 @@ public class BlockComputer extends BlockNetwork {
                     case 2:
                         return computerFront;
                     case 3:
+                        return computerBack;
                     case 4:
+                        return computerLeft;
                     case 5:
-                    default:
-                        return computerSides;
+                        return computerRight;
                 }
-            default:
             case 2:
                 switch (side) {
                     case 3:
                         return computerFront;
                     case 2:
+                        return computerBack;
                     case 4:
+                        return computerRight;
                     case 5:
-                    default:
-                        return computerSides;
+                        return computerLeft;
                 }
             case 3:
                 switch (side) {
                     case 4:
                         return computerFront;
                     case 2:
+                        return computerLeft;
                     case 3:
+                        return computerRight;
                     case 5:
-                    default:
-                        return computerSides;
+                        return computerBack;
                 }
             case 1:
                 switch (side) {
                     case 5:
                         return computerFront;
                     case 2:
+                        return computerRight;
                     case 3:
+                        return computerLeft;
                     case 4:
-                    default:
-                        return computerSides;
+                        return computerBack;
                 }
         }
+
+        // Shouldn't happen
+        return computerBottom;
     }
 
     @Override
@@ -165,6 +172,10 @@ public class BlockComputer extends BlockNetwork {
     @SideOnly(Side.CLIENT)
     public void registerBlockIcons(IIconRegister iconRegister) {
         computerFront = iconRegister.registerIcon("electrocraft:computerFront");
-        computerSides = iconRegister.registerIcon("electrocraft:computerSide");
+        computerBack = iconRegister.registerIcon("electrocraft:computerBack");
+        computerLeft = iconRegister.registerIcon("electrocraft:computerSideLeft");
+        computerRight = iconRegister.registerIcon("electrocraft:computerSideRight");
+        computerTop = iconRegister.registerIcon("electrocraft:computerTop");
+        computerBottom = iconRegister.registerIcon("electrocraft:computerBottom");
     }
 }

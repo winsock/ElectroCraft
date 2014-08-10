@@ -27,8 +27,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
     private IIcon[] icons = new IIcon[5];
 
-    public ItemDroneUpgrade(int id) {
-        Item.itemRegistry.addObject(id, "droneUpgrades", this);
+    public ItemDroneUpgrade() {
         setHasSubtypes(true);
     }
 

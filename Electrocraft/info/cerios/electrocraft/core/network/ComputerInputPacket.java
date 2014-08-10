@@ -1,9 +1,14 @@
 package info.cerios.electrocraft.core.network;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import cpw.mods.fml.relauncher.Side;
+import info.cerios.electrocraft.core.ElectroCraft;
 import io.netty.buffer.ByteBuf;
 
-public class ComputerInputPacket extends ElectroPacket {
+public class ComputerInputPacket extends ElectroPacket implements IMessageHandler<ComputerInputPacket, IMessage> {
 
     private int key;
     private String keyName;
@@ -21,7 +26,6 @@ public class ComputerInputPacket extends ElectroPacket {
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeByte(type.ordinal());
         buf.writeInt(key);
         ByteBufUtils.writeUTF8String(buf, keyName);
         buf.writeInt(button);
@@ -37,7 +41,6 @@ public class ComputerInputPacket extends ElectroPacket {
 
     @Override
     public void fromBytes(ByteBuf data) {
-        data.readByte(); // Throw away the type info
         key = data.readInt();
         keyName = ByteBufUtils.readUTF8String(data);
         button = data.readInt();
@@ -131,5 +134,15 @@ public class ComputerInputPacket extends ElectroPacket {
 
     public boolean wasKeyDown() {
         return down;
+    }
+
+    @Override
+    public IMessage onMessage(ComputerInputPacket message, MessageContext ctx) {
+        if (message.wasKeyDown()) {
+            if (ElectroCraft.instance.getComputerForPlayer(ctx.getServerHandler().playerEntity) != null) {
+                ElectroCraft.instance.getComputerForPlayer(ctx.getServerHandler().playerEntity).getComputer().getKeyboard().onKeyPress(message);
+            }
+        }
+        return null;
     }
 }

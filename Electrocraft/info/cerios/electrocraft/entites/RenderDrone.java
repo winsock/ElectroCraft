@@ -12,7 +12,7 @@ import org.lwjgl.opengl.GL11;
 
 public class RenderDrone extends RenderLiving {
 
-    private ResourceLocation droneTexture = new ResourceLocation("electrocraft", "models/drone");
+    private ResourceLocation droneTexture = new ResourceLocation("electrocraft", "textures/models/drone");
 
     public RenderDrone(ModelBase par1ModelBase, float par2) {
         super(par1ModelBase, par2);

@@ -1,6 +1,8 @@
 package info.cerios.electrocraft.core.network;
 
+import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.relauncher.Side;
 import info.cerios.electrocraft.core.ElectroCraft;
 import io.netty.buffer.ByteBuf;
 
@@ -14,13 +16,20 @@ import java.io.IOException;
 public abstract class ElectroPacket implements IMessage {
 
     public enum Type {
-        MODIFIER(ModifierPacket.class), GUI(GuiPacket.class), ADDRESS(NetworkAddressPacket.class), INPUT(ComputerInputPacket.class), PORT(ServerPortPacket.class), CUSTOM(CustomPacket.class);
+        MODIFIER, GUI, ADDRESS, INPUT, PORT, CUSTOM;
+    }
 
-        private Class<? extends ElectroPacket> packetClass;
-
-        private Type(Class<? extends ElectroPacket> packetClass) {
-            this.packetClass = packetClass;
-        }
+    public static void registerClasses() {
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(ServerPortPacket.class, ServerPortPacket.class, Type.PORT.ordinal(), Side.CLIENT);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(NetworkAddressPacket.class, NetworkAddressPacket.class, Type.ADDRESS.ordinal(), Side.CLIENT);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(NetworkAddressPacket.class, NetworkAddressPacket.class, Type.ADDRESS.ordinal(), Side.SERVER);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(ModifierPacket.class, ModifierPacket.class, Type.MODIFIER.ordinal(), Side.SERVER);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(GuiPacket.class, GuiPacket.class, Type.GUI.ordinal(), Side.CLIENT);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(GuiPacket.class, GuiPacket.class, Type.GUI.ordinal(), Side.SERVER);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(CustomPacket.class, CustomPacket.class, Type.CUSTOM.ordinal(), Side.CLIENT);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(CustomPacket.class, CustomPacket.class, Type.CUSTOM.ordinal(), Side.SERVER);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(ComputerInputPacket.class, ComputerInputPacket.class, Type.INPUT.ordinal(), Side.CLIENT);
+        ElectroCraft.instance.getNetworkWrapper().registerMessage(ComputerInputPacket.class, ComputerInputPacket.class, Type.INPUT.ordinal(), Side.SERVER);
     }
 
     protected Type type;
@@ -31,14 +40,5 @@ public abstract class ElectroPacket implements IMessage {
 
     public Type getType() {
         return type;
-    }
-
-    private static ElectroPacket getAndCreatePacketFromId(byte id) {
-        try {
-            return Type.values()[id].packetClass.newInstance();
-        } catch (Exception e) {
-            ElectroCraft.instance.getLogger().severe("Unable to parse packet id!");
-        }
-        return null;
     }
 }

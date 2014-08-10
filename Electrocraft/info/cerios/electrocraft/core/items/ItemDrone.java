@@ -10,9 +10,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 public class ItemDrone extends Item {
-    public ItemDrone(int id) {
-        Item.itemRegistry.addObject(id, "itemDrone",this);
-    }
 
     @Override
     public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int par7, float par8, float par9, float par10) {
