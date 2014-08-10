@@ -15,6 +15,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import cpw.mods.fml.common.FMLCommonHandler;
+import net.minecraftforge.common.util.Constants;
 
 public class ComputerNetwork {
     private Set<ObjectTriplet<Integer, Integer, Integer>> devices = new HashSet<ObjectTriplet<Integer, Integer, Integer>>();
@@ -26,10 +27,10 @@ public class ComputerNetwork {
     }
 
     public void writeToNBT(NBTTagCompound nbttagcompound) {
-        NBTTagList computerList = new NBTTagList("devices");
+        NBTTagList computerList = new NBTTagList();
         if (devices != null) {
             for (ObjectTriplet<Integer, Integer, Integer> computer : devices) {
-                NBTTagCompound computerData = new NBTTagCompound("deviceData");
+                NBTTagCompound computerData = new NBTTagCompound();
                 computerData.setInteger("x", computer.getValue1());
                 computerData.setInteger("y", computer.getValue2());
                 computerData.setInteger("z", computer.getValue3());
@@ -40,16 +41,14 @@ public class ComputerNetwork {
     }
 
     public void readFromNBT(NBTTagCompound nbttagcompound) {
-        NBTTagList computerList = nbttagcompound.getTagList("devices");
+        NBTTagList computerList = nbttagcompound.getTagList("devices", Constants.NBT.TAG_LIST);
         for (int i = 0; i < computerList.tagCount(); i++) {
-            if (computerList.tagAt(i) instanceof NBTTagCompound) {
-                NBTTagCompound computerData = (NBTTagCompound) computerList.tagAt(i);
-                int x = computerData.getInteger("x");
-                int y = computerData.getInteger("y");
-                int z = computerData.getInteger("z");
+            NBTTagCompound computerData = computerList.getCompoundTagAt(i);
+            int x = computerData.getInteger("x");
+            int y = computerData.getInteger("y");
+            int z = computerData.getInteger("z");
 
-                devices.add(new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
-            }
+            devices.add(new ObjectTriplet<Integer, Integer, Integer>(x, y, z));
         }
     }
 
@@ -92,7 +91,7 @@ public class ComputerNetwork {
 
     public TileEntityComputer getTileEntityComputerFromLocation(int x, int y, int z, int d) {
         if (dims.contains(d)) {
-            TileEntity tile = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(d).getBlockTileEntity(x, y, z);
+            TileEntity tile = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(d).getTileEntity(x, y, z);
             if (tile instanceof TileEntityComputer)
                 return (TileEntityComputer) tile;
         }
@@ -101,7 +100,7 @@ public class ComputerNetwork {
 
     public NetworkBlock getNetworkBlockFromLocation(int x, int y, int z, int d) {
         if (dims.contains(d)) {
-            TileEntity tile = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(d).getBlockTileEntity(x, y, z);
+            TileEntity tile = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(d).getTileEntity(x, y, z);
             if (tile instanceof NetworkBlock)
                 return (NetworkBlock) tile;
         }

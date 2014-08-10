@@ -1,6 +1,8 @@
 package info.cerios.electrocraft;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import info.cerios.electrocraft.core.IElectroCraftSided;
+import info.cerios.electrocraft.core.network.ConnectionHandler;
 import info.cerios.electrocraft.core.network.CustomPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
@@ -8,7 +10,6 @@ import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import java.io.File;
 import java.net.SocketAddress;
 
-import cpw.mods.fml.common.IScheduledTickHandler;
 import cpw.mods.fml.server.FMLServerHandler;
 
 public class ElectroCraftSidedServer implements IElectroCraftSided {
@@ -17,6 +18,7 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 
     @Override
     public void init() {
+        FMLCommonHandler.instance().bus().register(new ConnectionHandler());
     }
 
     @Override
@@ -32,12 +34,8 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
     }
 
     @Override
-    public IScheduledTickHandler getTickHandler() {
+    public Object getTickHandler() {
         return null;
-    }
-
-    @Override
-    public void loadTextures() {
     }
 
     @Override
@@ -56,11 +54,6 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 
     public void setShiftState(boolean state) {
         this.isShiftDown = state;
-    }
-
-    @Override
-    public File getBaseDir() {
-        return FMLServerHandler.instance().getServer().getFile(".");
     }
 
     @Override

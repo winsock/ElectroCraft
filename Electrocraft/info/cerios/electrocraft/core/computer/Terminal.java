@@ -19,8 +19,6 @@ import java.util.TreeMap;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
 
 @ExposedToLua
 public class Terminal extends Writer {
@@ -126,10 +124,10 @@ public class Terminal extends Writer {
             returnPacket.id = 2;
             returnPacket.data = out.toByteArray();
             if (player != null) {
-                PacketDispatcher.sendPacketToPlayer(returnPacket.getMCPacket(), (Player) player);
+                ElectroCraft.instance.getNetworkWrapper().sendTo(returnPacket, (EntityPlayerMP) player);
             } else {
                 for (EntityPlayer e : computer.getClients()) {
-                    PacketDispatcher.sendPacketToPlayer(returnPacket.getMCPacket(), (Player) e);
+                    ElectroCraft.instance.getNetworkWrapper().sendTo(returnPacket, (EntityPlayerMP) e);
                 }
             }
         } catch (IOException e) {

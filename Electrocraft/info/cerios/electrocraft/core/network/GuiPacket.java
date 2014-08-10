@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.network;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 
 public class GuiPacket extends ElectroPacket {
@@ -17,14 +19,15 @@ public class GuiPacket extends ElectroPacket {
     }
 
     @Override
-    protected byte[] getData() throws IOException {
-        return new byte[] { (byte) type.ordinal(), (byte) windowId.ordinal(), (byte) (closeWindow ? 1 : 0) };
+    public void toBytes(ByteBuf buf) {
+        buf.writeBytes(new byte[] { (byte) type.ordinal(), (byte) windowId.ordinal(), (byte) (closeWindow ? 1 : 0) });
     }
 
     @Override
-    protected void readData(byte[] data) throws IOException {
-        windowId = Gui.values()[data[1]];
-        closeWindow = (data[2] == 0 ? false : true);
+    public void fromBytes(ByteBuf data) {
+        data.readByte(); // Discard type
+        windowId = Gui.values()[data.readByte()];
+        closeWindow = (data.readByte() == 0 ? false : true);
     }
 
     public void setGui(Gui gui) {

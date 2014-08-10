@@ -18,7 +18,7 @@ public class WorldGenerator implements IWorldGenerator {
                 int randPosX = chunkX * 16 + random.nextInt(16);
                 int randPosY = random.nextInt(128); // Min Height
                 int randPosZ = chunkZ * 16 + random.nextInt(16);
-                new WorldGenMinable(ElectroBlocks.MAGNETITE_ORE.getBlock().blockID, 10/*
+                new WorldGenMinable(ElectroBlocks.MAGNETITE_ORE.getBlock(), 10/*
                                                                                        * Vein
                                                                                        * Size
                                                                                        */).generate(world, random, randPosX, randPosY, randPosZ);

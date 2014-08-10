@@ -1,10 +1,6 @@
 package info.cerios.electrocraft.core.network;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
 
 public class NetworkAddressPacket extends ElectroPacket {
 
@@ -17,30 +13,25 @@ public class NetworkAddressPacket extends ElectroPacket {
     }
 
     @Override
-    protected byte[] getData() throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        dos.write(type.ordinal());
-        dos.writeInt(x);
-        dos.writeInt(y);
-        dos.writeInt(z);
-        dos.writeInt(world);
-        dos.writeInt(dataAddress);
-        dos.writeInt(controlAddress);
-        return bos.toByteArray();
+    public void toBytes(ByteBuf buf) {
+        buf.writeByte(type.ordinal());
+        buf.writeInt(x);
+        buf.writeInt(y);
+        buf.writeInt(z);
+        buf.writeInt(world);
+        buf.writeInt(dataAddress);
+        buf.writeInt(controlAddress);
     }
 
     @Override
-    protected void readData(byte[] data) throws IOException {
-        ByteArrayInputStream bis = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(bis);
-        dis.read(); // Throw away the type info
-        x = dis.readInt();
-        y = dis.readInt();
-        z = dis.readInt();
-        world = dis.readInt();
-        dataAddress = dis.readInt();
-        controlAddress = dis.readInt();
+    public void fromBytes(ByteBuf data) {
+        data.readByte(); // Throw away the type info
+        x = data.readInt();
+        y = data.readInt();
+        z = data.readInt();
+        world = data.readInt();
+        dataAddress = data.readInt();
+        controlAddress = data.readInt();
     }
 
     public int getDataAddress() {

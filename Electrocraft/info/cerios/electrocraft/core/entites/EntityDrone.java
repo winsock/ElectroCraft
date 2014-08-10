@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import net.minecraft.block.Block;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
@@ -30,12 +32,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
-import net.minecraftforge.common.Configuration;
-import net.minecraftforge.common.ForgeDirection;
 import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
 import cpw.mods.fml.relauncher.Side;
+import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class EntityDrone extends EntityLiving implements IComputerHost {
 
@@ -50,9 +50,10 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 
     public EntityDrone(World par1World) {
         super(par1World);
-        texture = "/info/cerios/electrocraft/gfx/Drone.png";
+        //texture = "/info/cerios/electrocraft/gfx/Drone.png";
         this.height = 0.8F;
         inventory = new InventoryDrone(this);
+        this.getEntityAttribute(SharedMonsterAttributes.maxHealth).setBaseValue(100);
     }
 
     @Override
@@ -103,10 +104,10 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 DataOutputStream dos = new DataOutputStream(bos);
                 try {
-                    dos.writeInt(entityId);
+                    dos.writeInt(getEntityId());
                     packet.id = 7;
                     packet.data = bos.toByteArray();
-                    PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+                    ElectroCraft.instance.getNetworkWrapper().sendToServer(packet);
                 } catch (IOException e) {
                     ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
                 }
@@ -160,7 +161,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
     }
 
     public void move(final int x, final int y, final int z, final int ticks) {
-        if (Block.blocksList[worldObj.getBlockId((int) posX + x, (int) posY + y, (int) posZ + z)] == null || Block.blocksList[worldObj.getBlockId((int) posX + x, (int) posY + y, (int) posZ + z)].isAirBlock(worldObj, (int) posX + x, (int) posY + y, (int) posZ + z)) {
+        if (worldObj.getBlock((int) posX + x, (int) posY + y, (int) posZ + z) == null || !worldObj.getBlock((int) posX + x, (int) posY + y, (int) posZ + z).getBlocksMovement(worldObj, (int) posX + x, (int) posY + y, (int) posZ + z)) {
             newPosRotationIncrements = ticks;
             newPosX = posX + x;
             newPosY = posY + y;
@@ -219,10 +220,11 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 
             if (this.onGround) {
                 var3 = 0.54600006F;
-                int var4 = this.worldObj.getBlockId(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+                Block block = this.worldObj.getBlock(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+                int id = Block.getIdFromBlock(block);
 
-                if (var4 > 0) {
-                    var3 = Block.blocksList[var4].slipperiness * 0.91F;
+                if (id > 0) {
+                    var3 = block.slipperiness * 0.91F;
                 }
             }
 
@@ -232,10 +234,11 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 
             if (this.onGround) {
                 var3 = 0.54600006F;
-                int var5 = this.worldObj.getBlockId(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+                Block block = this.worldObj.getBlock(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+                int id = Block.getIdFromBlock(block);
 
-                if (var5 > 0) {
-                    var3 = Block.blocksList[var5].slipperiness * 0.91F;
+                if (id > 0) {
+                    var3 = block.slipperiness * 0.91F;
                 }
             }
 
@@ -245,17 +248,17 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
             this.motionZ *= var3;
         }
 
-        this.prevLegYaw = this.legYaw;
-        double var10 = this.posX - this.prevPosX;
-        double var9 = this.posZ - this.prevPosZ;
-        float var7 = MathHelper.sqrt_double(var10 * var10 + var9 * var9) * 4.0F;
+        this.prevLimbSwingAmount = this.limbSwingAmount;
+        double d1 = this.posX - this.prevPosX;
+        double d0 = this.posZ - this.prevPosZ;
+        float f4 = MathHelper.sqrt_double(d1 * d1 + d0 * d0) * 4.0F;
 
-        if (var7 > 1.0F) {
-            var7 = 1.0F;
+        if (f4 > 1.0F) {
+            f4 = 1.0F;
         }
 
-        this.legYaw += (var7 - this.legYaw) * 0.4F;
-        this.legSwing += this.legYaw;
+        this.limbSwingAmount += (f4 - this.limbSwingAmount) * 0.4F;
+        this.limbSwing += this.limbSwingAmount;
     }
 
     public Drone getDrone() {
@@ -285,11 +288,11 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
             }
         }
 
-        if (tool.appliesToBlock(getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z))) {
+        if (tool.appliesToBlock(getHeldItem(), worldObj.getBlock(x, y, z), worldObj.getBlockMetadata(x, y, z))) {
             for (ItemStack item : tool.preformAction(getHeldItem(), this, worldObj, x, y, z)) {
                 drone.addToInventory(inventory, 0, 36, item);
             }
-            tool.damageItem(this, getHeldItem(), Block.blocksList[worldObj.getBlockId(x, y, z)], worldObj.getBlockMetadata(x, y, z));
+            tool.damageItem(this, getHeldItem(), worldObj.getBlock(x, y, z), worldObj.getBlockMetadata(x, y, z));
             drone.postEvent("tool", true);
         } else {
             drone.postEvent("tool", false);
@@ -297,10 +300,14 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
     }
 
     public ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
-        int id = world.getBlockId(x, y, z);
-        Block block = Block.blocksList[id];
+        Block block = world.getBlock(x, y, z);
         int metadata = world.getBlockMetadata(x, y, z);
-        return block.getBlockDropped(world, x, y, z, metadata, 0);
+        for (int i = 0; i < getHeldItem().getEnchantmentTagList().tagCount(); i++) {
+            if (getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("id") == Enchantment.fortune.effectId) {
+                return block.getDrops(world, x, y, z, metadata, getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("lvl"));
+            }
+        }
+        return block.getDrops(world, x, y, z, metadata, 0);
     }
 
     @Override
@@ -333,8 +340,8 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
         if (player instanceof EntityPlayerMP) {
             ElectroCraft.instance.setComputerForPlayer(player, this);
             if (player.isSneaking()) {
-                player.openGui(ElectroCraft.instance, this.entityId, worldObj, (int) posX, (int) posY, (int) posZ);
-            } else if ((player.ridingEntity != null) || (player.getHeldItem() != null && player.getHeldItem().itemID == Item.saddle.shiftedIndex)) {
+                player.openGui(ElectroCraft.instance, this.getEntityId(), worldObj, (int) posX, (int) posY, (int) posZ);
+            } else if ((player.ridingEntity != null) || (player.getHeldItem() != null && Item.getIdFromItem(player.getHeldItem().getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("saddle")))) {
                 player.mountEntity(this);
             } else {
                 if (drone == null) {
@@ -343,11 +350,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
                 GuiPacket guiPacket = new GuiPacket();
                 guiPacket.setCloseWindow(false);
                 guiPacket.setGui(Gui.COMPUTER_SCREEN);
-                try {
-                    PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
-                } catch (IOException e) {
-                    ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
-                }
+                ElectroCraft.instance.getNetworkWrapper().sendTo(guiPacket, (EntityPlayerMP) player);
                 if (!drone.isRunning()) {
                     drone.start();
                 }
@@ -362,24 +365,19 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 
     public void createDrone() {
         if (!worldObj.isRemote) {
-            String worldDir = "";
-            if (FMLCommonHandler.instance().getSide() == Side.SERVER || FMLCommonHandler.instance().getSide() == Side.BUKKIT) {
-                worldDir = worldObj.getWorldInfo().getWorldName();
-            } else {
-                worldDir = "saves" + File.separator + worldObj.getWorldInfo().getWorldName();
-            }
-            String dir = "";
+            File worldFolder = worldObj.getSaveHandler().getWorldDirectory();
+            String dir;
             if (id == null || id.isEmpty()) {
                 id = String.valueOf(Calendar.getInstance().getTime().getTime());
-                dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
+                dir = worldFolder.getAbsolutePath() + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
                 File file = new File(dir);
                 while (file.exists()) {
                     id = String.valueOf(Calendar.getInstance().getTime().getTime());
-                    dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
+                    dir = worldFolder.getAbsolutePath() + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
                     file = new File(dir);
                 }
             }
-            dir = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
+            dir = worldFolder.getAbsolutePath() + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
             drone = new Drone(new ArrayList<EntityPlayer>(), dir, 320, 240, 15, 50);
             drone.setDrone(this);
         }
@@ -401,10 +399,5 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
             drone.removeClient(player);
         }
         ElectroCraft.instance.setComputerForPlayer(player, null);
-    }
-
-    @Override
-    public int getMaxHealth() {
-        return 100;
     }
 }

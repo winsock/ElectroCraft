@@ -1,10 +1,7 @@
 package info.cerios.electrocraft.core.network;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import cpw.mods.fml.common.network.ByteBufUtils;
+import io.netty.buffer.ByteBuf;
 
 public class ComputerInputPacket extends ElectroPacket {
 
@@ -23,40 +20,35 @@ public class ComputerInputPacket extends ElectroPacket {
     }
 
     @Override
-    protected byte[] getData() throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        dos.write(type.ordinal());
-        dos.writeInt(key);
-        dos.writeUTF(keyName);
-        dos.writeInt(button);
-        dos.writeBoolean(down);
-        dos.writeBoolean(leftKey);
-        dos.writeBoolean(rightKey);
-        dos.writeBoolean(upKey);
-        dos.writeBoolean(downKey);
-        dos.writeInt(dX);
-        dos.writeInt(dY);
-        dos.writeInt(wD);
-        return bos.toByteArray();
+    public void toBytes(ByteBuf buf) {
+        buf.writeByte(type.ordinal());
+        buf.writeInt(key);
+        ByteBufUtils.writeUTF8String(buf, keyName);
+        buf.writeInt(button);
+        buf.writeBoolean(down);
+        buf.writeBoolean(leftKey);
+        buf.writeBoolean(rightKey);
+        buf.writeBoolean(upKey);
+        buf.writeBoolean(downKey);
+        buf.writeInt(dX);
+        buf.writeInt(dY);
+        buf.writeInt(wD);
     }
 
     @Override
-    protected void readData(byte[] data) throws IOException {
-        ByteArrayInputStream bis = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(bis);
-        dis.read(); // Throw away the type info
-        key = dis.readInt();
-        keyName = dis.readUTF();
-        button = dis.readInt();
-        down = dis.readBoolean();
-        leftKey = dis.readBoolean();
-        rightKey = dis.readBoolean();
-        upKey = dis.readBoolean();
-        downKey = dis.readBoolean();
-        dX = dis.readInt();
-        dY = dis.readInt();
-        wD = dis.readInt();
+    public void fromBytes(ByteBuf data) {
+        data.readByte(); // Throw away the type info
+        key = data.readInt();
+        keyName = ByteBufUtils.readUTF8String(data);
+        button = data.readInt();
+        down = data.readBoolean();
+        leftKey = data.readBoolean();
+        rightKey = data.readBoolean();
+        upKey = data.readBoolean();
+        downKey = data.readBoolean();
+        dX = data.readInt();
+        dY = data.readInt();
+        wD = data.readInt();
     }
 
     public void setMouseDeltas(int deltaX, int deltaY, int wheelDelta) {

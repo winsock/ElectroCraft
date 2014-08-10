@@ -23,12 +23,12 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.Tessellator;
 
+import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.common.network.PacketDispatcher;
 
 public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
@@ -50,6 +50,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
     private int ticksSinceLastBlink = 0;
     private int delayTicks = 0;
     private int ticksControlComboPressed = 0;
+    private ResourceLocation computerScreenResource = new ResourceLocation("/info/cerios/electrocraft/gfx/computerscreen.png");
 
     public GuiComputerScreen() {
         Keyboard.enableRepeatEvents(true);
@@ -61,7 +62,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
     }
 
     public void initGui() {
-        controlList.add(new GuiButton(CLOSE_BUTTON, width - 5 - 4 - 17, 5 + 4, 17, 17, "X"));
+        buttonList.add(new GuiButton(CLOSE_BUTTON, width - 5 - 4 - 17, 5 + 4, 17, 17, "X"));
     }
 
     @Override
@@ -74,7 +75,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
         float halfScreenHeight = halfBoxHeight - 20;
 
         // Draw the background
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, mc.renderEngine.getTexture("/info/cerios/electrocraft/gfx/computerscreen.png"));
+        this.mc.renderEngine.bindTexture(computerScreenResource);
         tess.startDrawingQuads();
         tess.addVertexWithUV((width / 2) + halfBoxWidth, (height / 2) - halfBoxHeight, 0, 1, 0);
         tess.addVertexWithUV((width / 2) - halfBoxWidth, (height / 2) - halfBoxHeight, 0, 0, 0);
@@ -100,17 +101,17 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
                 float scaleFactorX = 1f;
                 float scaleFactorY = 1f;
-                if (fontRenderer.getStringWidth(line) > (halfScreenWidth * 2)) {
-                    scaleFactorX = (float) ((halfScreenWidth * 2) / fontRenderer.getStringWidth(line));
+                if (fontRendererObj.getStringWidth(line) > (halfScreenWidth * 2)) {
+                    scaleFactorX = (float) ((halfScreenWidth * 2) / fontRendererObj.getStringWidth(line));
                 }
-                if ((fontRenderer.FONT_HEIGHT * columns) > (halfScreenHeight * 2)) {
+                if ((fontRendererObj.FONT_HEIGHT * columns) > (halfScreenHeight * 2)) {
                     scaleFactorY = (float) ((halfScreenHeight * 2) / (pixelsPerLineHeight * rows));
                 }
                 GL11.glPushMatrix();
                 GL11.glScalef(scaleFactorX, scaleFactorY, 1);
-                this.fontRenderer.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
+                this.fontRendererObj.drawString(line, (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
                 if (i == currentRow && (ticksSinceLastBlink > 500 || delayTicks > 0)) {
-                    this.fontRenderer.drawString("_", (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)) + (currentCol > line.length() ? fontRenderer.getStringWidth(line) : fontRenderer.getStringWidth(line.substring(0, currentCol))), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
+                    this.fontRendererObj.drawString("_", (int) ((1 / scaleFactorX) * ((width / 2) - halfScreenWidth)) + (currentCol > line.length() ? fontRendererObj.getStringWidth(line) : fontRendererObj.getStringWidth(line.substring(0, currentCol))), (int) ((i * pixelsPerLineHeight) + ((1 / scaleFactorY) * ((height / 2) - halfScreenHeight))) + 4, 0xFFFFFF);
                     if (delayTicks <= 0)
                         delayTicks = 500;
                 } else if (ticksSinceLastBlink <= 500) {
@@ -134,7 +135,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
         }
 
         // Draw the screen title
-        fontRenderer.drawString("xEC Computer System", 53, 28, 0x404040);
+        fontRendererObj.drawString("xEC Computer System", 53, 28, 0x404040);
 
         super.drawScreen(par1, par2, par3);
     }
@@ -175,7 +176,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
                             CustomPacket packet = new CustomPacket();
                             packet.id = 1;
                             packet.data = new byte[] {};
-                            PacketDispatcher.sendPacketToServer(packet.getMCPacket());
+                            ElectroCraft.instance.getNetworkWrapper().sendToServer(packet);
                         }
                         shouldAskForScreenPacket = false;
                         // } else {
@@ -208,11 +209,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
         GuiPacket packet = new GuiPacket();
         packet.setCloseWindow(true);
         packet.setGui(Gui.COMPUTER_SCREEN);
-        try {
-            PacketDispatcher.sendPacketToServer(packet.getMCPacket());
-        } catch (IOException e) {
-            // Oh well we tried
-        }
+        ElectroCraft.instance.getNetworkWrapper().sendToServer(packet);
         Keyboard.enableRepeatEvents(repeatEventsOldState);
         this.isVisible = false;
     }
@@ -233,11 +230,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
                     CustomPacket customPacket = new CustomPacket();
                     customPacket.id = 3;
                     customPacket.data = new byte[] { 0 };
-                    try {
-                        FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(customPacket.getMCPacket());
-                    } catch (IOException e) {
-                        ElectroCraft.instance.getLogger().fine("Unable to send program terminate!");
-                    }
+                    ElectroCraft.instance.getNetworkWrapper().sendToServer(customPacket);
                     ticksControlComboPressed = 0;
                 } else {
                     ticksControlComboPressed++;
@@ -270,11 +263,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
                 inputPacket.setMouseDeltas(Mouse.getDX(), Mouse.getDY(), Mouse.getDWheel());
                 inputPacket.setEventMouseButton(Mouse.getEventButton());
                 inputPacket.setWasKeyDown(down);
-                try {
-                    FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(inputPacket.getMCPacket());
-                } catch (IOException e) {
-                    ElectroCraft.instance.getLogger().fine("Unable to send computer input data!");
-                }
+                ElectroCraft.instance.getNetworkWrapper().sendToServer(inputPacket);
             }
         }
     }

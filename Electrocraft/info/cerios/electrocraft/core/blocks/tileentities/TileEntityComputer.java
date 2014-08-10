@@ -15,9 +15,7 @@ import java.util.Set;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.common.ForgeDirection;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.relauncher.Side;
+import net.minecraftforge.common.util.ForgeDirection;
 
 @ExposedToLua
 public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock, IComputerHost {
@@ -165,14 +163,9 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         if (worldObj == null || worldObj.isRemote)
             return;
         if (this.baseDirectory.isEmpty()) {
-            String worldDir = "";
-            if (FMLCommonHandler.instance().getSide() == Side.SERVER || FMLCommonHandler.instance().getSide() == Side.BUKKIT) {
-                worldDir = worldObj.getWorldInfo().getWorldName();
-            } else {
-                worldDir = "saves" + File.separator + worldObj.getWorldInfo().getWorldName();
-            }
             this.id = String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
-            this.baseDirectory = ElectroCraft.electroCraftSided.getBaseDir().getAbsolutePath() + File.separator + worldDir + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
+            File worldFolder = worldObj.getSaveHandler().getWorldDirectory();
+            this.baseDirectory = worldFolder.getAbsolutePath() + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
         }
         computer = new Computer(activePlayers, baseDirectory, 320, 240, 15, 50);
     }

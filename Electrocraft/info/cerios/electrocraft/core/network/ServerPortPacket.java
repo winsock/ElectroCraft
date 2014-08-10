@@ -1,10 +1,6 @@
 package info.cerios.electrocraft.core.network;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
 
 public class ServerPortPacket extends ElectroPacket {
 
@@ -15,20 +11,15 @@ public class ServerPortPacket extends ElectroPacket {
     }
 
     @Override
-    protected byte[] getData() throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        dos.write(type.ordinal());
-        dos.writeInt(port);
-        return bos.toByteArray();
+    public void toBytes(ByteBuf buf) {
+        buf.writeByte(type.ordinal());
+        buf.writeInt(port);
     }
 
     @Override
-    protected void readData(byte[] data) throws IOException {
-        ByteArrayInputStream bis = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(bis);
-        dis.read(); // Throw away the type info
-        port = dis.readInt();
+    public void fromBytes(ByteBuf data) {
+        data.readByte();
+        port = data.readInt();
     }
 
     public int getPort() {

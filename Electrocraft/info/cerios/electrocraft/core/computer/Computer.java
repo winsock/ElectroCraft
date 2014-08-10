@@ -40,9 +40,6 @@ import com.naef.jnlua.LuaSyntaxException;
 import com.naef.jnlua.LuaType;
 import com.naef.jnlua.NamedJavaFunction;
 
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
-
 @ExposedToLua
 public class Computer implements Runnable {
 
@@ -108,10 +105,7 @@ public class Computer implements Runnable {
             CustomPacket packet = new CustomPacket();
             packet.id = 0;
             packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
-            try {
-                PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) client);
-            } catch (IOException e) {
-            }
+            ElectroCraft.instance.getNetworkWrapper().sendTo(packet, (EntityPlayerMP) client);
         }
         int[] rows = new int[terminal.getRows()];
         for (int i = 0; i < terminal.getRows(); i++) {
@@ -807,10 +801,7 @@ public class Computer implements Runnable {
                     CustomPacket packet = new CustomPacket();
                     packet.id = 0;
                     packet.data = new byte[] { (byte) (!graphicsMode ? 1 : 0) };
-                    try {
-                        PacketDispatcher.sendPacketToPlayer(packet.getMCPacket(), (Player) p);
-                    } catch (IOException e) {
-                    }
+                    ElectroCraft.instance.getNetworkWrapper().sendTo(packet, (EntityPlayerMP) p);
                 }
             }
         }

@@ -10,9 +10,8 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.Tessellator;
 
+import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
-
-import cpw.mods.fml.common.network.PacketDispatcher;
 
 public class GuiNetworkAddressScreen extends GuiScreen {
 
@@ -21,10 +20,7 @@ public class GuiNetworkAddressScreen extends GuiScreen {
     private NetworkBlock device;
     private boolean isSmp = false;
     private NetworkAddressPacket packetInProgress;
-
-    public GuiNetworkAddressScreen(NetworkBlock device) {
-        this.device = device;
-    }
+    private ResourceLocation genericWindowResource = new ResourceLocation("/info/cerios/electrocraft/gfx/genericWindow.png");
 
     public GuiNetworkAddressScreen(NetworkAddressPacket packetInProgress) {
         isSmp = true;
@@ -33,12 +29,12 @@ public class GuiNetworkAddressScreen extends GuiScreen {
 
     @Override
     public void initGui() {
-        controlLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 30, 50, 15);
+        controlLineTextField = new GuiTextField(fontRendererObj, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 30, 50, 15);
         if (!isSmp)
             controlLineTextField.setText(Integer.toString(device.getControlAddress()));
         else
             controlLineTextField.setText(Integer.toString(packetInProgress.getControlAddress()));
-        dataLineTextField = new GuiTextField(fontRenderer, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 60, 50, 15);
+        dataLineTextField = new GuiTextField(fontRendererObj, (this.width / 2) - (xSize / 2) + 100, (this.height / 2) - (ySize / 2) + 60, 50, 15);
         if (!isSmp)
             dataLineTextField.setText(Integer.toString(device.getDataAddress()));
         else
@@ -50,7 +46,7 @@ public class GuiNetworkAddressScreen extends GuiScreen {
         Tessellator tess = Tessellator.instance;
 
         // Draw the background
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, mc.renderEngine.getTexture("/info/cerios/electrocraft/gfx/genericWindow.png"));
+        mc.renderEngine.bindTexture(genericWindowResource);
         tess.startDrawingQuads();
         tess.addVertexWithUV((this.width / 2) - (xSize / 2), (this.height / 2) - (ySize / 2), 0, 0, 0);
         tess.addVertexWithUV((this.width / 2) - (xSize / 2), (this.height / 2) + (ySize / 2), 0, 1, 0);
@@ -59,13 +55,13 @@ public class GuiNetworkAddressScreen extends GuiScreen {
         tess.draw();
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
-        drawCenteredString(fontRenderer, "Networked Device Addresses", (this.width / 2), (this.height / 2) - (ySize / 2) + 5, 0xFFFFFF);
+        drawCenteredString(fontRendererObj, "Networked Device Addresses", (this.width / 2), (this.height / 2) - (ySize / 2) + 5, 0xFFFFFF);
 
         controlLineTextField.drawTextBox();
         dataLineTextField.drawTextBox();
 
-        fontRenderer.drawString("Control Address: ", (this.width / 2) - (xSize / 2) + 5, (this.height / 2) - (ySize / 2) + 33, 0x404040);
-        fontRenderer.drawString("Data Address: ", (this.width / 2) - (xSize / 2) + 20, (this.height / 2) - (ySize / 2) + 63, 0x404040);
+        fontRendererObj.drawString("Control Address: ", (this.width / 2) - (xSize / 2) + 5, (this.height / 2) - (ySize / 2) + 33, 0x404040);
+        fontRendererObj.drawString("Data Address: ", (this.width / 2) - (xSize / 2) + 20, (this.height / 2) - (ySize / 2) + 63, 0x404040);
     }
 
     @Override
@@ -84,11 +80,7 @@ public class GuiNetworkAddressScreen extends GuiScreen {
                 packetInProgress.setDataAddress(dataAddress);
             }
             if (isSmp) {
-                try {
-                    PacketDispatcher.sendPacketToServer(packetInProgress.getMCPacket());
-                } catch (IOException e) {
-                    ElectroCraft.instance.getLogger().severe("Unable to send network address packet!");
-                }
+                ElectroCraft.instance.getNetworkWrapper().sendToServer(packetInProgress);
             }
         } catch (NumberFormatException e) {
         }

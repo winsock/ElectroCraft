@@ -2,6 +2,7 @@ package info.cerios.electrocraft.core.container;
 
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class RestrictedSlot extends Slot {
@@ -19,13 +20,13 @@ public class RestrictedSlot extends Slot {
     public boolean isItemValid(ItemStack par1ItemStack) {
         if (allowed) {
             for (ItemStack stack : items) {
-                if (par1ItemStack.itemID == stack.itemID && ((par1ItemStack.isItemDamaged() || stack.isItemDamaged()) ? (par1ItemStack.getItemDamage() == stack.getItemDamage()) : true))
+                if (Item.getIdFromItem(par1ItemStack.getItem()) == Item.getIdFromItem(stack.getItem()) && ((par1ItemStack.isItemDamaged() || stack.isItemDamaged()) ? (par1ItemStack.getItemDamage() == stack.getItemDamage()) : true))
                     return true;
             }
             return false;
         } else {
             for (ItemStack stack : items) {
-                if (par1ItemStack.itemID == stack.itemID && ((par1ItemStack.isItemDamaged() || stack.isItemDamaged()) ? (par1ItemStack.getItemDamage() == stack.getItemDamage()) : true))
+                if (Item.getIdFromItem(par1ItemStack.getItem()) == Item.getIdFromItem(stack.getItem()) && ((par1ItemStack.isItemDamaged() || stack.isItemDamaged()) ? (par1ItemStack.getItemDamage() == stack.getItemDamage()) : true))
                     return false;
             }
             return true;

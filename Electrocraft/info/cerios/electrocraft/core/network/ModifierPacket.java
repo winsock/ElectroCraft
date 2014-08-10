@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core.network;
 
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
 
 public class ModifierPacket extends ElectroPacket {
 
@@ -11,14 +11,15 @@ public class ModifierPacket extends ElectroPacket {
     }
 
     @Override
-    protected byte[] getData() throws IOException {
-        return new byte[] { (byte) type.ordinal(), (byte) (isShiftDown ? 1 : 0), (byte) (isCtrlDown ? 1 : 0) };
+    public void toBytes(ByteBuf buf) {
+        buf.writeBytes(new byte[] { (byte) type.ordinal(), (byte) (isShiftDown ? 1 : 0), (byte) (isCtrlDown ? 1 : 0) });
     }
 
     @Override
-    protected void readData(byte[] data) throws IOException {
-        isShiftDown = (data[1] == 0 ? false : true);
-        isCtrlDown = (data[2] == 0 ? false : true);
+    public void fromBytes(ByteBuf data) {
+        data.readByte(); // Discard type
+        isShiftDown = (data.readByte() == 0 ? false : true);
+        isCtrlDown = (data.readByte() == 0 ? false : true);
     }
 
     public void setModifiers(boolean shift, boolean ctrl) {

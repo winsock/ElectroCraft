@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.blocks;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import info.cerios.electrocraft.core.items.ElectroItems;
 
 import java.util.ArrayList;
@@ -7,6 +9,7 @@ import java.util.Random;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -16,11 +19,11 @@ import net.minecraftforge.common.MinecraftForge;
 public class MagnetiteOre extends Block {
 
     public MagnetiteOre(int blockId) {
-        super(blockId, 4, Material.rock);
+        super(Material.rock);
         this.setHardness(1.0f);
         this.setResistance(2.0f);
-        this.setStepSound(soundStoneFootstep);
-        MinecraftForge.setBlockHarvestLevel(this, "pickaxe", 0);
+        this.setHarvestLevel("pickaxe", 0);
+        Block.blockRegistry.addObject(blockId, "magnetiteOre", this);
     }
 
     @Override
@@ -28,7 +31,7 @@ public class MagnetiteOre extends Block {
         ItemStack stack = player.inventory.getCurrentItem();
         if (stack == null)
             return 0f;
-        if (stack.itemID == Item.pickaxeGold.shiftedIndex || stack.itemID == Item.pickaxeSteel.shiftedIndex)
+        if (Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("pickaxeGold")) || Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("pickaxeSteel")))
             return 0f;
         return super.getPlayerRelativeBlockHardness(player, world, par3, par4, par5);
     }
@@ -39,17 +42,13 @@ public class MagnetiteOre extends Block {
     }
 
     @Override
-    public int idDropped(int par1, Random par2Random, int par3) {
-        return ElectroItems.MAGNETITE_DUST.getItem().shiftedIndex;
+    public Item getItemDropped(int par1, Random par2Random, int par3) {
+        return ElectroItems.MAGNETITE_DUST.getItem();
     }
 
     @Override
-    public String getTextureFile() {
-        return "/info/cerios/electrocraft/gfx/blocks.png";
-    }
-
-    @Override
-    public void addCreativeItems(ArrayList itemList) {
-        itemList.add(this);
+    @SideOnly(Side.CLIENT)
+    public void registerBlockIcons(IIconRegister par1IconRegister) {
+        this.blockIcon = par1IconRegister.registerIcon("electrocraft:magnetiteOre");
     }
 }

@@ -5,8 +5,11 @@
 
 package com.naef.jnlua;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ElectroCraft;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,7 +96,7 @@ public final class NativeSupport {
 	            fileExtention = ".dylib";
 	        }
 
-	        File libFolder = new File(ElectroCraft.electroCraftSided.getBaseDir(), "electrocraft" + File.separator + "natives");
+	        File libFolder = new File(FMLCommonHandler.instance().findContainerFor(ElectroCraft.instance).getSource().getParent(), "electrocraft" + File.separator + "natives");
 	        if (!libFolder.exists())
 	            libFolder.mkdirs();
 

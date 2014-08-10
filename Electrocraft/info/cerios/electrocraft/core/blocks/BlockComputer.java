@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.blocks;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ConfigHandler;
 import info.cerios.electrocraft.core.ElectroCraft;
@@ -8,29 +10,31 @@ import info.cerios.electrocraft.core.network.GuiPacket;
 import info.cerios.electrocraft.core.network.GuiPacket.Gui;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.EntityLiving;
+import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
-import net.minecraftforge.common.Configuration;
-import net.minecraftforge.common.ForgeDirection;
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
+import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class BlockComputer extends BlockNetwork {
 
     public BlockComputer(int id) {
-        super(id, 33, Material.wood);
+        super(Material.wood);
+        Block.blockRegistry.addObject(id, "computer", this);
     }
+    private IIcon computerFront, computerSides;
 
     @Override
-    public int getBlockTextureFromSideAndMetadata(int side, int metadata) {
+    public IIcon getIcon(int side, int metadata) {
         if (metadata > 5) {
             metadata = 5;
         }
@@ -39,74 +43,74 @@ public class BlockComputer extends BlockNetwork {
         }
 
         if (side == 0)
-            return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+            return computerSides;
 
         switch (metadata) {
             case 4:
                 switch (side) {
                     case 2:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+                        return computerFront;
                     case 3:
                     case 4:
                     case 5:
                     default:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+                        return computerSides;
                 }
             default:
             case 2:
                 switch (side) {
                     case 3:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+                        return computerFront;
                     case 2:
                     case 4:
                     case 5:
                     default:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+                        return computerSides;
                 }
             case 3:
                 switch (side) {
                     case 4:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+                        return computerFront;
                     case 2:
                     case 3:
                     case 5:
                     default:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+                        return computerSides;
                 }
             case 1:
                 switch (side) {
                     case 5:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[0];
+                        return computerFront;
                     case 2:
                     case 3:
                     case 4:
                     default:
-                        return ElectroBlocks.COMPUTER.getDefaultTextureIndices()[1];
+                        return computerSides;
                 }
         }
     }
 
     @Override
-    public void onBlockPlacedBy(World world, int x, int y, int z, EntityLiving entityliving) {
-        super.onBlockPlacedBy(world, x, y, z, entityliving);
+    public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase entityLiving, ItemStack itemStack) {
+        super.onBlockPlacedBy(world, x, y, z, entityLiving, itemStack);
 
-        if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
-            TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
-            int direction = MathHelper.floor_double(entityliving.rotationYaw * 4.0F / 360.0F + 0.5D) & 0x3;
+        if (world.getTileEntity(x, y, z) instanceof TileEntityComputer) {
+            TileEntityComputer computerTileEntity = (TileEntityComputer) world.getTileEntity(x, y, z);
+            int direction = MathHelper.floor_double(entityLiving.rotationYaw * 4.0F / 360.0F + 0.5D) & 0x3;
             if (direction == 0) {
                 direction = 4;
             }
-            world.setBlockMetadataWithNotify(x, y, z, direction);
+            world.setBlockMetadataWithNotify(x, y, z, direction, 3);
             computerTileEntity.setDirection(ForgeDirection.values()[direction]);
         }
     }
 
     @Override
-    public void breakBlock(World world, int x, int y, int z, int par5, int par6) {
+    public void breakBlock(World world, int x, int y, int z, Block par5, int par6) {
         if (world.isRemote)
             return;
-        if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
-            TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
+        if (world.getTileEntity(x, y, z) instanceof TileEntityComputer) {
+            TileEntityComputer computerTileEntity = (TileEntityComputer) world.getTileEntity(x, y, z);
             if (computerTileEntity != null) {
                 if (computerTileEntity.getComputer() != null) {
                     if (computerTileEntity.getComputer().isRunning()) {
@@ -131,8 +135,8 @@ public class BlockComputer extends BlockNetwork {
             return true;
 
         if (player instanceof EntityPlayerMP) {
-            if (world.getBlockTileEntity(x, y, z) instanceof TileEntityComputer) {
-                TileEntityComputer computerTileEntity = (TileEntityComputer) world.getBlockTileEntity(x, y, z);
+            if (world.getTileEntity(x, y, z) instanceof TileEntityComputer) {
+                TileEntityComputer computerTileEntity = (TileEntityComputer) world.getTileEntity(x, y, z);
                 if (computerTileEntity != null) {
                     if (computerTileEntity.getComputer() == null) {
                         computerTileEntity.createComputer();
@@ -144,11 +148,7 @@ public class BlockComputer extends BlockNetwork {
                     GuiPacket guiPacket = new GuiPacket();
                     guiPacket.setCloseWindow(false);
                     guiPacket.setGui(Gui.COMPUTER_SCREEN);
-                    try {
-                        PacketDispatcher.sendPacketToPlayer(guiPacket.getMCPacket(), (Player) player);
-                    } catch (IOException e) {
-                        ElectroCraft.instance.getLogger().severe("Unable to send \"Open Computer GUI Packet\"!");
-                    }
+                    ElectroCraft.instance.getNetworkWrapper().sendTo(guiPacket, (EntityPlayerMP) player);
                     computerTileEntity.addActivePlayer(player);
                     return true;
                 }
@@ -158,12 +158,13 @@ public class BlockComputer extends BlockNetwork {
     }
 
     @Override
-    public TileEntity createNewTileEntity(World var1) {
+    public TileEntity createNewTileEntity(World world, int p_149915_2_) {
         return new TileEntityComputer();
     }
 
-    @Override
-    public void addCreativeItems(ArrayList itemList) {
-        itemList.add(this);
+    @SideOnly(Side.CLIENT)
+    public void registerBlockIcons(IIconRegister iconRegister) {
+        computerFront = iconRegister.registerIcon("electrocraft:computerFront");
+        computerSides = iconRegister.registerIcon("electrocraft:computerSide");
     }
 }

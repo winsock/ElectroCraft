@@ -24,7 +24,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import net.minecraft.world.IBlockAccess;
-import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class Utils {
     public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
@@ -126,17 +126,17 @@ public class Utils {
     }
 
     public static ForgeDirection isBlockOnOpaqueBlock(IBlockAccess access, int x, int y, int z) {
-        if (access.isBlockOpaqueCube(x + 1, y, z)) {
+        if (access.getBlock(x + 1, y, z).isOpaqueCube()) {
             return ForgeDirection.EAST;
-        } else if (access.isBlockOpaqueCube(x - 1, y, z)) {
+        } else if (access.getBlock(x - 1, y, z).isOpaqueCube()) {
             return ForgeDirection.WEST;
-        } else if (access.isBlockOpaqueCube(x, y + 1, z)) {
+        } else if (access.getBlock(x, y + 1, z).isOpaqueCube()) {
             return ForgeDirection.UP;
-        } else if (access.isBlockOpaqueCube(x, y - 1, z)) {
+        } else if (access.getBlock(x, y - 1, z).isOpaqueCube()) {
             return ForgeDirection.DOWN;
-        } else if (access.isBlockOpaqueCube(x, y, z + 1)) {
+        } else if (access.getBlock(x, y, z + 1).isOpaqueCube()) {
             return ForgeDirection.SOUTH;
-        } else if (access.isBlockOpaqueCube(x, y, z - 1)) {
+        } else if (access.getBlock(x, y, z - 1).isOpaqueCube()) {
             return ForgeDirection.NORTH;
         } else {
             return ForgeDirection.UNKNOWN;

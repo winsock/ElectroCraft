@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.items;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.drone.Drone;
@@ -9,41 +11,36 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
+import net.minecraft.block.Block;
+import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
-import net.minecraftforge.common.ForgeDirection;
 
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class ItemDroneUpgrade extends Item implements ICard {
 
+    private IIcon[] icons = new IIcon[5];
+
     public ItemDroneUpgrade(int id) {
-        super(id);
+        Item.itemRegistry.addObject(id, "droneUpgrades", this);
         setHasSubtypes(true);
     }
 
     @Override
-    public int getIconFromDamage(int meta) {
-        switch (meta) {
-            case 0:
-                return 9;
-            case 1:
-                return 8;
-            case 2:
-                return 6;
-            case 3:
-                return 7;
-            case 4:
-                return 5;
-        }
-        return 0;
+    public IIcon getIconFromDamage(int meta) {
+        if (meta >= icons.length)
+            meta = 0;
+        return icons[meta];
     }
 
     @Override
-    public String getItemNameIS(ItemStack stack) {
+    public String getUnlocalizedName(ItemStack stack) {
         switch (stack.getItemDamage()) {
             case 0:
                 return "info.cerios.electrocraft.items.gyro";
@@ -202,14 +199,14 @@ public class ItemDroneUpgrade extends Item implements ICard {
                         ElectroCraft.instance.registerRunnable(task);
                         try {
                             task.get();
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignore) {
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
                         while (drone.getDrone().isStillMovingOrRotating()) {
                             try {
                                 Thread.sleep(1);
-                            } catch (InterruptedException e) {
+                            } catch (InterruptedException ignored) {
                             }
                         }
                         return 0;
@@ -241,14 +238,14 @@ public class ItemDroneUpgrade extends Item implements ICard {
                         ElectroCraft.instance.registerRunnable(task);
                         try {
                             task.get();
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignored) {
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
                         while (drone.getDrone().isStillMovingOrRotating()) {
                             try {
                                 Thread.sleep(1);
-                            } catch (InterruptedException e) {
+                            } catch (InterruptedException ignored) {
                             }
                         }
                         return 0;
@@ -284,7 +281,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                             luaState.pushInteger(values[1]);
                             luaState.pushInteger(values[2]);
                             return 3;
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignored) {
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
@@ -319,7 +316,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                             luaState.pushNumber(values[1]);
                             luaState.pushNumber(values[2]);
                             return 3;
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignored) {
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
@@ -346,7 +343,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                             @Override
                             public Integer call() throws Exception {
                                 ForgeDirection dir = drone.getDirection(drone.getDrone().rotationYaw);
-                                return drone.getDrone().worldObj.getBlockId((int) (dir.offsetX + drone.getDrone().posX), (int) (dir.offsetY + drone.getDrone().posY), (int) (dir.offsetZ + drone.getDrone().posZ));
+                                return Block.getIdFromBlock(drone.getDrone().worldObj.getBlock((int) (dir.offsetX + drone.getDrone().posX), (int) (dir.offsetY + drone.getDrone().posY), (int) (dir.offsetZ + drone.getDrone().posZ)));
                             }
                         };
                         final FutureTask<Integer> task = new FutureTask<Integer>(callable);
@@ -354,7 +351,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                         try {
                             luaState.pushInteger(task.get());
                             return 3;
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignored) {
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
@@ -382,7 +379,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                                 int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
                                 int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
                                 int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                                return new Integer[] { drone.getDrone().worldObj.getBlockId(x, y, z), drone.getDrone().worldObj.getBlockMetadata(x, y, z) };
+                                return new Integer[] { Block.getIdFromBlock(drone.getDrone().worldObj.getBlock(x, y, z)), drone.getDrone().worldObj.getBlockMetadata(x, y, z) };
                             }
                         };
                         final FutureTask<Integer[]> task = new FutureTask<Integer[]>(callable);
@@ -392,7 +389,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                             luaState.pushInteger(values[0]);
                             luaState.pushInteger(values[1]);
                             return 2;
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignored) {
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
@@ -430,7 +427,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                         ElectroCraft.instance.registerRunnable(task);
                         try {
                             task.get();
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignored) {
                         } catch (ExecutionException e) {
                             e.printStackTrace();
                         }
@@ -501,22 +498,25 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
     @Override
     public void passiveFunctionTick(ItemStack stack) {
+        /*
         switch (stack.getItemDamage()) {
 
-        }
+        }*/
     }
 
     @Override
-    public void getSubItems(int id, CreativeTabs tab, List list) {
-        list.add(new ItemStack(id, 1, 0));
-        list.add(new ItemStack(id, 1, 1));
-        list.add(new ItemStack(id, 1, 2));
-        list.add(new ItemStack(id, 1, 3));
-        list.add(new ItemStack(id, 1, 4));
+    public void getSubItems(Item item, CreativeTabs tab, List list) {
+        list.add(new ItemStack(item, 1, 0));
+        list.add(new ItemStack(item, 1, 1));
+        list.add(new ItemStack(item, 1, 2));
+        list.add(new ItemStack(item, 1, 3));
+        list.add(new ItemStack(item, 1, 4));
     }
 
     @Override
-    public String getTextureFile() {
-        return "/info/cerios/electrocraft/gfx/items.png";
+    @SideOnly(Side.CLIENT)
+    public void registerIcons(IIconRegister par1IconRegister) {
+        for (int i = 0; i < icons.length; i++)
+            icons[i] = par1IconRegister.registerIcon("electrocraft:droneUpgrade_" + i);
     }
 }

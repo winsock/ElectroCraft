@@ -1,5 +1,10 @@
 package info.cerios.electrocraft.core.network;
 
+import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import cpw.mods.fml.relauncher.Side;
 import info.cerios.electrocraft.ElectroCraftSidedServer;
 import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.api.utils.Utils;
@@ -17,30 +22,28 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.netty.buffer.ByteBufUtil;
+import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.INetworkManager;
-import net.minecraft.network.packet.Packet250CustomPayload;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.network.IPacketHandler;
-import cpw.mods.fml.common.network.Player;
+import net.minecraftforge.common.util.Constants;
 
-public class UniversialPacketHandler implements IPacketHandler {
+public class UniversialPacketHandler implements IMessageHandler<ElectroPacket, ElectroPacket> {
     private byte[] lastVGAData;
 
     @Override
-    public void onPacketData(INetworkManager manager, Packet250CustomPayload packet, Player player) {
-        if (!packet.channel.equalsIgnoreCase("electrocraft"))
-            return;
-        if (player instanceof EntityPlayerMP) {
+    public ElectroPacket onMessage(ElectroPacket ecPacket, MessageContext ctx) {
+        if (ctx.side == Side.SERVER) {
             // Must be a server sided packet
             try {
-                ElectroPacket ecPacket = ElectroPacket.readMCPacket(packet);
+                EntityPlayerMP player = ctx.getServerHandler().playerEntity;
                 if (ecPacket.getType() == Type.MODIFIER) {
                     ModifierPacket modifierPacket = (ModifierPacket) ecPacket;
 
@@ -51,13 +54,13 @@ public class UniversialPacketHandler implements IPacketHandler {
 
                     // Send the modifier packet to the computer if it is a valid
                     // computer
-                    if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null && ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer() != null) {
-                        ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getKeyboard().proccessModifierPacket(modifierPacket);
+                    if (ElectroCraft.instance.getComputerForPlayer(player) != null && ElectroCraft.instance.getComputerForPlayer(player).getComputer() != null) {
+                        ElectroCraft.instance.getComputerForPlayer(player).getComputer().getKeyboard().proccessModifierPacket(modifierPacket);
                     }
                 } else if (ecPacket.getType() == Type.ADDRESS) {
                     NetworkAddressPacket addressPacket = (NetworkAddressPacket) ecPacket;
                     World world = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(addressPacket.getWorldId());
-                    TileEntity tileEntity = world.getBlockTileEntity(addressPacket.getX(), addressPacket.getY(), addressPacket.getZ());
+                    TileEntity tileEntity = world.getTileEntity(addressPacket.getX(), addressPacket.getY(), addressPacket.getZ());
                     if (tileEntity instanceof NetworkBlock) {
                         ((NetworkBlock) tileEntity).setControlAddress(addressPacket.getControlAddress());
                         ((NetworkBlock) tileEntity).setDataAddress(addressPacket.getDataAddress());
@@ -65,15 +68,15 @@ public class UniversialPacketHandler implements IPacketHandler {
                 } else if (ecPacket.getType() == Type.INPUT) {
                     ComputerInputPacket inputPacket = (ComputerInputPacket) ecPacket;
                     if (inputPacket.wasKeyDown()) {
-                        if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null) {
-                            ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getKeyboard().onKeyPress(inputPacket);
+                        if (ElectroCraft.instance.getComputerForPlayer(player) != null) {
+                            ElectroCraft.instance.getComputerForPlayer(player).getComputer().getKeyboard().onKeyPress(inputPacket);
                         }
                     }
                 } else if (ecPacket.getType() == Type.GUI) {
                     GuiPacket guiPacket = (GuiPacket) ecPacket;
                     if (guiPacket.getGui() == Gui.COMPUTER_SCREEN) {
-                        if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null) {
-                            ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).removeActivePlayer((EntityPlayer) player);
+                        if (ElectroCraft.instance.getComputerForPlayer(player) != null) {
+                            ElectroCraft.instance.getComputerForPlayer(player).removeActivePlayer(player);
                         }
                     }
                 } else if (ecPacket.getType() == Type.CUSTOM) {
@@ -81,10 +84,10 @@ public class UniversialPacketHandler implements IPacketHandler {
                     if (customPacket.id == 1) {
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
                         DataOutputStream dos = new DataOutputStream(out);
-                        dos.writeInt(ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getVideoCard().getWidth());
-                        dos.writeInt(ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getVideoCard().getHeight());
+                        dos.writeInt(ElectroCraft.instance.getComputerForPlayer(player).getComputer().getVideoCard().getWidth());
+                        dos.writeInt(ElectroCraft.instance.getComputerForPlayer(player).getComputer().getVideoCard().getHeight());
 
-                        byte[] vgadata = ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer().getVideoCard().getData();
+                        byte[] vgadata = ElectroCraft.instance.getComputerForPlayer(player).getComputer().getVideoCard().getData();
 
                         if (lastVGAData == null) {
                             lastVGAData = vgadata;
@@ -126,7 +129,7 @@ public class UniversialPacketHandler implements IPacketHandler {
                         CustomPacket returnPacket = new CustomPacket();
                         returnPacket.id = customPacket.id;
                         returnPacket.data = out.toByteArray();
-                        manager.addToSendQueue(returnPacket.getMCPacket());
+                        return returnPacket;
                     } else if (customPacket.id == 2) {
                         ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
                         DataInputStream dis = new DataInputStream(bis);
@@ -149,7 +152,7 @@ public class UniversialPacketHandler implements IPacketHandler {
                         CustomPacket returnPacket = new CustomPacket();
                         returnPacket.id = customPacket.id;
                         returnPacket.data = out.toByteArray();
-                        manager.addToSendQueue(returnPacket.getMCPacket());
+                        return returnPacket;
                     } else if (customPacket.id == 3) {
                         if (customPacket.data[0] == 0) {
                             if (ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player) != null && ElectroCraft.instance.getComputerForPlayer((EntityPlayer) player).getComputer() != null) {
@@ -169,11 +172,11 @@ public class UniversialPacketHandler implements IPacketHandler {
                             NBTTagCompound inventory = new NBTTagCompound();
                             drone.getInventory().writeToNBT(inventory);
                             try {
-                                dos.writeInt(drone.entityId);
-                                NBTBase.writeNamedTag(inventory, dos);
+                                dos.writeInt(drone.getEntityId());
+                                CompressedStreamTools.write(inventory, dos);
                                 response.id = 4;
                                 response.data = bos.toByteArray();
-                                manager.addToSendQueue(response.getMCPacket());
+                                return response;
                             } catch (IOException e) {
                                 ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
                             }
@@ -191,12 +194,12 @@ public class UniversialPacketHandler implements IPacketHandler {
                             NBTTagCompound inventory = new NBTTagCompound();
                             drone.getInventory().writeToNBT(inventory);
                             try {
-                                dos.writeInt(drone.entityId);
+                                dos.writeInt(drone.getEntityId());
                                 dos.writeBoolean(((drone.getDrone() == null) ? false : drone.getDrone().getFlying()));
-                                NBTBase.writeNamedTag(inventory, dos);
+                                CompressedStreamTools.write(inventory, dos);
                                 response.id = 7;
                                 response.data = bos.toByteArray();
-                                manager.addToSendQueue(response.getMCPacket());
+                                return response;
                             } catch (IOException e) {
                                 ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
                             }
@@ -210,7 +213,7 @@ public class UniversialPacketHandler implements IPacketHandler {
         } else {
             // Must be a client sided packet
             try {
-                ElectroPacket ecPacket = ElectroPacket.readMCPacket(packet);
+                EntityClientPlayerMP player = FMLClientHandler.instance().getClientPlayerEntity();
                 if (ecPacket.getType() == Type.GUI) {
                     GuiPacket guiPacket = (GuiPacket) ecPacket;
                     if (guiPacket.closeWindow()) {
@@ -223,15 +226,15 @@ public class UniversialPacketHandler implements IPacketHandler {
                     ElectroCraft.electroCraftSided.openNetworkGui(networkPacket);
                 } else if (ecPacket.getType() == Type.PORT) {
                     ServerPortPacket portPacket = (ServerPortPacket) ecPacket;
-                    ElectroCraft.electroCraftSided.startComputerClient(portPacket.getPort(), manager.getSocketAddress());
+                    ElectroCraft.electroCraftSided.startComputerClient(portPacket.getPort(), ctx.getClientHandler().getNetworkManager().getSocketAddress());
                 } else if (ecPacket.getType() == Type.CUSTOM) {
                     CustomPacket customPacket = (CustomPacket) ecPacket;
                     if (customPacket.id == 4) {
                         ByteArrayInputStream bis = new ByteArrayInputStream(customPacket.data);
                         DataInputStream dis = new DataInputStream(bis);
                         int entity = dis.readInt();
-                        NBTTagCompound inventory = (NBTTagCompound) NBTBase.readNamedTag(dis);
-                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer) player).worldObj);
+                        NBTTagCompound inventory = CompressedStreamTools.read(dis);
+                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, (player).worldObj);
                         if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
                             ((EntityDrone) possibleEntity).getInventory().readFromNBT(inventory);
                         }
@@ -240,7 +243,7 @@ public class UniversialPacketHandler implements IPacketHandler {
                         DataInputStream dis = new DataInputStream(bis);
                         int entity = dis.readInt();
                         int rotationTicks = dis.readInt();
-                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer) player).worldObj);
+                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, (player).worldObj);
                         if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
                             ((EntityDrone) possibleEntity).setRotationTicks(rotationTicks);
                         }
@@ -249,7 +252,7 @@ public class UniversialPacketHandler implements IPacketHandler {
                         DataInputStream dis = new DataInputStream(bis);
                         int entity = dis.readInt();
                         boolean flying = dis.readBoolean();
-                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer) player).worldObj);
+                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, (player).worldObj);
                         if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
                             ((EntityDrone) possibleEntity).setClientFlying(flying);
                         }
@@ -258,8 +261,8 @@ public class UniversialPacketHandler implements IPacketHandler {
                         DataInputStream dis = new DataInputStream(bis);
                         int entity = dis.readInt();
                         boolean flying = dis.readBoolean();
-                        NBTTagCompound inventory = (NBTTagCompound) NBTBase.readNamedTag(dis);
-                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, ((EntityPlayer) player).worldObj);
+                        NBTTagCompound inventory = CompressedStreamTools.read(dis);
+                        Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, (player).worldObj);
                         if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
                             ((EntityDrone) possibleEntity).getInventory().readFromNBT(inventory);
                             ((EntityDrone) possibleEntity).setClientFlying(flying);
@@ -273,5 +276,7 @@ public class UniversialPacketHandler implements IPacketHandler {
                 e.printStackTrace();
             }
         }
+
+        return null;
     }
 }

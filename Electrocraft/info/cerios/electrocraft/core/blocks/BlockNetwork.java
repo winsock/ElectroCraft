@@ -4,37 +4,30 @@ import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 
-import java.io.IOException;
-
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
 
 public abstract class BlockNetwork extends ElectroBlock {
 
-    protected BlockNetwork(int id, int textureId, Material material) {
-        super(id, textureId, material);
-    }
-
-    protected BlockNetwork(int id, Material material) {
-        super(id, material);
+    protected BlockNetwork(Material material) {
+        super(material);
     }
 
     @Override
     public void onBlockAdded(World world, int x, int y, int z) {
         super.onBlockAdded(world, x, y, z);
-        if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-            ((NetworkBlock) world.getBlockTileEntity(x, y, z)).update((NetworkBlock) world.getBlockTileEntity(x, y, z));
+        if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
+            ((NetworkBlock) world.getTileEntity(x, y, z)).update((NetworkBlock) world.getTileEntity(x, y, z));
         }
     }
 
     @Override
-    public void breakBlock(World world, int x, int y, int z, int par5, int par6) {
-        if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-            NetworkBlock block = (NetworkBlock) world.getBlockTileEntity(x, y, z);
+    public void breakBlock(World world, int x, int y, int z, Block par5, int par6) {
+        if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
+            NetworkBlock block = (NetworkBlock) world.getTileEntity(x, y, z);
             if (block.getComputerNetwork() != null) {
                 block.getComputerNetwork().removeDevice(block);
             }
@@ -46,10 +39,10 @@ public abstract class BlockNetwork extends ElectroBlock {
     }
 
     @Override
-    public void onNeighborBlockChange(World world, int x, int y, int z, int nBlockId) {
-        super.onNeighborBlockChange(world, x, y, z, nBlockId);
-        if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-            ((NetworkBlock) world.getBlockTileEntity(x, y, z)).update((NetworkBlock) world.getBlockTileEntity(x, y, z));
+    public void onNeighborBlockChange(World world, int x, int y, int z, Block nBlock) {
+        super.onNeighborBlockChange(world, x, y, z, nBlock);
+        if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
+            ((NetworkBlock) world.getTileEntity(x, y, z)).update((NetworkBlock) world.getTileEntity(x, y, z));
         }
     }
 
@@ -57,18 +50,14 @@ public abstract class BlockNetwork extends ElectroBlock {
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int par6, float par7, float par8, float par9) {
         if (player instanceof EntityPlayerMP) {
             if (player.isSneaking()) {
-                if (world.getBlockId(x, y, z) == this.blockID) {
-                    if (world.getBlockTileEntity(x, y, z) instanceof NetworkBlock) {
-                        NetworkBlock block = (NetworkBlock) world.getBlockTileEntity(x, y, z);
+                if (Block.getIdFromBlock(world.getBlock(x, y, z)) == Block.getIdFromBlock(this)) {
+                    if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
+                        NetworkBlock block = (NetworkBlock) world.getTileEntity(x, y, z);
                         NetworkAddressPacket networkAddressPacket = new NetworkAddressPacket();
                         networkAddressPacket.setControlAddress(block.getControlAddress());
                         networkAddressPacket.setDataAddress(block.getDataAddress());
                         networkAddressPacket.setLocation(world.provider.dimensionId, x, y, z);
-                        try {
-                            PacketDispatcher.sendPacketToPlayer(networkAddressPacket.getMCPacket(), (Player) player);
-                        } catch (IOException e) {
-                            ElectroCraft.instance.getLogger().severe("Unable to send \"Open Address GUI Packet\"!");
-                        }
+                        ElectroCraft.instance.getNetworkWrapper().sendTo(networkAddressPacket, (EntityPlayerMP) player);
                         return true;
                     }
                 }

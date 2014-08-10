@@ -7,8 +7,6 @@ import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import java.io.File;
 import java.net.SocketAddress;
 
-import cpw.mods.fml.common.IScheduledTickHandler;
-
 public interface IElectroCraftSided {
 
     public void init();
@@ -19,14 +17,11 @@ public interface IElectroCraftSided {
 
     public void openNetworkGui(NetworkAddressPacket packet);
 
-    public IScheduledTickHandler getTickHandler();
-
-    public File getBaseDir();
+    public Object getTickHandler();
 
     // //
     // Client Only Methods //
     // //
-    public void loadTextures();
 
     public void registerRenderers();
 

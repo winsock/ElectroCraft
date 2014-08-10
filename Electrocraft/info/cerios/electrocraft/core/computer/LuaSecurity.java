@@ -1,5 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
+import cpw.mods.fml.common.ModClassLoader;
 import info.cerios.electrocraft.api.utils.Utils;
 
 import java.io.File;
@@ -8,8 +9,6 @@ import java.io.IOException;
 import java.security.Permission;
 
 import com.naef.jnlua.LuaState;
-
-import cpw.mods.fml.relauncher.RelaunchClassLoader;
 
 public class LuaSecurity extends SecurityManager {
 
@@ -26,7 +25,7 @@ public class LuaSecurity extends SecurityManager {
 
     public boolean shouldCheckPermissions() {
         for (Class c : this.getClassContext()) {
-            if (c == RelaunchClassLoader.class)
+            if (c == ModClassLoader.class)
                 return false;
             if (c == LuaState.class)
                 return false;

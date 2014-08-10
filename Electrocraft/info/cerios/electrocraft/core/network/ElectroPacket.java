@@ -1,17 +1,17 @@
 package info.cerios.electrocraft.core.network;
 
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import info.cerios.electrocraft.core.ElectroCraft;
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-
-import net.minecraft.network.packet.Packet250CustomPayload;
 
 /**
  * A packet that contains uniform data that can be serialized
  * 
  * @author andrewquerol
  */
-public abstract class ElectroPacket {
+public abstract class ElectroPacket implements IMessage {
 
     public enum Type {
         MODIFIER(ModifierPacket.class), GUI(GuiPacket.class), ADDRESS(NetworkAddressPacket.class), INPUT(ComputerInputPacket.class), PORT(ServerPortPacket.class), CUSTOM(CustomPacket.class);
@@ -25,25 +25,9 @@ public abstract class ElectroPacket {
 
     protected Type type;
 
-    protected abstract byte[] getData() throws IOException;
+    public abstract void fromBytes(ByteBuf buf);
 
-    protected abstract void readData(byte[] data) throws IOException;
-
-    public Packet250CustomPayload getMCPacket() throws IOException {
-        Packet250CustomPayload mcPacket = new Packet250CustomPayload();
-        mcPacket.channel = "electrocraft";
-        byte[] data = getData();
-        mcPacket.length = data.length;
-        mcPacket.data = data;
-        mcPacket.isChunkDataPacket = false;
-        return mcPacket;
-    }
-
-    public static ElectroPacket readMCPacket(Packet250CustomPayload packet) throws IOException {
-        ElectroPacket ecPacket = getAndCreatePacketFromId(packet.data[0]);
-        ecPacket.readData(packet.data);
-        return ecPacket;
-    }
+    public abstract void toBytes(ByteBuf buf);
 
     public Type getType() {
         return type;

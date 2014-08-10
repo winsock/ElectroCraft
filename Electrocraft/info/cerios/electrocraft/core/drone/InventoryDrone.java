@@ -12,10 +12,10 @@ import java.io.IOException;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import cpw.mods.fml.common.network.PacketDispatcher;
+import net.minecraftforge.common.util.Constants;
 
 public class InventoryDrone implements IInventory {
 
@@ -117,7 +117,10 @@ public class InventoryDrone implements IInventory {
     }
 
     @Override
-    public String getInvName() {
+    public boolean hasCustomInventoryName() { return true; }
+
+    @Override
+    public String getInventoryName() {
         return "info.cerios.electrocraft.drone.inventory";
     }
 
@@ -127,7 +130,7 @@ public class InventoryDrone implements IInventory {
     }
 
     @Override
-    public void onInventoryChanged() {
+    public void markDirty() {
         if (!drone.worldObj.isRemote) {
             if (drone.getDrone() != null) {
                 if (tools[0] == null) {
@@ -147,11 +150,11 @@ public class InventoryDrone implements IInventory {
             NBTTagCompound inventory = new NBTTagCompound();
             writeToNBT(inventory);
             try {
-                dos.writeInt(drone.entityId);
-                NBTBase.writeNamedTag(inventory, dos);
+                dos.writeInt(drone.getEntityId());
+                CompressedStreamTools.write(inventory, dos);
                 packet.id = 4;
                 packet.data = bos.toByteArray();
-                PacketDispatcher.sendPacketToAllInDimension(packet.getMCPacket(), drone.worldObj.provider.dimensionId);
+                ElectroCraft.instance.getNetworkWrapper().sendToDimension(packet, drone.worldObj.provider.dimensionId);
             } catch (IOException e) {
                 ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
             }
@@ -164,17 +167,22 @@ public class InventoryDrone implements IInventory {
     }
 
     @Override
-    public void openChest() {
+    public void openInventory() {
     }
 
     @Override
-    public void closeChest() {
+    public void closeInventory() {
+    }
+
+    @Override
+    public boolean isItemValidForSlot(int p_94041_1_, ItemStack p_94041_2_) {
+        return true;
     }
 
     public void readFromNBT(NBTTagCompound tagCompound) {
-        NBTTagList tagList = tagCompound.getTagList("inventory");
+        NBTTagList tagList = tagCompound.getTagList("inventory", Constants.NBT.TAG_LIST);
         for (int i = 0; i < tagList.tagCount(); i++) {
-            NBTTagCompound tag = (NBTTagCompound) tagList.tagAt(i);
+            NBTTagCompound tag = tagList.getCompoundTagAt(i);
             byte slot = tag.getByte("slot");
             if (slot >= 0 && slot < getSizeInventory()) {
                 setInventorySlotContents(slot, ItemStack.loadItemStackFromNBT(tag));

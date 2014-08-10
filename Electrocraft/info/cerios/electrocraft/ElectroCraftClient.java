@@ -15,20 +15,17 @@ import info.cerios.electrocraft.gui.GuiComputerScreen;
 import info.cerios.electrocraft.gui.GuiDroneInventory;
 import info.cerios.electrocraft.gui.GuiNetworkAddressScreen;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraftforge.client.MinecraftForgeClient;
 
 import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.client.registry.RenderingRegistry;
-import cpw.mods.fml.common.IScheduledTickHandler;
 
 public class ElectroCraftClient implements IElectroCraftSided {
 
@@ -75,14 +72,8 @@ public class ElectroCraftClient implements IElectroCraftSided {
     }
 
     @Override
-    public IScheduledTickHandler getTickHandler() {
+    public Object getTickHandler() {
         return new ClientTickHandler();
-    }
-
-    @Override
-    public void loadTextures() {
-        MinecraftForgeClient.preloadTexture("/info/cerios/electrocraft/gfx/blocks.png");
-        MinecraftForgeClient.preloadTexture("/info/cerios/electrocraft/gfx/items.png");
     }
 
     @Override
@@ -111,11 +102,6 @@ public class ElectroCraftClient implements IElectroCraftSided {
         } catch (IOException e) {
             ElectroCraft.instance.getLogger().severe("Client: Unable to connect to server!");
         }
-    }
-
-    @Override
-    public File getBaseDir() {
-        return FMLClientHandler.instance().getClient().getMinecraftDir();
     }
 
     @Override

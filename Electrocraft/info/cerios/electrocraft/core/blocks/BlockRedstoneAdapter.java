@@ -1,39 +1,46 @@
 package info.cerios.electrocraft.core.blocks;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntityRedstoneAdapter;
 
-import java.util.ArrayList;
-
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 public class BlockRedstoneAdapter extends BlockNetwork {
+
+    private IIcon redstoneAdapterOn, redstoneAdapterOff, redstoneAdapeterSides;
+
     public BlockRedstoneAdapter(int id) {
-        super(id, 117, Material.rock);
+        super(Material.rock);
         this.setBlockBounds(0f, 0f, 0f, 1.0f, 0.55f, 1.0f);
+        Block.blockRegistry.addObject(id, "redstoneAdapter", this);
     }
 
     @Override
-    public boolean isProvidingWeakPower(IBlockAccess blockAccess, int par2, int par3, int par4, int par5) {
+    public int isProvidingWeakPower(IBlockAccess blockAccess, int par2, int par3, int par4, int par5) {
         return isProvidingStrongPower(blockAccess, par2, par3, par4, par5);
     }
 
     @Override
-    public boolean isProvidingStrongPower(IBlockAccess par1IBlockAccess, int par2, int par3, int par4, int par5) {
-        if (par1IBlockAccess.getBlockTileEntity(par2, par3, par4) instanceof TileEntityRedstoneAdapter) {
-            TileEntityRedstoneAdapter adapter = (TileEntityRedstoneAdapter) par1IBlockAccess.getBlockTileEntity(par2, par3, par4);
-            return adapter.getRedstonePower();
+    public int isProvidingStrongPower(IBlockAccess par1IBlockAccess, int par2, int par3, int par4, int par5) {
+        if (par1IBlockAccess.getTileEntity(par2, par3, par4) instanceof TileEntityRedstoneAdapter) {
+            TileEntityRedstoneAdapter adapter = (TileEntityRedstoneAdapter) par1IBlockAccess.getTileEntity(par2, par3, par4);
+            return adapter.getRedstonePower() ? 1 :0;
         }
-        return false;
+        return 0;
     }
 
     @Override
-    public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
-        super.onNeighborBlockChange(world, x, y, z, id);
-        if (world.getBlockTileEntity(x, y, z) instanceof TileEntityRedstoneAdapter) {
-            TileEntityRedstoneAdapter adapter = (TileEntityRedstoneAdapter) world.getBlockTileEntity(x, y, z);
+    public void onNeighborBlockChange(World world, int x, int y, int z, Block block) {
+        super.onNeighborBlockChange(world, x, y, z, block);
+        if (world.getTileEntity(x, y, z) instanceof TileEntityRedstoneAdapter) {
+            TileEntityRedstoneAdapter adapter = (TileEntityRedstoneAdapter) world.getTileEntity(x, y, z);
             if (world.isBlockIndirectlyGettingPowered(x, y, z) != adapter.getState()) {
                 adapter.setExternalState(world.isBlockIndirectlyGettingPowered(x, y, z));
             }
@@ -41,8 +48,14 @@ public class BlockRedstoneAdapter extends BlockNetwork {
     }
 
     @Override
-    public int getBlockTextureFromSide(int side) {
-        return ElectroBlocks.REDSTONE_ADAPTER.getDefaultTextureIndices()[side];
+    public IIcon getIcon(int side, int metadata) {
+        switch (side) {
+            case 0:
+                return redstoneAdapterOn;
+            case 1:
+                return redstoneAdapterOff;
+        }
+        return redstoneAdapeterSides;
     }
 
     // Needed to allow block to emit a redstone signal
@@ -67,12 +80,15 @@ public class BlockRedstoneAdapter extends BlockNetwork {
     }
 
     @Override
-    public TileEntity createNewTileEntity(World var1) {
-        return new TileEntityRedstoneAdapter();
+    @SideOnly(Side.CLIENT)
+    public void registerBlockIcons(IIconRegister par1IconRegister) {
+        redstoneAdapeterSides = par1IconRegister.registerIcon("electrocraft:redstoneAdapterSide");
+        redstoneAdapterOn = par1IconRegister.registerIcon("electrocraft:redstoneAdapterOff");
+        redstoneAdapterOff = par1IconRegister.registerIcon("electrocraft:redstoneAdapterSideOn");
     }
 
     @Override
-    public void addCreativeItems(ArrayList itemList) {
-        itemList.add(this);
+    public TileEntity createNewTileEntity(World world, int p_149915_2_) {
+        return new TileEntityRedstoneAdapter();
     }
 }

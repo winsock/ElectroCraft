@@ -4,12 +4,14 @@ import info.cerios.electrocraft.blocks.render.models.SerialCableModel;
 import info.cerios.electrocraft.core.blocks.tileentities.TileEntitySerialCable;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.common.ForgeDirection;
 
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.util.ForgeDirection;
 import org.lwjgl.opengl.GL11;
 
 public class SerialCableRenderer extends TileEntitySpecialRenderer {
     private SerialCableModel model;
+    private ResourceLocation serialCableResource = new ResourceLocation("electrocraft", "blocks/serialCable");
 
     public SerialCableRenderer() {
         model = new SerialCableModel();
@@ -18,7 +20,7 @@ public class SerialCableRenderer extends TileEntitySpecialRenderer {
     public void renderAModelAt(TileEntitySerialCable tileEntity, double d, double d1, double d2, float f) {
         // Texture file
         GL11.glPushMatrix();
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, tileEntity.getBlockType().blockIndexInTexture);
+        this.bindTexture(serialCableResource);
         GL11.glTranslatef((float) d + 0.5F, (float) d1 + 1.5F, (float) d2 + 0.5F);
         GL11.glScalef(1.0F, -1F, -1F);
 

@@ -1,5 +1,7 @@
 package info.cerios.electrocraft.core.drone;
 
+import com.mojang.authlib.GameProfile;
+import cpw.mods.fml.common.network.NetworkRegistry;
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.core.ElectroCraft;
@@ -12,31 +14,32 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemInWorldManager;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.management.ItemInWorldManager;
 import net.minecraft.util.MathHelper;
-import net.minecraftforge.common.ForgeDirection;
-import net.minecraftforge.common.ISidedInventory;
 
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
 
 import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.network.PacketDispatcher;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class Drone extends Computer {
 
     private EntityDrone drone;
-    private EntityPlayerMP fakePlayer;
+    private FakePlayer fakePlayer;
     private boolean flying = false;
     private ObjectPair<ICard, ItemStack> leftCard;
     private ObjectPair<ICard, ItemStack> rightCard;
@@ -65,7 +68,7 @@ public class Drone extends Computer {
         this.drone = drone;
         if (!drone.worldObj.isRemote) {
             ItemInWorldManager itemManager = new ItemInWorldManager(drone.worldObj);
-            fakePlayer = new EntityPlayerMP(FMLCommonHandler.instance().getMinecraftServerInstance(), drone.worldObj, "FakePlayerEC" + getBaseDirectory().getName(), itemManager);
+            fakePlayer = new FakePlayer(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(drone.worldObj.provider.dimensionId), new GameProfile(UUID.randomUUID(), "FakePlayerEC" + getBaseDirectory().getName()));
             fakePlayer.preventEntitySpawning = true;
         }
     }
@@ -181,11 +184,11 @@ public class Drone extends Computer {
                                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                                 DataOutputStream dos = new DataOutputStream(bos);
                                 try {
-                                    dos.writeInt(drone.drone.entityId);
+                                    dos.writeInt(drone.drone.getEntityId());
                                     dos.writeInt(drone.drone.getRotationTicks());
                                     packet.id = 5;
                                     packet.data = bos.toByteArray();
-                                    PacketDispatcher.sendPacketToAllAround(drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20, drone.drone.worldObj.provider.dimensionId, packet.getMCPacket());
+                                    ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.drone.worldObj.provider.dimensionId, drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20));
                                 } catch (IOException e) {
                                     ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
                                 }
@@ -204,11 +207,11 @@ public class Drone extends Computer {
                                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                                 DataOutputStream dos = new DataOutputStream(bos);
                                 try {
-                                    dos.writeInt(drone.drone.entityId);
+                                    dos.writeInt(drone.drone.getEntityId());
                                     dos.writeInt(drone.drone.getRotationTicks());
                                     packet.id = 5;
                                     packet.data = bos.toByteArray();
-                                    PacketDispatcher.sendPacketToAllAround(drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20, drone.drone.worldObj.provider.dimensionId, packet.getMCPacket());
+                                    ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.drone.worldObj.provider.dimensionId, drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20));
                                 } catch (IOException e) {
                                     ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
                                 }
@@ -375,11 +378,11 @@ public class Drone extends Computer {
                             int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
                             int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
                             int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            if (drone.drone.worldObj.getBlockTileEntity(x, y, z) != null && drone.drone.worldObj.getBlockTileEntity(x, y, z) instanceof IInventory) {
-                                IInventory inv = (IInventory) drone.drone.worldObj.getBlockTileEntity(x, y, z);
+                            if (drone.drone.worldObj.getTileEntity(x, y, z) != null && drone.drone.worldObj.getTileEntity(x, y, z) instanceof IInventory) {
+                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(x, y, z);
                                 if (inv instanceof ISidedInventory) {
                                     ISidedInventory sidedInv = (ISidedInventory) inv;
-                                    if (!addToInventory(sidedInv, sidedInv.getStartInventorySide(dir.getOpposite()), sidedInv.getSizeInventorySide(dir.getOpposite()), stack)) {
+                                    if (!addToInventory(sidedInv, sidedInv.getAccessibleSlotsFromSide(dir.getOpposite().ordinal()), stack)) {
                                         drone.drone.entityDropItem(stack, 0f);
                                     }
                                 } else {
@@ -415,11 +418,11 @@ public class Drone extends Computer {
                             int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
                             int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
                             int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            if (drone.drone.worldObj.getBlockTileEntity(x, y, z) != null && drone.drone.worldObj.getBlockTileEntity(x, y, z) instanceof IInventory) {
-                                IInventory inv = (IInventory) drone.drone.worldObj.getBlockTileEntity(x, y, z);
+                            if (drone.drone.worldObj.getTileEntity(x, y, z) != null && drone.drone.worldObj.getTileEntity(x, y, z) instanceof IInventory) {
+                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(x, y, z);
                                 if (inv instanceof ISidedInventory) {
                                     ISidedInventory sidedInv = (ISidedInventory) inv;
-                                    if (!addToInventory(sidedInv, sidedInv.getStartInventorySide(dir.getOpposite()), sidedInv.getSizeInventorySide(dir.getOpposite()), stack)) {
+                                    if (!addToInventory(sidedInv, sidedInv.getAccessibleSlotsFromSide(dir.getOpposite().ordinal()), stack)) {
                                         drone.drone.entityDropItem(stack, 0f);
                                     }
                                 } else {
@@ -455,11 +458,11 @@ public class Drone extends Computer {
                             int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
                             int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
                             int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            if (drone.drone.worldObj.getBlockTileEntity(x, y, z) != null && drone.drone.worldObj.getBlockTileEntity(x, y, z) instanceof IInventory) {
-                                IInventory inv = (IInventory) drone.drone.worldObj.getBlockTileEntity(x, y, z);
+                            if (drone.drone.worldObj.getTileEntity(x, y, z) != null && drone.drone.worldObj.getTileEntity(x, y, z) instanceof IInventory) {
+                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(x, y, z);
                                 if (inv instanceof ISidedInventory) {
                                     ISidedInventory sidedInv = (ISidedInventory) inv;
-                                    if (!addToInventory(sidedInv, sidedInv.getStartInventorySide(dir.getOpposite()), sidedInv.getSizeInventorySide(dir.getOpposite()), stack)) {
+                                    if (!addToInventory(sidedInv, sidedInv.getAccessibleSlotsFromSide(dir.getOpposite().ordinal()), stack)) {
                                         drone.drone.entityDropItem(stack, 0f);
                                     }
                                 } else {
@@ -510,9 +513,9 @@ public class Drone extends Computer {
                         int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
                         int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
                         int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                        Block block = Block.blocksList[drone.getDrone().worldObj.getBlockId(x, y, z)];
+                        Block block = drone.getDrone().worldObj.getBlock(x, y, z);
                         if (drone.getDrone().getInventory().getStackInSlot(slot).getItem() instanceof ItemBlock) {
-                            if ((block == null || block.isBlockReplaceable(drone.getDrone().worldObj, x, y, z)) && drone.getDrone().getInventory().getStackInSlot(slot) != null) {
+                            if ((block == null || block.isReplaceable(drone.getDrone().worldObj, x, y, z)) && drone.getDrone().getInventory().getStackInSlot(slot) != null) {
                                 ((ItemBlock) drone.getDrone().getInventory().getStackInSlot(slot).getItem()).placeBlockAt(drone.getDrone().getInventory().getStackInSlot(slot), fakePlayer, drone.getDrone().worldObj, x, y, z, dir.getOpposite().ordinal(), 0, 0, 0, drone.getDrone().getInventory().getStackInSlot(slot).getItemDamage());
                             }
                         } else {
@@ -644,11 +647,11 @@ public class Drone extends Computer {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
             try {
-                dos.writeInt(drone.entityId);
+                dos.writeInt(drone.getEntityId());
                 dos.writeBoolean(fly);
                 packet.id = 6;
                 packet.data = bos.toByteArray();
-                PacketDispatcher.sendPacketToAllAround(drone.posX, drone.posY, drone.posZ, 20, drone.worldObj.provider.dimensionId, packet.getMCPacket());
+                ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.worldObj.provider.dimensionId, drone.posX, drone.posY, drone.posZ, 20));
             } catch (IOException e) {
                 ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
             }
@@ -656,9 +659,21 @@ public class Drone extends Computer {
         this.flying = fly;
     }
 
-    public boolean addToInventory(IInventory inventory, int startIndex, int endIndex, ItemStack item) {
-        for (int i = startIndex; i < endIndex; i++) {
-            if (inventory.getStackInSlot(i) != null && inventory.getStackInSlot(i).itemID == item.itemID) {
+    public boolean addToInventory(IInventory inventory, int startSlot, int endSlot, ItemStack item) {
+        if (startSlot > endSlot)
+            return false;
+        int [] slots = new int[endSlot - startSlot];
+        int count = 0;
+        for (int i = startSlot; i < endSlot; i++) {
+            slots[count] = i;
+            count++;
+        }
+        return addToInventory(inventory, slots, item);
+    }
+
+    public boolean addToInventory(IInventory inventory, int[] slots, ItemStack item) {
+        for (int i : slots) {
+            if (inventory.getStackInSlot(i) != null && Item.getIdFromItem(inventory.getStackInSlot(i).getItem()) == Item.getIdFromItem(item.getItem())) {
                 if (inventory.getStackInSlot(i).stackSize + item.stackSize > item.getMaxStackSize()) {
                     int totalAmount = inventory.getStackInSlot(i).stackSize + item.stackSize;
                     item.stackSize = item.getMaxStackSize();
