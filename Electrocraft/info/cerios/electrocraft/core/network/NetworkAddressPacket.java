@@ -1,10 +1,11 @@
 package info.cerios.electrocraft.core.network;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
-import cpw.mods.fml.relauncher.Side;
+import net.minecraft.util.BlockPos;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.fml.relauncher.Side;
 import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
 import io.netty.buffer.ByteBuf;
@@ -57,11 +58,11 @@ public class NetworkAddressPacket extends ElectroPacket implements IMessageHandl
         this.controlAddress = controlAddress;
     }
 
-    public void setLocation(int world, int x, int y, int z) {
+    public void setLocation(int world, BlockPos pos) {
         this.world = world;
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        this.x = pos.getX();
+        this.y = pos.getY();
+        this.z = pos.getZ();
     }
 
     public int getWorldId() {
@@ -80,13 +81,17 @@ public class NetworkAddressPacket extends ElectroPacket implements IMessageHandl
         return z;
     }
 
+    public BlockPos getBlockPos() {
+        return new BlockPos(x, y, z);
+    }
+
     @Override
     public IMessage onMessage(NetworkAddressPacket message, MessageContext ctx) {
         if (ctx.side == Side.CLIENT) {
             ElectroCraft.electroCraftSided.openNetworkGui(message);
         } else {
             World world = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(message.getWorldId());
-            TileEntity tileEntity = world.getTileEntity(message.getX(), message.getY(), message.getZ());
+            TileEntity tileEntity = world.getTileEntity(message.getBlockPos());
             if (tileEntity instanceof NetworkBlock) {
                 ((NetworkBlock) tileEntity).setControlAddress(message.getControlAddress());
                 ((NetworkBlock) tileEntity).setDataAddress(message.getDataAddress());

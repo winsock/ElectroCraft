@@ -5,11 +5,9 @@
 
 package com.naef.jnlua;
 
-import cpw.mods.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ElectroCraft;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.config.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,19 +56,6 @@ public final class NativeSupport {
 		return loader;
 	}
 
-	/**
-	 * Sets the native library loader.
-	 * 
-	 * @param loader
-	 *            the loader
-	 */
-	public void setLoader(Loader loader) {
-		if (loader == null) {
-			throw new NullPointerException("loader must not be null");
-		}
-		this.loader = loader;
-	}
-
 	// -- Member types
 	/**
 	 * Loads the library.
@@ -82,23 +67,24 @@ public final class NativeSupport {
 	private class DefaultLoader implements Loader {
 		@Override
 		public void load() {
-			String osName = System.getProperty("os.name");
+			String osName = System.getProperty("os.name").toUpperCase();
 	        String fileExtention = ".so"; // Default to the linux/unix library
-	        if (System.getProperty("os.name").toUpperCase().indexOf("WINDOWS") > -1) {
+	        if (osName.contains("WINDOWS")) {
 	        	if (System.getProperty("os.arch").contains("86")) {
 		            fileExtention = "32.dll";
 	        	} else {
 		            fileExtention = "64.dll";
 	        	}
-	        } else if (System.getProperty("os.name").toUpperCase().indexOf("LINUX") > -1) {
+	        } else if (osName.contains("LINUX")) {
 	            fileExtention = ".so";
-	        } else if (System.getProperty("os.name").toUpperCase().indexOf("MAC") > -1) {
+	        } else if (osName.contains("MAC")) {
 	            fileExtention = ".dylib";
 	        }
 
 	        File libFolder = new File(FMLCommonHandler.instance().findContainerFor(ElectroCraft.instance).getSource().getParent(), "electrocraft" + File.separator + "natives");
 	        if (!libFolder.exists())
-	            libFolder.mkdirs();
+				//noinspection ResultOfMethodCallIgnored
+				libFolder.mkdirs();
 
 	        File libraryFile = new File(libFolder, "libElectroCraftCPU" + fileExtention);
 	        try {

@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core.computer;
 
-import cpw.mods.fml.common.ModClassLoader;
+import net.minecraftforge.fml.common.ModClassLoader;
 import info.cerios.electrocraft.api.utils.Utils;
 
 import java.io.File;
@@ -134,7 +134,7 @@ public class LuaSecurity extends SecurityManager {
 
     @Override
     public void checkPackageAccess(String pkg) {
-        if (pkg.equals("cpw.mods.fml.relauncher") || !shouldCheckPermissions())
+        if (pkg.equals("net.minecraftforge.fml.relauncher") || !shouldCheckPermissions())
             return;
 
         if (!pkg.startsWith("java") && !pkg.startsWith("info.cerios.electrocraft.core.computer"))

@@ -1,20 +1,17 @@
 package info.cerios.electrocraft.core.blocks;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.util.BlockPos;
 import info.cerios.electrocraft.core.items.ElectroItems;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
-import net.minecraftforge.common.MinecraftForge;
 
 public class MagnetiteOre extends Block {
 
@@ -26,13 +23,13 @@ public class MagnetiteOre extends Block {
     }
 
     @Override
-    public float getPlayerRelativeBlockHardness(EntityPlayer player, World world, int par3, int par4, int par5) {
-        ItemStack stack = player.inventory.getCurrentItem();
+    public float getPlayerRelativeBlockHardness(EntityPlayer playerIn, World worldIn, BlockPos pos) {
+        ItemStack stack = playerIn.inventory.getCurrentItem();
         if (stack == null)
             return 0f;
         if (Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("golden_pickaxe")) || Item.getIdFromItem(stack.getItem()) == Item.getIdFromItem((Item) Item.itemRegistry.getObject("iron_pickaxe")))
             return 0f;
-        return super.getPlayerRelativeBlockHardness(player, world, par3, par4, par5);
+        return super.getPlayerRelativeBlockHardness(playerIn, worldIn, pos);
     }
 
     @Override
@@ -41,13 +38,12 @@ public class MagnetiteOre extends Block {
     }
 
     @Override
-    public Item getItemDropped(int par1, Random par2Random, int par3) {
-        return ElectroItems.MAGNETITE_DUST.getItem();
+    public int quantityDroppedWithBonus(int fortune, Random random) {
+        return (quantityDropped(random) - 2) * fortune;
     }
 
     @Override
-    @SideOnly(Side.CLIENT)
-    public void registerBlockIcons(IIconRegister par1IconRegister) {
-        this.blockIcon = par1IconRegister.registerIcon("electrocraft:magnetiteOre");
+    public Item getItemDropped(IBlockState state, Random rand, int fortune) {
+        return ElectroItems.MAGNETITE_DUST.getItem();
     }
 }

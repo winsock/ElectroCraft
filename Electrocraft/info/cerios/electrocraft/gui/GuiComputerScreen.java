@@ -28,7 +28,7 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
-import cpw.mods.fml.client.FMLClientHandler;
+import net.minecraftforge.fml.client.FMLClientHandler;
 
 public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
@@ -67,7 +67,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
     @Override
     public void drawScreen(int par1, int par2, float par3) {
-        Tessellator tess = Tessellator.instance;
+        Tessellator tess = Tessellator.getInstance();
 
         float halfBoxWidth = width / 2.5f;
         float halfBoxHeight = height / 2.5f;
@@ -76,21 +76,21 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
 
         // Draw the background
         this.mc.renderEngine.bindTexture(computerScreenResource);
-        tess.startDrawingQuads();
-        tess.addVertexWithUV((width / 2) + halfBoxWidth, (height / 2) - halfBoxHeight, 0, 1, 0);
-        tess.addVertexWithUV((width / 2) - halfBoxWidth, (height / 2) - halfBoxHeight, 0, 0, 0);
-        tess.addVertexWithUV((width / 2) - halfBoxWidth, (height / 2) + halfBoxHeight, 0, 0, 1);
-        tess.addVertexWithUV((width / 2) + halfBoxWidth, (height / 2) + halfBoxHeight, 0, 1, 1);
+        tess.getWorldRenderer().startDrawingQuads();
+        tess.getWorldRenderer().addVertexWithUV((width / 2) + halfBoxWidth, (height / 2) - halfBoxHeight, 0, 1, 0);
+        tess.getWorldRenderer().addVertexWithUV((width / 2) - halfBoxWidth, (height / 2) - halfBoxHeight, 0, 0, 0);
+        tess.getWorldRenderer().addVertexWithUV((width / 2) - halfBoxWidth, (height / 2) + halfBoxHeight, 0, 0, 1);
+        tess.getWorldRenderer().addVertexWithUV((width / 2) + halfBoxWidth, (height / 2) + halfBoxHeight, 0, 1, 1);
         tess.draw();
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
         if (terminalMode) {
-            tess.startDrawingQuads();
-            tess.setColorOpaque(0, 0, 0);
-            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
-            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
-            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
-            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
+            tess.getWorldRenderer().startDrawingQuads();
+            tess.getWorldRenderer().setColorOpaque(0, 0, 0);
+            tess.getWorldRenderer().addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
+            tess.getWorldRenderer().addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
+            tess.getWorldRenderer().addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
+            tess.getWorldRenderer().addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
             tess.draw();
 
             for (int i = 0; i < terminalList.size(); i++) {
@@ -125,11 +125,11 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
             }
         } else {
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, displayTextureId);
-            tess.startDrawingQuads();
-            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
-            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
-            tess.addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
-            tess.addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
+            tess.getWorldRenderer().startDrawingQuads();
+            tess.getWorldRenderer().addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) - halfBoxHeight + 20, 0, 1, 0);
+            tess.getWorldRenderer().addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) - halfBoxHeight + 20, 0, 0, 0);
+            tess.getWorldRenderer().addVertexWithUV((width / 2) - halfBoxWidth + 15, (height / 2) + halfBoxHeight - 15, 0, 0, 1);
+            tess.getWorldRenderer().addVertexWithUV((width / 2) + halfBoxWidth - 15, (height / 2) + halfBoxHeight - 15, 0, 1, 1);
             tess.draw();
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
         }
@@ -220,7 +220,7 @@ public class GuiComputerScreen extends GuiScreen implements IComputerCallback {
     }
 
     @Override
-    public void handleInput() {
+    public void handleInput() throws IOException {
         while (Mouse.next()) {
             this.handleMouseInput();
         }

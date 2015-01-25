@@ -1,7 +1,7 @@
 package info.cerios.electrocraft;
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.network.ModifierPacket;
 
@@ -10,7 +10,7 @@ import java.util.EnumSet;
 
 import org.lwjgl.input.Keyboard;
 
-import cpw.mods.fml.client.FMLClientHandler;
+import net.minecraftforge.fml.client.FMLClientHandler;
 
 public class ClientTickHandler {
 

@@ -15,15 +15,16 @@ import java.util.Set;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraft.server.gui.IUpdatePlayerListBox;
+import net.minecraft.util.EnumFacing;
 
 @ExposedToLua
-public class TileEntityComputer extends NetworkBlock implements IDirectionalBlock, IComputerHost {
+public class TileEntityComputer extends NetworkBlock implements IUpdatePlayerListBox, IDirectionalBlock, IComputerHost {
 
     private Computer computer;
     private Set<NetworkBlock> ioPorts = new HashSet<NetworkBlock>();
     private List<EntityPlayer> activePlayers = new ArrayList<EntityPlayer>();
-    private ForgeDirection direction = ForgeDirection.NORTH;
+    private EnumFacing direction = EnumFacing.NORTH;
     private volatile boolean loadingState = false;
 
     /**
@@ -94,7 +95,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     public void readFromNBT(NBTTagCompound nbttagcompound) {
         super.readFromNBT(nbttagcompound);
         this.baseDirectory = nbttagcompound.getString("baseDirectory");
-        this.direction = ForgeDirection.values()[nbttagcompound.getInteger("direction")];
+        this.direction = EnumFacing.values()[nbttagcompound.getInteger("direction")];
         if (nbttagcompound.getBoolean("isOn") && !loadingState) {
             loadingState = true;
             if (computer == null) {
@@ -148,8 +149,8 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     }
 
     @Override
-    public void updateEntity() {
-        super.updateEntity();
+    public void update() {
+        super.update();
         if (computer != null && computer.isRunning()) {
             computer.tick();
         }
@@ -164,7 +165,7 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
         if (worldObj == null || worldObj.isRemote)
             return;
         if (this.baseDirectory.isEmpty()) {
-            this.id = String.valueOf(Math.abs(this.xCoord)) + String.valueOf(Math.abs(this.yCoord)) + String.valueOf(Math.abs(this.zCoord)) + String.valueOf(Calendar.getInstance().getTime().getTime());
+            this.id = String.valueOf(Math.abs(this.getPos().getX())) + String.valueOf(Math.abs(this.getPos().getY())) + String.valueOf(Math.abs(this.getPos().getZ())) + String.valueOf(Calendar.getInstance().getTime().getTime());
             File worldFolder = worldObj.getSaveHandler().getWorldDirectory();
             this.baseDirectory = worldFolder.getAbsolutePath() + File.separator + "electrocraft" + File.separator + "computers" + File.separator + id;
         }
@@ -227,12 +228,12 @@ public class TileEntityComputer extends NetworkBlock implements IDirectionalBloc
     }
 
     @Override
-    public void setDirection(ForgeDirection direction) {
+    public void setDirection(EnumFacing direction) {
         this.direction = direction;
     }
 
     @Override
-    public ForgeDirection getDirection() {
+    public EnumFacing getDirection() {
         return this.direction;
     }
 

@@ -1,6 +1,5 @@
 package info.cerios.electrocraft.api.computer;
 
-import info.cerios.electrocraft.api.utils.ObjectTriplet;
 import info.cerios.electrocraft.core.blocks.tileentities.ElectroTileEntity;
 import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.computer.ComputerNetwork;
@@ -9,11 +8,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraft.server.gui.IUpdatePlayerListBox;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 
-public abstract class NetworkBlock extends ElectroTileEntity {
+public abstract class NetworkBlock extends ElectroTileEntity implements IUpdatePlayerListBox {
     protected boolean hasBeenNetworkProbed = false;
-    protected Map<Integer, ObjectTriplet<Integer, Integer, Integer>> connectedDevices = new HashMap<Integer, ObjectTriplet<Integer, Integer, Integer>>();
+    protected Map<EnumFacing, BlockPos> connectedDevices = new HashMap<EnumFacing, BlockPos>();
     protected ComputerNetwork network;
     protected int controlAddress = 0, dataAddress = 0;
     private boolean dirty = true, hasBeenChecked = false;
@@ -43,14 +44,14 @@ public abstract class NetworkBlock extends ElectroTileEntity {
     }
 
     public boolean isConnectedToNetwork(NetworkBlock block) {
-        for (ObjectTriplet<Integer, Integer, Integer> testBlock : connectedDevices.values()) {
-            if (testBlock.getValue1() == block.xCoord && testBlock.getValue2() == block.yCoord && testBlock.getValue3() == block.zCoord)
+        for (BlockPos testBlockPos : connectedDevices.values()) {
+            if (testBlockPos == block.pos)
                 return true;
         }
         return false;
     }
 
-    public Map<Integer, ObjectTriplet<Integer, Integer, Integer>> getConnectedDevices() {
+    public Map<EnumFacing, BlockPos> getConnectedDevices() {
         return connectedDevices;
     }
 
@@ -63,8 +64,7 @@ public abstract class NetworkBlock extends ElectroTileEntity {
     }
 
     @Override
-    public void updateEntity() {
-        super.updateEntity();
+    public void update() {
         if (worldObj.isRemote) {
             computeNetworkConnections();
             return;
@@ -78,9 +78,9 @@ public abstract class NetworkBlock extends ElectroTileEntity {
     public void updateComputerNetwork() {
         this.network = checkConnectedBlocksForComputerNetworks();
         if (network == null)
-            network = new ComputerNetwork(worldObj.provider.dimensionId);
+            network = new ComputerNetwork(worldObj.provider.getDimensionId());
         computeNetworkConnections();
-        network.updateProviderChain(this, worldObj.provider.dimensionId);
+        network.updateProviderChain(this, worldObj.provider.getDimensionId());
         this.network = checkConnectedBlocksForComputerNetworks();
     }
 
@@ -108,22 +108,22 @@ public abstract class NetworkBlock extends ElectroTileEntity {
         return dataAddress;
     }
 
-    public NetworkBlock getNetworkBlockFromLocation(int x, int y, int z) {
-        if (worldObj.getTileEntity(x, y, z) instanceof NetworkBlock)
-            return (NetworkBlock) worldObj.getTileEntity(x, y, z);
+    public NetworkBlock getNetworkBlockFromLocation(BlockPos pos) {
+        if (worldObj.getTileEntity(pos) instanceof NetworkBlock)
+            return (NetworkBlock) worldObj.getTileEntity(pos);
         return null;
     }
 
-    public boolean isConnectedInDirection(ForgeDirection direction) {
+    public boolean isConnectedInDirection(EnumFacing direction) {
         return connectedDevices.containsKey(direction.ordinal());
     }
 
     public ComputerNetwork checkConnectedBlocksForComputerNetworks() {
         ComputerNetwork network = this.network;
-        for (ObjectTriplet<Integer, Integer, Integer> block : connectedDevices.values()) {
-            NetworkBlock networkBlock = getNetworkBlockFromLocation(block.getValue1(), block.getValue2(), block.getValue3());
+        for (BlockPos blockPos : connectedDevices.values()) {
+            NetworkBlock networkBlock = getNetworkBlockFromLocation(blockPos);
             if (networkBlock == null) {
-                connectedDevices.remove(block);
+                connectedDevices.remove(blockPos);
                 continue;
             }
             if (networkBlock.network != null) {
@@ -160,34 +160,10 @@ public abstract class NetworkBlock extends ElectroTileEntity {
         if (network != null)
             network.removeDevice(this);
         connectedDevices.clear();
-        // X
-        if (worldObj.getTileEntity(xCoord + 1, yCoord, zCoord) instanceof NetworkBlock) {
-            if (canConnectNetwork((NetworkBlock) worldObj.getTileEntity(xCoord + 1, yCoord, zCoord)))
-                connectedDevices.put(ForgeDirection.EAST.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord + 1, yCoord, zCoord));
-        }
-        if (worldObj.getTileEntity(xCoord - 1, yCoord, zCoord) instanceof NetworkBlock) {
-            if (canConnectNetwork((NetworkBlock) worldObj.getTileEntity(xCoord - 1, yCoord, zCoord)))
-                connectedDevices.put(ForgeDirection.WEST.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord - 1, yCoord, zCoord));
-        }
 
-        // Y
-        if (worldObj.getTileEntity(xCoord, yCoord + 1, zCoord) instanceof NetworkBlock) {
-            if (canConnectNetwork((NetworkBlock) worldObj.getTileEntity(xCoord, yCoord + 1, zCoord)))
-                connectedDevices.put(ForgeDirection.UP.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord + 1, zCoord));
-        }
-        if (worldObj.getTileEntity(xCoord, yCoord - 1, zCoord) instanceof NetworkBlock) {
-            if (canConnectNetwork((NetworkBlock) worldObj.getTileEntity(xCoord, yCoord - 1, zCoord)))
-                connectedDevices.put(ForgeDirection.DOWN.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord - 1, zCoord));
-        }
-
-        // Z
-        if (worldObj.getTileEntity(xCoord, yCoord, zCoord + 1) instanceof NetworkBlock) {
-            if (canConnectNetwork((NetworkBlock) worldObj.getTileEntity(xCoord, yCoord, zCoord + 1)))
-                connectedDevices.put(ForgeDirection.SOUTH.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord, zCoord + 1));
-        }
-        if (worldObj.getTileEntity(xCoord, yCoord, zCoord - 1) instanceof NetworkBlock) {
-            if (canConnectNetwork((NetworkBlock) worldObj.getTileEntity(xCoord, yCoord, zCoord - 1)))
-                connectedDevices.put(ForgeDirection.NORTH.ordinal(), new ObjectTriplet<Integer, Integer, Integer>(xCoord, yCoord, zCoord - 1));
+        for (EnumFacing direction : EnumFacing.values()) {
+            if (worldObj.getTileEntity(getPos().offset(direction)) instanceof NetworkBlock)
+                connectedDevices.put(direction, getPos().offset(direction));
         }
     }
 

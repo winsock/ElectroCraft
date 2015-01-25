@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraft.entity.player.EntityPlayerMP;
-import cpw.mods.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 public class ComputerServer implements Runnable {
 
@@ -50,7 +50,7 @@ public class ComputerServer implements Runnable {
 
                 for (int i = 0; i < players.size(); i++) {
                     EntityPlayerMP player = (EntityPlayerMP) players.get(i);
-                    if (((InetSocketAddress) player.playerNetServerHandler.netManager.getSocketAddress()).getHostName().equalsIgnoreCase(connection.getInetAddress().getHostName())) {
+                    if (((InetSocketAddress) player.playerNetServerHandler.netManager.getRemoteAddress()).getHostName().equalsIgnoreCase(connection.getInetAddress().getHostName())) {
                         ElectroCraft.instance.getLogger().info("ComputerServer: Client Connected!");
                         clients.put(player, client);
                         new Thread(client).start();

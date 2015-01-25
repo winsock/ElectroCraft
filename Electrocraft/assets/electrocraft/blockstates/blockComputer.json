@@ -1,0 +1,17 @@
+{
+  "variants": {
+    "facing=north": {"model": "electrocraft:blockComputer"},
+    "facing=east": {
+      "model": "electrocraft:blockComputer",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "electrocraft:blockComputer",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "electrocraft:blockComputer",
+      "y": 270
+    }
+  }
+}

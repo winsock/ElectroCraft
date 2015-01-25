@@ -3,6 +3,8 @@ package info.cerios.electrocraft.core.blocks;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
 
 public abstract class ElectroBlock extends BlockContainer {
@@ -12,7 +14,7 @@ public abstract class ElectroBlock extends BlockContainer {
     }
 
     @Override
-    public void onNeighborBlockChange(World world, int x, int y, int z, Block block) {
-        super.onNeighborBlockChange(world, x, y, z, block);
+    public void onNeighborBlockChange(World worldIn, BlockPos pos, IBlockState state, Block neighborBlock) {
+        super.onNeighborBlockChange(worldIn, pos, state, neighborBlock);
     }
 }

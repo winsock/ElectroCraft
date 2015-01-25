@@ -1,7 +1,9 @@
 package info.cerios.electrocraft.core.items;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.drone.Drone;
@@ -12,30 +14,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
 import net.minecraft.block.Block;
-import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
-import net.minecraftforge.common.util.ForgeDirection;
 
 public class ItemDroneUpgrade extends Item implements ICard {
 
-    private IIcon[] icons = new IIcon[5];
-
     public ItemDroneUpgrade() {
         setHasSubtypes(true);
-    }
-
-    @Override
-    public IIcon getIconFromDamage(int meta) {
-        if (meta >= icons.length)
-            meta = 0;
-        return icons[meta];
     }
 
     @Override
@@ -89,7 +79,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
                         Callable<Integer> callable = new Callable<Integer>() {
                             @Override
                             public Integer call() throws Exception {
-                                ForgeDirection dir = drone.getDirection(drone.getDrone().rotationYaw);
+                                EnumFacing dir = drone.getDirection(drone.getDrone().rotationYaw);
                                 return dir.ordinal();
                             }
                         };
@@ -341,8 +331,8 @@ public class ItemDroneUpgrade extends Item implements ICard {
                         Callable<Integer> callable = new Callable<Integer>() {
                             @Override
                             public Integer call() throws Exception {
-                                ForgeDirection dir = drone.getDirection(drone.getDrone().rotationYaw);
-                                return Block.getIdFromBlock(drone.getDrone().worldObj.getBlock((int) (dir.offsetX + drone.getDrone().posX), (int) (dir.offsetY + drone.getDrone().posY), (int) (dir.offsetZ + drone.getDrone().posZ)));
+                                EnumFacing dir = drone.getDirection(drone.getDrone().rotationYaw);
+                                return Block.getIdFromBlock(drone.getDrone().worldObj.getBlockState(new BlockPos(drone.getDrone().getPosition().offset(dir))).getBlock());
                             }
                         };
                         final FutureTask<Integer> task = new FutureTask<Integer>(callable);
@@ -371,22 +361,18 @@ public class ItemDroneUpgrade extends Item implements ICard {
 
                     @Override
                     public int invoke(final LuaState luaState) {
-                        Callable<Integer[]> callable = new Callable<Integer[]>() {
+                        Callable<Integer> callable = new Callable<Integer>() {
                             @Override
-                            public Integer[] call() throws Exception {
-                                ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
-                                int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
-                                int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
-                                int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                                return new Integer[] { Block.getIdFromBlock(drone.getDrone().worldObj.getBlock(x, y, z)), drone.getDrone().worldObj.getBlockMetadata(x, y, z) };
+                            public Integer call() throws Exception {
+                                EnumFacing dir = EnumFacing.getFront(luaState.checkInteger(-1));
+                                BlockPos blockPos = new BlockPos(drone.getDrone().getPosition().offset(dir));
+                                return Block.getIdFromBlock(drone.getDrone().worldObj.getBlockState(blockPos).getBlock());
                             }
                         };
-                        final FutureTask<Integer[]> task = new FutureTask<Integer[]>(callable);
+                        final FutureTask<Integer> task = new FutureTask<Integer>(callable);
                         ElectroCraft.instance.registerRunnable(task);
                         try {
-                            Integer[] values = task.get();
-                            luaState.pushInteger(values[0]);
-                            luaState.pushInteger(values[1]);
+                            luaState.pushInteger(task.get());
                             return 2;
                         } catch (InterruptedException ignored) {
                         } catch (ExecutionException e) {
@@ -503,6 +489,7 @@ public class ItemDroneUpgrade extends Item implements ICard {
         }*/
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void getSubItems(Item item, CreativeTabs tab, List list) {
         list.add(new ItemStack(item, 1, 0));
@@ -510,12 +497,5 @@ public class ItemDroneUpgrade extends Item implements ICard {
         list.add(new ItemStack(item, 1, 2));
         list.add(new ItemStack(item, 1, 3));
         list.add(new ItemStack(item, 1, 4));
-    }
-
-    @Override
-    @SideOnly(Side.CLIENT)
-    public void registerIcons(IIconRegister par1IconRegister) {
-        for (int i = 0; i < icons.length; i++)
-            icons[i] = par1IconRegister.registerIcon("electrocraft:droneUpgrade_" + i);
     }
 }

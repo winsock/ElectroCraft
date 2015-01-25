@@ -1,15 +1,11 @@
 package info.cerios.electrocraft.api.utils;
 
-import info.cerios.electrocraft.core.ElectroCraft;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -22,9 +18,6 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
-import net.minecraft.world.IBlockAccess;
-import net.minecraftforge.common.util.ForgeDirection;
 
 public class Utils {
     public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
@@ -46,7 +39,7 @@ public class Utils {
         return keys;
     }
 
-    public static byte[] compressBytes(byte[] data) throws UnsupportedEncodingException, IOException {
+    public static byte[] compressBytes(byte[] data) throws IOException {
         Deflater df = new Deflater();
         df.setLevel(Deflater.BEST_COMPRESSION);
         df.setInput(data);
@@ -59,11 +52,10 @@ public class Utils {
             bos.write(buff, 0, count);
         }
         bos.close();
-        byte[] output = bos.toByteArray();
-        return output;
+        return bos.toByteArray();
     }
 
-    public static byte[] extractBytes(byte[] input) throws UnsupportedEncodingException, IOException, DataFormatException {
+    public static byte[] extractBytes(byte[] input) throws IOException, DataFormatException {
         Inflater ifl = new Inflater();
         ifl.setInput(input);
 
@@ -74,12 +66,12 @@ public class Utils {
             baos.write(buff, 0, count);
         }
         baos.close();
-        byte[] output = baos.toByteArray();
-        return output;
+        return baos.toByteArray();
     }
 
     public static void copyResource(String sourceFile, File destFile) throws IOException {
         if (!destFile.exists()) {
+            //noinspection ResultOfMethodCallIgnored
             destFile.createNewFile();
         }
 
@@ -103,43 +95,6 @@ public class Utils {
                 fileOutput.close();
             if (resource != null)
                 resource.close();
-        }
-    }
-
-    public static String loadUncompiledAssembly(String file) {
-        File javaFile = new File(file);
-        if (!javaFile.exists()) {
-            return "";
-        }
-
-        StringBuffer buffer = new StringBuffer();
-        try {
-            FileReader reader = new FileReader(javaFile);
-            while (reader.ready()) {
-                buffer.append((char) reader.read());
-            }
-            reader.close();
-        } catch (IOException e) {
-            ElectroCraft.instance.getLogger().severe("Error! Unable to open specified ASM file: " + file);
-        }
-        return buffer.toString();
-    }
-
-    public static ForgeDirection isBlockOnOpaqueBlock(IBlockAccess access, int x, int y, int z) {
-        if (access.getBlock(x + 1, y, z).isOpaqueCube()) {
-            return ForgeDirection.EAST;
-        } else if (access.getBlock(x - 1, y, z).isOpaqueCube()) {
-            return ForgeDirection.WEST;
-        } else if (access.getBlock(x, y + 1, z).isOpaqueCube()) {
-            return ForgeDirection.UP;
-        } else if (access.getBlock(x, y - 1, z).isOpaqueCube()) {
-            return ForgeDirection.DOWN;
-        } else if (access.getBlock(x, y, z + 1).isOpaqueCube()) {
-            return ForgeDirection.SOUTH;
-        } else if (access.getBlock(x, y, z - 1).isOpaqueCube()) {
-            return ForgeDirection.NORTH;
-        } else {
-            return ForgeDirection.UNKNOWN;
         }
     }
 
@@ -185,6 +140,7 @@ public class Utils {
             throw new FileNotFoundException(path.getAbsolutePath());
         boolean ret = true;
         if (path.isDirectory()) {
+            //noinspection ConstantConditions
             for (File f : path.listFiles()) {
                 ret = ret && deleteRecursive(f);
             }
@@ -195,10 +151,10 @@ public class Utils {
     /**
      * Compares array1 to array two and gets the ChangedBytes
      * 
-     * @param beginOffset
-     * @param array1
-     * @param array2
-     * @return
+     * @param beginOffset Offset in the array
+     * @param array1 First array to compare with
+     * @param array2 Second array to compare to array1
+     * @return Only the difference of bytes that was changed
      */
     public static ChangedBytes getNextBlock(int beginOffset, byte[] array1, byte[] array2) {
         if (beginOffset >= array1.length || beginOffset >= array2.length) {
@@ -208,6 +164,7 @@ public class Utils {
         } else if (array1.length <= beginOffset) {
             ChangedBytes changedBytes = new ChangedBytes();
             changedBytes.b = Arrays.copyOfRange(array2, beginOffset, array2.length);
+            changedBytes.b = Arrays.copyOfRange(array2, beginOffset, array2.length);
             changedBytes.offset = beginOffset;
             changedBytes.length = array2.length - beginOffset;
             return changedBytes;
@@ -215,7 +172,7 @@ public class Utils {
             ChangedBytes changedBytes = new ChangedBytes();
             changedBytes.length = 0;
             return changedBytes;
-        } else if (array2 == null || array2.length <= 0) {
+        } else if (array2.length <= 0) {
             ChangedBytes changedBytes = new ChangedBytes();
             changedBytes.b = array1;
             changedBytes.offset = beginOffset;

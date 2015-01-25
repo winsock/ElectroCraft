@@ -23,9 +23,9 @@ import net.minecraft.client.gui.GuiScreen;
 
 import org.lwjgl.input.Keyboard;
 
-import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.client.registry.ClientRegistry;
-import cpw.mods.fml.client.registry.RenderingRegistry;
+import net.minecraftforge.fml.client.FMLClientHandler;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
+import net.minecraftforge.fml.client.registry.RenderingRegistry;
 
 public class ElectroCraftClient implements IElectroCraftSided {
 
@@ -57,18 +57,11 @@ public class ElectroCraftClient implements IElectroCraftSided {
     @Override
     public void registerRenderers() {
         for (BlockRenderers renderer : BlockRenderers.values()) {
-            if (renderer.getRenderer() != null)
-                RenderingRegistry.registerBlockHandler(renderer.getRenderer());
             if (renderer.getSpecialRenderer() != null)
                 if (renderer.getTileClass() != null)
                     ClientRegistry.bindTileEntitySpecialRenderer(renderer.getTileClass(), renderer.getSpecialRenderer());
         }
-        RenderingRegistry.registerEntityRenderingHandler(EntityDrone.class, new RenderDrone(new ModelDrone(), 0.5f));
-    }
-
-    @Override
-    public int getFreeRenderId() {
-        return RenderingRegistry.getNextAvailableRenderId();
+        RenderingRegistry.registerEntityRenderingHandler(EntityDrone.class, new RenderDrone(FMLClientHandler.instance().getClient().getRenderManager(), new ModelDrone(), 0.5f));
     }
 
     @Override

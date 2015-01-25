@@ -1,9 +1,9 @@
 package info.cerios.electrocraft.core.blocks.tileentities;
 
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraft.util.EnumFacing;
 
 public interface IDirectionalBlock {
-    public void setDirection(ForgeDirection direction);
+    public void setDirection(EnumFacing direction);
 
-    public ForgeDirection getDirection();
+    public EnumFacing getDirection();
 }

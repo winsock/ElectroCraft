@@ -1,0 +1,39 @@
+{
+    "__createdwith": "opl's Model Creator",
+    "ambientocclusion": false,
+    "textures": {
+        "computerFront": "electrocraft:blocks/computerFront",
+        "computerBack": "electrocraft:blocks/computerBack",
+        "computerTop": "electrocraft:blocks/computerTop",
+        "computerBottom": "electrocraft:blocks/computerBottom",
+        "computerLeft": "electrocraft:blocks/computerLeft",
+        "computerRight": "electrocraft:blocks/computerRight"
+    },
+    "elements": [
+        {
+            "from": [0,0,0],
+            "to": [16,16,16],
+            "faces": {
+                "up": {
+                    "uv": [0,16,16,0],
+                    "texture": "#computerTop"
+                },
+                "down": {
+                    "texture": "#computerBottom"
+                },
+                "west": {
+                    "texture": "#computerRight"
+                },
+                "east": {
+                    "texture": "#computerLeft"
+                },
+                "north": {
+                    "texture": "#computerFront"
+                },
+                "south": {
+                    "texture": "#computerBack"
+                }
+            }
+        }
+    ]
+}

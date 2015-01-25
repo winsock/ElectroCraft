@@ -5,9 +5,10 @@ import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.blocks.ElectroBlocks;
 import info.cerios.electrocraft.core.computer.Computer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.gui.IUpdatePlayerListBox;
 
 @ExposedToLua
-public class TileEntityRedstoneAdapter extends NetworkBlock {
+public class TileEntityRedstoneAdapter extends NetworkBlock implements IUpdatePlayerListBox {
 
     private boolean redstonePower = false;
     private boolean externalPower = false;
@@ -21,15 +22,15 @@ public class TileEntityRedstoneAdapter extends NetworkBlock {
     }
 
     @Override
-    public void updateEntity() {
-        super.updateEntity();
+    public void update() {
+        super.update();
         if (outputChanged) {
-            worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
-            worldObj.notifyBlocksOfNeighborChange(xCoord, yCoord, zCoord, ElectroBlocks.REDSTONE_ADAPTER.getBlock());
+            worldObj.markBlockForUpdate(pos);
+            worldObj.notifyNeighborsOfStateChange(pos, ElectroBlocks.REDSTONE_ADAPTER.getBlock());
             outputChanged = false;
         }
-        if (externalPower != worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord)) {
-            setExternalState(worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord));
+        if (externalPower != (worldObj.isBlockIndirectlyGettingPowered(pos) != 0)) {
+            setExternalState(worldObj.isBlockIndirectlyGettingPowered(pos) != 0);
         }
     }
 

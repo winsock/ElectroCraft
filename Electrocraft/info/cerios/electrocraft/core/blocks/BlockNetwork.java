@@ -2,12 +2,16 @@ package info.cerios.electrocraft.core.blocks;
 
 import info.cerios.electrocraft.api.computer.NetworkBlock;
 import info.cerios.electrocraft.core.ElectroCraft;
+import info.cerios.electrocraft.core.computer.luaapi.Network;
 import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
 
 public abstract class BlockNetwork extends ElectroBlock {
@@ -17,47 +21,49 @@ public abstract class BlockNetwork extends ElectroBlock {
     }
 
     @Override
-    public void onBlockAdded(World world, int x, int y, int z) {
-        super.onBlockAdded(world, x, y, z);
-        if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
-            ((NetworkBlock) world.getTileEntity(x, y, z)).update((NetworkBlock) world.getTileEntity(x, y, z));
+    public void onBlockAdded(World worldIn, BlockPos pos, IBlockState state) {
+        super.onBlockAdded(worldIn, pos, state);
+        if (worldIn.getTileEntity(pos) instanceof NetworkBlock) {
+            NetworkBlock networkBlock = (NetworkBlock) worldIn.getTileEntity(pos);
+            networkBlock.update(networkBlock);
         }
     }
 
     @Override
-    public void breakBlock(World world, int x, int y, int z, Block par5, int par6) {
-        if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
-            NetworkBlock block = (NetworkBlock) world.getTileEntity(x, y, z);
+    public void breakBlock(World worldIn, BlockPos pos, IBlockState state) {
+        if (worldIn.getTileEntity(pos) instanceof NetworkBlock) {
+            NetworkBlock block = (NetworkBlock) worldIn.getTileEntity(pos) ;
             if (block.getComputerNetwork() != null) {
                 block.getComputerNetwork().removeDevice(block);
             }
-            super.breakBlock(world, x, y, z, par5, par6);
+            super.breakBlock(worldIn, pos, state);
             block.update(block);
         } else {
-            super.breakBlock(world, x, y, z, par5, par6);
+            super.breakBlock(worldIn, pos, state);
         }
     }
 
     @Override
-    public void onNeighborBlockChange(World world, int x, int y, int z, Block nBlock) {
-        super.onNeighborBlockChange(world, x, y, z, nBlock);
-        if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
-            ((NetworkBlock) world.getTileEntity(x, y, z)).update((NetworkBlock) world.getTileEntity(x, y, z));
+    public void onNeighborBlockChange(World worldIn, BlockPos pos, IBlockState state, Block neighborBlock) {
+        super.onNeighborBlockChange(worldIn, pos, state, neighborBlock);
+        if (worldIn.getTileEntity(pos) instanceof NetworkBlock) {
+            NetworkBlock networkBlock = (NetworkBlock) worldIn.getTileEntity(pos);
+            networkBlock.update(networkBlock);
         }
     }
 
     @Override
-    public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int par6, float par7, float par8, float par9) {
-        if (player instanceof EntityPlayerMP) {
-            if (player.isSneaking()) {
-                if (Block.getIdFromBlock(world.getBlock(x, y, z)) == Block.getIdFromBlock(this)) {
-                    if (world.getTileEntity(x, y, z) instanceof NetworkBlock) {
-                        NetworkBlock block = (NetworkBlock) world.getTileEntity(x, y, z);
+    public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumFacing side, float hitX, float hitY, float hitZ) {
+        if (playerIn instanceof EntityPlayerMP) {
+            if (playerIn.isSneaking()) {
+                if (Block.getIdFromBlock(state.getBlock()) == Block.getIdFromBlock(this)) {
+                    if (worldIn.getTileEntity(pos) instanceof NetworkBlock) {
+                        NetworkBlock block = (NetworkBlock) worldIn.getTileEntity(pos);
                         NetworkAddressPacket networkAddressPacket = new NetworkAddressPacket();
                         networkAddressPacket.setControlAddress(block.getControlAddress());
                         networkAddressPacket.setDataAddress(block.getDataAddress());
-                        networkAddressPacket.setLocation(world.provider.dimensionId, x, y, z);
-                        ElectroCraft.instance.getNetworkWrapper().sendTo(networkAddressPacket, (EntityPlayerMP) player);
+                        networkAddressPacket.setLocation(worldIn.provider.getDimensionId(), pos);
+                        ElectroCraft.instance.getNetworkWrapper().sendTo(networkAddressPacket, (EntityPlayerMP) playerIn);
                         return true;
                     }
                 }

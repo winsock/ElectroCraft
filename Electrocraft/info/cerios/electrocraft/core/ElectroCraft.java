@@ -1,6 +1,6 @@
 package info.cerios.electrocraft.core;
 
-import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import info.cerios.electrocraft.api.IComputerHost;
 import info.cerios.electrocraft.api.IElectroCraft;
 import info.cerios.electrocraft.api.drone.tools.IDroneTool;
@@ -47,19 +47,19 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.ModContainer;
-import cpw.mods.fml.common.SidedProxy;
-import cpw.mods.fml.common.event.FMLInitializationEvent;
-import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-import cpw.mods.fml.common.event.FMLServerStartingEvent;
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
-import cpw.mods.fml.common.network.IGuiHandler;
-import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.registry.EntityRegistry;
-import cpw.mods.fml.common.registry.GameRegistry;
-import cpw.mods.fml.relauncher.Side;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.ModContainer;
+import net.minecraftforge.fml.common.SidedProxy;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
+import net.minecraftforge.fml.common.network.IGuiHandler;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.common.registry.EntityRegistry;
+import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.fml.relauncher.Side;
 
 @Mod(modid = "electrocraft", name = "ElectroCraft", version = "DEV", useMetadata = true)
 public class ElectroCraft implements IElectroCraft {
@@ -179,7 +179,7 @@ public class ElectroCraft implements IElectroCraft {
         public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
             Entity entity = null;
             if ((entity = getEntityByID(ID, world)) != null && entity instanceof EntityDrone)
-                return new ContainerDrone(((EntityDrone) entity).getInventory(), player.inventory);
+                return new ContainerDrone(((EntityDrone) entity).getInventoryInterface(), player.inventory);
             return null;
         }
 
@@ -187,7 +187,7 @@ public class ElectroCraft implements IElectroCraft {
         public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
             Entity entity = null;
             if ((entity = getEntityByID(ID, world)) != null && entity instanceof EntityDrone)
-                return electroCraftSided.getClientGuiFor(Gui.DRONE_INVENTORY, new ContainerDrone(((EntityDrone) entity).getInventory(), player.inventory));
+                return electroCraftSided.getClientGuiFor(Gui.DRONE_INVENTORY, new ContainerDrone(((EntityDrone) entity).getInventoryInterface(), player.inventory));
             return null;
         }
     };

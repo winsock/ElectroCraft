@@ -1,11 +1,11 @@
 package info.cerios.electrocraft.core.blocks;
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import info.cerios.electrocraft.core.items.ItemHandler;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.OreDictionary.OreRegisterEvent;
-import cpw.mods.fml.common.registry.GameRegistry;
-import cpw.mods.fml.common.registry.LanguageRegistry;
+import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.fml.common.registry.LanguageRegistry;
 
 public class BlockHandler {
 
@@ -26,7 +26,7 @@ public class BlockHandler {
             if (block.getTileEntity() != null) {
                 GameRegistry.registerTileEntity(block.getTileEntity(), block.getName());
             }
-            LanguageRegistry.addName(block.getBlock(), block.getHumanName());
+            LanguageRegistry.addName(block.getBlock(), block.getHumanName()); // TODO: Localization
             if (block.isOreDicBlock()) {
                 OreDictionary.registerOre(block.getName(), block.getBlock());
             }

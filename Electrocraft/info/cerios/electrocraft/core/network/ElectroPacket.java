@@ -1,8 +1,8 @@
 package info.cerios.electrocraft.core.network;
 
-import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.relauncher.Side;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.relauncher.Side;
 import info.cerios.electrocraft.core.ElectroCraft;
 import io.netty.buffer.ByteBuf;
 

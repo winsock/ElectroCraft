@@ -1,14 +1,14 @@
 package info.cerios.electrocraft.core.network;
 
-import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
-import cpw.mods.fml.relauncher.Side;
+import net.minecraftforge.fml.client.FMLClientHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.fml.relauncher.Side;
 import info.cerios.electrocraft.api.utils.Utils;
 import info.cerios.electrocraft.core.ElectroCraft;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.CompressedStreamTools;
@@ -55,7 +55,7 @@ public class CustomPacket extends ElectroPacket implements IMessageHandler<Custo
     @Override
     public CustomPacket onMessage(CustomPacket message, MessageContext ctx) {
         if (ctx.side == Side.CLIENT) {
-            EntityClientPlayerMP player = FMLClientHandler.instance().getClientPlayerEntity();
+            AbstractClientPlayer player = FMLClientHandler.instance().getClientPlayerEntity();
             try {
                 if (message.id == 4) {
                     ByteArrayInputStream bis = new ByteArrayInputStream(message.data);
@@ -64,7 +64,7 @@ public class CustomPacket extends ElectroPacket implements IMessageHandler<Custo
                     NBTTagCompound inventory = CompressedStreamTools.read(dis);
                     Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, (player).worldObj);
                     if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
-                        ((EntityDrone) possibleEntity).getInventory().readFromNBT(inventory);
+                        ((EntityDrone) possibleEntity).getInventoryInterface().readFromNBT(inventory);
                     }
                 } else if (message.id == 5) {
                     ByteArrayInputStream bis = new ByteArrayInputStream(message.data);
@@ -92,7 +92,7 @@ public class CustomPacket extends ElectroPacket implements IMessageHandler<Custo
                     NBTTagCompound inventory = CompressedStreamTools.read(dis);
                     Entity possibleEntity = ElectroCraft.instance.getEntityByID(entity, (player).worldObj);
                     if (possibleEntity != null && possibleEntity instanceof EntityDrone) {
-                        ((EntityDrone) possibleEntity).getInventory().readFromNBT(inventory);
+                        ((EntityDrone) possibleEntity).getInventoryInterface().readFromNBT(inventory);
                         ((EntityDrone) possibleEntity).setClientFlying(flying);
                     }
                 } else {
@@ -186,7 +186,7 @@ public class CustomPacket extends ElectroPacket implements IMessageHandler<Custo
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         DataOutputStream dos = new DataOutputStream(bos);
                         NBTTagCompound inventory = new NBTTagCompound();
-                        drone.getInventory().writeToNBT(inventory);
+                        drone.getInventoryInterface().writeToNBT(inventory);
                         try {
                             dos.writeInt(drone.getEntityId());
                             CompressedStreamTools.write(inventory, dos);
@@ -208,7 +208,7 @@ public class CustomPacket extends ElectroPacket implements IMessageHandler<Custo
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         DataOutputStream dos = new DataOutputStream(bos);
                         NBTTagCompound inventory = new NBTTagCompound();
-                        drone.getInventory().writeToNBT(inventory);
+                        drone.getInventoryInterface().writeToNBT(inventory);
                         try {
                             dos.writeInt(drone.getEntityId());
                             dos.writeBoolean(((drone.getDrone() == null) ? false : drone.getDrone().getFlying()));

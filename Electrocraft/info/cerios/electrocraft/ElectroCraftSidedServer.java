@@ -1,6 +1,6 @@
 package info.cerios.electrocraft;
 
-import cpw.mods.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import info.cerios.electrocraft.core.IElectroCraftSided;
 import info.cerios.electrocraft.core.network.ConnectionHandler;
 import info.cerios.electrocraft.core.network.CustomPacket;
@@ -10,7 +10,7 @@ import info.cerios.electrocraft.core.network.NetworkAddressPacket;
 import java.io.File;
 import java.net.SocketAddress;
 
-import cpw.mods.fml.server.FMLServerHandler;
+import net.minecraftforge.fml.server.FMLServerHandler;
 
 public class ElectroCraftSidedServer implements IElectroCraftSided {
 
@@ -40,11 +40,6 @@ public class ElectroCraftSidedServer implements IElectroCraftSided {
 
     @Override
     public void registerRenderers() {
-    }
-
-    @Override
-    public int getFreeRenderId() {
-        return 0;
     }
 
     @Override

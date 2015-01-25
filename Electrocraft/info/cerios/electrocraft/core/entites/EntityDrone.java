@@ -20,8 +20,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -30,10 +32,11 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.common.util.ForgeDirection;
 
 public class EntityDrone extends EntityLiving implements IComputerHost {
 
@@ -42,7 +45,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
     private InventoryDrone inventory;
     private boolean firstTick = true;
     private volatile int rotationTicks = 0;
-    private ForgeDirection digDirection = ForgeDirection.UNKNOWN;
+    private EnumFacing digDirection = null;
     private AbstractTool defaultTool = new AbstractTool();
     private volatile boolean clientFlying = false;
 
@@ -90,7 +93,11 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
         }
     }
 
-    public InventoryDrone getInventory() {
+    public ItemStack[] getInventory() {
+        return inventory.getAllSlots();
+    }
+
+    public InventoryDrone getInventoryInterface() {
         return inventory;
     }
 
@@ -164,13 +171,13 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
     }
 
     @Override
-    protected void fall(float par1) {
+    public void fall(float distance, float damageMultiplier) {
         if (worldObj.isRemote) {
             if (!clientFlying) {
-                super.fall(par1);
+                super.fall(distance, 0);
             }
         } else if (drone == null || !drone.getFlying()) {
-            super.fall(par1);
+            super.fall(distance, 0);
         }
     }
 
@@ -208,7 +215,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 
             if (this.onGround) {
                 var3 = 0.54600006F;
-                Block block = this.worldObj.getBlock(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+                Block block = this.worldObj.getBlockState(new BlockPos(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.getBoundingBox().minY) - 1, MathHelper.floor_double(this.posZ))).getBlock();
                 int id = Block.getIdFromBlock(block);
 
                 if (id > 0) {
@@ -222,7 +229,7 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
 
             if (this.onGround) {
                 var3 = 0.54600006F;
-                Block block = this.worldObj.getBlock(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.boundingBox.minY) - 1, MathHelper.floor_double(this.posZ));
+                Block block = this.worldObj.getBlockState(new BlockPos(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.getBoundingBox().minY) - 1, MathHelper.floor_double(this.posZ))).getBlock();
                 int id = Block.getIdFromBlock(block);
 
                 if (id > 0) {
@@ -257,15 +264,11 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
         if (getHeldItem() == null)
             return;
 
-        ForgeDirection dir = drone.getDirection(rotationYaw);
-        if (digDirection != ForgeDirection.UNKNOWN) {
+        EnumFacing dir = drone.getDirection(rotationYaw);
+        if (digDirection != null) {
             dir = digDirection;
-            digDirection = ForgeDirection.UNKNOWN;
+            digDirection = null;
         }
-
-        int x = (int) (Math.floor(posX) + dir.offsetX);
-        int y = (int) (Math.floor(posY) + dir.offsetY);
-        int z = (int) (Math.floor(posZ) + dir.offsetZ);
 
         IDroneTool tool = defaultTool;
 
@@ -276,28 +279,30 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
             }
         }
 
-        if (tool.appliesToBlock(getHeldItem(), worldObj.getBlock(x, y, z), worldObj.getBlockMetadata(x, y, z))) {
-            for (ItemStack item : tool.preformAction(getHeldItem(), this, worldObj, x, y, z)) {
+        BlockPos targetBlockPos = getPosition().offset(dir);
+        IBlockState state = worldObj.getBlockState(targetBlockPos);
+
+        if (tool.appliesToBlock(worldObj, getHeldItem(), targetBlockPos)) {
+            for (ItemStack item : tool.preformAction(getHeldItem(), this, worldObj, targetBlockPos)) {
                 drone.addToInventory(inventory, 0, 36, item);
             }
-            tool.damageItem(this, getHeldItem(), worldObj.getBlock(x, y, z), worldObj.getBlockMetadata(x, y, z));
+            tool.damageItem(this, getHeldItem(), state);
             drone.postEvent("tool", true);
         } else {
             drone.postEvent("tool", false);
         }
     }
 
-    public ArrayList<ItemStack> getBlockDropped(World world, int x, int y, int z) {
-        Block block = world.getBlock(x, y, z);
-        int metadata = world.getBlockMetadata(x, y, z);
+    public List<ItemStack> getBlockDropped(World world, BlockPos pos) {
+        IBlockState blockState = world.getBlockState(pos);
         if (getHeldItem().getEnchantmentTagList() != null) {
             for (int i = 0; i < getHeldItem().getEnchantmentTagList().tagCount(); i++) {
                 if (getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("id") == Enchantment.fortune.effectId) {
-                    return block.getDrops(world, x, y, z, metadata, getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("lvl"));
+                    return blockState.getBlock().getDrops(world, pos, blockState, getHeldItem().getEnchantmentTagList().getCompoundTagAt(i).getShort("lvl"));
                 }
             }
         }
-        return block.getDrops(world, x, y, z, metadata, 0);
+        return blockState.getBlock().getDrops(world, pos, blockState, 0);
     }
 
     @Override
@@ -316,13 +321,8 @@ public class EntityDrone extends EntityLiving implements IComputerHost {
         }
     }
 
-    public void setDigDirection(ForgeDirection dir) {
+    public void setDigDirection(EnumFacing dir) {
         this.digDirection = dir;
-    }
-
-    @Override
-    protected boolean isAIEnabled() {
-        return true;
     }
 
     @Override

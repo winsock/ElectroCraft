@@ -25,8 +25,6 @@ public interface IElectroCraftSided {
 
     public void registerRenderers();
 
-    public int getFreeRenderId();
-
     public boolean isShiftHeld();
 
     public void startComputerClient(int port, SocketAddress address);

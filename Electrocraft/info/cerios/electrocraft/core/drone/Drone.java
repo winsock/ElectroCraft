@@ -1,7 +1,10 @@
 package info.cerios.electrocraft.core.drone;
 
 import com.mojang.authlib.GameProfile;
-import cpw.mods.fml.common.network.NetworkRegistry;
+
+import com.naef.jnlua.LuaState;
+import com.naef.jnlua.NamedJavaFunction;
+
 import info.cerios.electrocraft.api.drone.upgrade.ICard;
 import info.cerios.electrocraft.api.utils.ObjectPair;
 import info.cerios.electrocraft.core.ElectroCraft;
@@ -9,15 +12,6 @@ import info.cerios.electrocraft.core.computer.Computer;
 import info.cerios.electrocraft.core.drone.tools.SwordTool;
 import info.cerios.electrocraft.core.entites.EntityDrone;
 import info.cerios.electrocraft.core.network.CustomPacket;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.ai.EntityMoveHelper;
@@ -27,15 +21,21 @@ import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.management.ItemInWorldManager;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.MathHelper;
-
-import com.naef.jnlua.LuaState;
-import com.naef.jnlua.NamedJavaFunction;
-
-import cpw.mods.fml.common.FMLCommonHandler;
 import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 public class Drone extends Computer {
 
@@ -70,8 +70,7 @@ public class Drone extends Computer {
         this.drone = drone;
         this.moveHelper = new EntityMoveHelper(drone);
         if (!drone.worldObj.isRemote) {
-            ItemInWorldManager itemManager = new ItemInWorldManager(drone.worldObj);
-            fakePlayer = new FakePlayer(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(drone.worldObj.provider.dimensionId), new GameProfile(UUID.randomUUID(), "FakePlayerEC" + getBaseDirectory().getName()));
+            fakePlayer = new FakePlayer(FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(drone.worldObj.provider.getDimensionId()), new GameProfile(UUID.randomUUID(), "FakePlayerEC" + getBaseDirectory().getName()));
             fakePlayer.preventEntitySpawning = true;
         }
     }
@@ -110,24 +109,20 @@ public class Drone extends Computer {
                     callable = new Callable<Integer[]>() {
                         @Override
                         public Integer[] call() throws Exception {
-                            ForgeDirection dir = ForgeDirection.getOrientation(intDir);
-                            double x = dir.offsetX + drone.getDrone().posX;
-                            double y = dir.offsetY + drone.getDrone().posY;
-                            double z = dir.offsetZ + drone.getDrone().posZ;
-                            drone.getMoveHelper().setMoveTo(x, y, z, 5);
-                            return new Integer[] { dir.offsetX, dir.offsetY, dir.offsetZ };
+                            EnumFacing dir = EnumFacing.getFront(intDir);
+                            BlockPos moveTo = drone.getDrone().getPosition().offset(dir);
+                            drone.getMoveHelper().setMoveTo(moveTo.getX(), moveTo.getY(), moveTo.getZ(), 5);
+                            return new Integer[] { dir.getFrontOffsetX(), dir.getFrontOffsetY(), dir.getFrontOffsetZ() };
                         }
                     };
                 } else {
                     callable = new Callable<Integer[]>() {
                         @Override
                         public Integer[] call() throws Exception {
-                            ForgeDirection dir = getDirection(drone.drone.rotationYaw);
-                            double x = dir.offsetX + drone.getDrone().posX;
-                            double y = dir.offsetY + drone.getDrone().posY;
-                            double z = dir.offsetZ + drone.getDrone().posZ;
-                            drone.getMoveHelper().setMoveTo(x, y, z, 5);
-                            return new Integer[] { dir.offsetX, dir.offsetY, dir.offsetZ };
+                            EnumFacing dir = EnumFacing.fromAngle(drone.drone.rotationYaw);
+                            BlockPos moveTo = drone.getDrone().getPosition().offset(dir);
+                            drone.getMoveHelper().setMoveTo(moveTo.getX(), moveTo.getY(), moveTo.getZ(), 5);
+                            return new Integer[] { dir.getFrontOffsetX(), dir.getFrontOffsetY(), dir.getFrontOffsetZ() };
                         }
                     };
                 }
@@ -139,7 +134,7 @@ public class Drone extends Computer {
                         try {
                             drone.getMoveHelper().onUpdateMoveHelper();
                             Thread.sleep(1);
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException ignored) {
                         }
                     }
 
@@ -156,7 +151,7 @@ public class Drone extends Computer {
                     ElectroCraft.instance.registerRunnable(task);
                     Integer[] afterLocation = task.get();
 
-                    if (location[0] == afterLocation[0] && location[1] == afterLocation[1] && location[2] == afterLocation[2]) {
+                    if (location[0].equals(afterLocation[0]) && location[1].equals(afterLocation[1]) && location[2].equals(afterLocation[2])) {
                         luaState.pushBoolean(false);
                     } else {
                         luaState.pushBoolean(true);
@@ -191,7 +186,7 @@ public class Drone extends Computer {
                         @Override
                         public Boolean call() throws Exception {
                             if (drone.drone.getRotationTicks() <= 0) {
-                                drone.drone.setDigDirection(ForgeDirection.getOrientation(number));
+                                drone.drone.setDigDirection(EnumFacing.getFront(number));
                                 drone.drone.setRotationTicks(60);
                                 CustomPacket packet = new CustomPacket();
                                 packet.id = 5;
@@ -202,7 +197,7 @@ public class Drone extends Computer {
                                     dos.writeInt(drone.drone.getRotationTicks());
                                     packet.id = 5;
                                     packet.data = bos.toByteArray();
-                                    ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.drone.worldObj.provider.dimensionId, drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20));
+                                    ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.drone.worldObj.provider.getDimensionId(), drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20));
                                 } catch (IOException e) {
                                     ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
                                 }
@@ -225,7 +220,7 @@ public class Drone extends Computer {
                                     dos.writeInt(drone.drone.getRotationTicks());
                                     packet.id = 5;
                                     packet.data = bos.toByteArray();
-                                    ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.drone.worldObj.provider.dimensionId, drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20));
+                                    ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.drone.worldObj.provider.getDimensionId(), drone.drone.posX, drone.drone.posY, drone.drone.posZ, 20));
                                 } catch (IOException e) {
                                     ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
                                 }
@@ -238,7 +233,7 @@ public class Drone extends Computer {
                 ElectroCraft.instance.registerRunnable(task);
                 try {
                     task.get();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException ignored) {
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 }
@@ -263,7 +258,7 @@ public class Drone extends Computer {
                 Callable<ItemStack> getStack = new Callable<ItemStack>() {
                     @Override
                     public ItemStack call() throws Exception {
-                        return drone.drone.getInventory().getStackInSlot(slot1);
+                        return drone.drone.getInventory()[slot1];
                     }
                 };
                 final FutureTask<ItemStack> task = new FutureTask<ItemStack>(getStack);
@@ -273,8 +268,8 @@ public class Drone extends Computer {
                         Callable<Boolean> setStack = new Callable<Boolean>() {
                             @Override
                             public Boolean call() throws Exception {
-                                drone.drone.getInventory().setInventorySlotContents(slot1, task.get());
-                                drone.drone.getInventory().setInventorySlotContents(slot2, null);
+                                drone.drone.getInventory()[slot1] = task.get();
+                                drone.drone.getInventory()[slot2] = null;
                                 return true;
                             }
                         };
@@ -311,10 +306,10 @@ public class Drone extends Computer {
                 Callable<Boolean> callable = new Callable<Boolean>() {
                     @Override
                     public Boolean call() throws Exception {
-                        ItemStack stack = drone.drone.getInventory().getStackInSlot(slot2);
+                        ItemStack stack = drone.drone.getInventory()[slot2];
                         if (stack == null)
                             return false;
-                        int remainder = 0;
+                        int remainder;
                         if (stack.stackSize <= amount) {
                             remainder = stack.stackSize - amount;
                             stack.stackSize = amount;
@@ -322,14 +317,14 @@ public class Drone extends Computer {
                             stack.stackSize = 0;
                             remainder = amount;
                         }
-                        if (drone.drone.getInventory().getStackInSlot(-2) == null) {
-                            drone.drone.getInventory().setInventorySlotContents(slot2, stack);
+                        if (drone.drone.getInventory()[-2] == null) {
+                            drone.drone.getInventory()[slot2] = stack;
                             if (remainder > 0) {
                                 ItemStack newStack = stack.copy();
                                 newStack.stackSize = remainder;
-                                drone.drone.getInventory().setInventorySlotContents(slot1, newStack);
+                                drone.drone.getInventory()[slot1] = newStack;
                             } else {
-                                drone.drone.getInventory().setInventorySlotContents(slot1, null);
+                                drone.drone.getInventory()[slot1] = null;
                             }
                             return true;
                         } else
@@ -370,33 +365,30 @@ public class Drone extends Computer {
                     callable = new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
-                            ForgeDirection dir;
-                            dir = ForgeDirection.getOrientation(int1);
+                            EnumFacing dir = EnumFacing.getFront(int1);
 
-                            int amount = 0;
-                            ItemStack stack = null;
+                            int amount;
+                            ItemStack stack;
                             amount = int2;
-                            stack = drone.drone.getInventory().getStackInSlot(int3);
+                            stack = drone.drone.getInventory()[int3];
                             ItemStack remainder = stack.copy();
                             remainder.stackSize = stack.stackSize - amount;
                             if (remainder.stackSize <= 0) {
                                 amount -= Math.abs(remainder.stackSize);
                                 remainder = null;
                             }
-                            drone.drone.getInventory().setInventorySlotContents(int3, remainder);
+                            drone.drone.getInventory()[int3] = remainder;
                             stack.stackSize = amount;
 
-                            if (stack == null || amount <= 0)
+                            if (amount <= 0)
                                 return false;
 
-                            int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
-                            int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
-                            int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            if (drone.drone.worldObj.getTileEntity(x, y, z) != null && drone.drone.worldObj.getTileEntity(x, y, z) instanceof IInventory) {
-                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(x, y, z);
+                            BlockPos blockPos = drone.drone.getPosition().offset(dir);
+                            if (drone.drone.worldObj.getTileEntity(blockPos) != null && drone.drone.worldObj.getTileEntity(blockPos) instanceof IInventory) {
+                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(blockPos);
                                 if (inv instanceof ISidedInventory) {
                                     ISidedInventory sidedInv = (ISidedInventory) inv;
-                                    if (!addToInventory(sidedInv, sidedInv.getAccessibleSlotsFromSide(dir.getOpposite().ordinal()), stack)) {
+                                    if (!addToInventory(sidedInv, sidedInv.getSlotsForFace(dir.getOpposite()), stack)) {
                                         drone.drone.entityDropItem(stack, 0f);
                                     }
                                 } else {
@@ -415,28 +407,25 @@ public class Drone extends Computer {
                     callable = new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
-                            ForgeDirection dir;
-                            dir = ForgeDirection.getOrientation(int1);
+                            EnumFacing dir = EnumFacing.getFront(int1);
 
                             int amount = 0;
-                            ItemStack stack = null;
-                            stack = drone.drone.getInventory().getStackInSlot(int2);
+                            ItemStack stack;
+                            stack = drone.drone.getInventory()[int2];
                             if (stack != null) {
                                 amount = stack.stackSize;
                             }
-                            drone.drone.getInventory().setInventorySlotContents(int2, null);
+                            drone.drone.getInventory()[int2] = null;
 
                             if (stack == null || amount <= 0)
                                 return false;
 
-                            int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
-                            int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
-                            int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            if (drone.drone.worldObj.getTileEntity(x, y, z) != null && drone.drone.worldObj.getTileEntity(x, y, z) instanceof IInventory) {
-                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(x, y, z);
+                            BlockPos blockPos = drone.drone.getPosition().offset(dir);
+                            if (drone.drone.worldObj.getTileEntity(blockPos) != null && drone.drone.worldObj.getTileEntity(blockPos) instanceof IInventory) {
+                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(blockPos);
                                 if (inv instanceof ISidedInventory) {
                                     ISidedInventory sidedInv = (ISidedInventory) inv;
-                                    if (!addToInventory(sidedInv, sidedInv.getAccessibleSlotsFromSide(dir.getOpposite().ordinal()), stack)) {
+                                    if (!addToInventory(sidedInv, sidedInv.getSlotsForFace(dir.getOpposite()), stack)) {
                                         drone.drone.entityDropItem(stack, 0f);
                                     }
                                 } else {
@@ -455,28 +444,25 @@ public class Drone extends Computer {
                     callable = new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
-                            ForgeDirection dir;
-                            dir = getDirection(drone.drone.rotationYaw);
+                            EnumFacing dir = EnumFacing.fromAngle(drone.drone.rotationYaw);
 
                             int amount = 0;
-                            ItemStack stack = null;
-                            stack = drone.drone.getInventory().getStackInSlot(int1);
+                            ItemStack stack;
+                            stack = drone.drone.getInventory()[int1];
                             if (stack != null) {
                                 amount = stack.stackSize;
                             }
-                            drone.drone.getInventory().setInventorySlotContents(int1, null);
+                            drone.drone.getInventory()[int1] = null;
 
                             if (stack == null || amount <= 0)
                                 return false;
 
-                            int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
-                            int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
-                            int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            if (drone.drone.worldObj.getTileEntity(x, y, z) != null && drone.drone.worldObj.getTileEntity(x, y, z) instanceof IInventory) {
-                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(x, y, z);
+                            BlockPos blockPos = drone.drone.getPosition().offset(dir);
+                            if (drone.drone.worldObj.getTileEntity(blockPos) != null && drone.drone.worldObj.getTileEntity(blockPos) instanceof IInventory) {
+                                IInventory inv = (IInventory) drone.drone.worldObj.getTileEntity(blockPos);
                                 if (inv instanceof ISidedInventory) {
                                     ISidedInventory sidedInv = (ISidedInventory) inv;
-                                    if (!addToInventory(sidedInv, sidedInv.getAccessibleSlotsFromSide(dir.getOpposite().ordinal()), stack)) {
+                                    if (!addToInventory(sidedInv, sidedInv.getSlotsForFace(dir.getOpposite()), stack)) {
                                         drone.drone.entityDropItem(stack, 0f);
                                     }
                                 } else {
@@ -519,21 +505,20 @@ public class Drone extends Computer {
 
             @Override
             public int invoke(LuaState luaState) {
-                final ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+                final EnumFacing dir = EnumFacing.getFront(luaState.checkInteger(-1));
                 final int slot = luaState.checkInteger(-2);
                 Callable<Boolean> callable = new Callable<Boolean>() {
                     @Override
                     public Boolean call() throws Exception {
-                        int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
-                        int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
-                        int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                        Block block = drone.getDrone().worldObj.getBlock(x, y, z);
-                        if (drone.getDrone().getInventory().getStackInSlot(slot).getItem() instanceof ItemBlock) {
-                            if ((block == null || block.isReplaceable(drone.getDrone().worldObj, x, y, z)) && drone.getDrone().getInventory().getStackInSlot(slot) != null) {
-                                ((ItemBlock) drone.getDrone().getInventory().getStackInSlot(slot).getItem()).placeBlockAt(drone.getDrone().getInventory().getStackInSlot(slot), fakePlayer, drone.getDrone().worldObj, x, y, z, dir.getOpposite().ordinal(), 0, 0, 0, drone.getDrone().getInventory().getStackInSlot(slot).getItemDamage());
+                        BlockPos blockPos = drone.drone.getPosition().offset(dir);
+                        Block block = drone.getDrone().worldObj.getBlockState(blockPos).getBlock();
+                        if (drone.getDrone().getInventory()[slot].getItem() instanceof ItemBlock) {
+                            if ((block == null || block.isReplaceable(drone.getDrone().worldObj, blockPos)) && drone.getDrone().getInventory()[slot] != null) {
+                                ItemBlock blockToPlace = (ItemBlock) drone.getDrone().getInventory()[slot].getItem();
+                                blockToPlace.placeBlockAt(drone.getDrone().getInventory()[slot], fakePlayer, drone.getDrone().worldObj, blockPos, dir.getOpposite(), 0, 0, 0, blockToPlace.getBlock().getDefaultState());
                             }
                         } else {
-                            drone.getDrone().getInventory().getStackInSlot(slot).tryPlaceItemIntoWorld(fakePlayer, drone.getDrone().worldObj, x, y, z, dir.getOpposite().ordinal(), 0, 0, 0);
+                            drone.getDrone().getInventory()[slot].onItemUse(fakePlayer, drone.getDrone().worldObj, blockPos, dir.getOpposite(), 0, 0, 0);
                         }
                         return true;
                     }
@@ -566,16 +551,14 @@ public class Drone extends Computer {
 
             @Override
             public int invoke(LuaState luaState) {
-                final ForgeDirection dir = ForgeDirection.getOrientation(luaState.checkInteger(-1));
+                final EnumFacing dir = EnumFacing.getFront(luaState.checkInteger(-1));
                 Callable<Boolean> callable;
                 if (luaState.getTop() == 1) {
                     callable = new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
-                            int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
-                            int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
-                            int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            return fakePlayer.theItemInWorldManager.activateBlockOrUseItem(fakePlayer, drone.getDrone().worldObj, null, x, y, z, dir.getOpposite().ordinal(), 0, 0, 0);
+                            BlockPos blockPos = drone.drone.getPosition().offset(dir);
+                            return fakePlayer.theItemInWorldManager.activateBlockOrUseItem(fakePlayer, drone.getDrone().worldObj, null, blockPos, dir.getOpposite(), 0, 0, 0);
                         }
                     };
                 } else {
@@ -583,10 +566,8 @@ public class Drone extends Computer {
                     callable = new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
-                            int x = (int) (Math.floor(drone.getDrone().posX) + dir.offsetX);
-                            int y = (int) (Math.floor(drone.getDrone().posY) + dir.offsetY);
-                            int z = (int) (Math.floor(drone.getDrone().posZ) + dir.offsetZ);
-                            return fakePlayer.theItemInWorldManager.activateBlockOrUseItem(fakePlayer, drone.getDrone().worldObj, drone.getDrone().getInventory().getStackInSlot(slot), x, y, z, dir.getOpposite().ordinal(), 0, 0, 0);
+                            BlockPos blockPos = drone.drone.getPosition().offset(dir);
+                            return fakePlayer.theItemInWorldManager.activateBlockOrUseItem(fakePlayer, drone.getDrone().worldObj, drone.getDrone().getInventory()[slot], blockPos, dir.getOpposite(), 0, 0, 0);
                         }
                     };
                 }
@@ -624,7 +605,7 @@ public class Drone extends Computer {
 
     public void setLeftCard(ICard card, ItemStack stack) {
         luaStateLock.lock();
-        if (luaState != null && luaState.isOpen() && card == null && this.leftCard != null && (this.rightCard != null ? (rightCard.getValue2() != leftCard.getValue2()) : true)) {
+        if (luaState != null && luaState.isOpen() && card == null && this.leftCard != null && (this.rightCard == null || (rightCard.getValue2() != leftCard.getValue2()))) {
             luaState.pushNil();
             luaState.setGlobal(leftCard.getValue1().getName(leftCard.getValue2()));
         }
@@ -638,7 +619,7 @@ public class Drone extends Computer {
 
     public void setRightCard(ICard card, ItemStack stack) {
         luaStateLock.lock();
-        if (luaState != null && luaState.isOpen() && card == null && this.rightCard != null && (this.leftCard != null ? (rightCard.getValue2() != leftCard.getValue2()) : true)) {
+        if (luaState != null && luaState.isOpen() && card == null && this.rightCard != null && (this.leftCard == null || (rightCard.getValue2() != leftCard.getValue2()))) {
             luaState.pushNil();
             luaState.setGlobal(rightCard.getValue1().getName(rightCard.getValue2()));
         }
@@ -665,7 +646,7 @@ public class Drone extends Computer {
                 dos.writeBoolean(fly);
                 packet.id = 6;
                 packet.data = bos.toByteArray();
-                ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.worldObj.provider.dimensionId, drone.posX, drone.posY, drone.posZ, 20));
+                ElectroCraft.instance.getNetworkWrapper().sendToAllAround(packet, new NetworkRegistry.TargetPoint(drone.worldObj.provider.getDimensionId(), drone.posX, drone.posY, drone.posZ, 20));
             } catch (IOException e) {
                 ElectroCraft.instance.getLogger().fine("Error sending tool use update to entity!");
             }
@@ -711,26 +692,26 @@ public class Drone extends Computer {
         return MathHelper.floor_double(rotation * 4.0F / 360.0F + 0.5D) & 3;
     }
 
-    public ForgeDirection getDirection(float rotation) {
+    public EnumFacing getDirection(float rotation) {
         return getDirection(getDir(rotation));
     }
 
-    public ForgeDirection getDirection(int direction) {
+    public EnumFacing getDirection(int direction) {
         switch (direction) {
             case 0:
-                return ForgeDirection.SOUTH;
+                return EnumFacing.SOUTH;
             case 1:
-                return ForgeDirection.WEST;
+                return EnumFacing.WEST;
             case 2:
-                return ForgeDirection.NORTH;
+                return EnumFacing.NORTH;
             case 3:
-                return ForgeDirection.EAST;
+                return EnumFacing.EAST;
             default:
-                return ForgeDirection.UNKNOWN;
+                return null;
         }
     }
 
-    public float getRotation(ForgeDirection direction) {
+    public float getRotation(EnumFacing direction) {
         switch (direction) {
             case NORTH:
                 return 180f;

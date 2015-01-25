@@ -1,30 +1,22 @@
 package info.cerios.electrocraft.core.items;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import info.cerios.electrocraft.core.entites.EntityDrone;
-import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 public class ItemDrone extends Item {
-
     @Override
-    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int par7, float par8, float par9, float par10) {
-        if (!world.isRemote) {
-            EntityDrone drone = new EntityDrone(world);
-            drone.setPositionAndRotation(x, y + 1, z, 0, 0);
-            world.spawnEntityInWorld(drone);
+    public boolean onItemUse(ItemStack stack, EntityPlayer playerIn, World worldIn, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ) {
+        if (!worldIn.isRemote) {
+            EntityDrone drone = new EntityDrone(worldIn);
+            drone.setPositionAndRotation(pos.getX(), pos.getY() + 1, pos.getZ(), playerIn.rotationYaw, 0);
+            worldIn.spawnEntityInWorld(drone);
             stack.stackSize--;
         }
         return true;
-    }
-
-    @Override
-    @SideOnly(Side.CLIENT)
-    public void registerIcons(IIconRegister par1IconRegister) {
-        this.itemIcon = par1IconRegister.registerIcon("electrocraft:droneItem");
     }
 }

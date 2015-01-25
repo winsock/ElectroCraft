@@ -3,7 +3,7 @@ package info.cerios.electrocraft.core;
 import java.io.File;
 import java.io.IOException;
 
-import cpw.mods.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
 

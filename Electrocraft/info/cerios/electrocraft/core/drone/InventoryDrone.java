@@ -8,6 +8,7 @@ import info.cerios.electrocraft.core.network.CustomPacket;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
@@ -15,7 +16,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
 import net.minecraftforge.common.util.Constants;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class InventoryDrone implements IInventory {
 
@@ -26,6 +30,10 @@ public class InventoryDrone implements IInventory {
 
     public InventoryDrone(EntityDrone drone) {
         this.drone = drone;
+    }
+
+    public ItemStack[] getAllSlots() {
+        return (ItemStack[]) ArrayUtils.addAll(mainInventory, tools, fuel);
     }
 
     @Override
@@ -99,7 +107,7 @@ public class InventoryDrone implements IInventory {
             var1 -= 36;
             if (var1 >= 3) {
                 var1 = 0;
-                slots = new ItemStack[] { fuel };
+                slots = new ItemStack[]{fuel};
             } else {
                 slots = tools;
             }
@@ -117,11 +125,18 @@ public class InventoryDrone implements IInventory {
     }
 
     @Override
-    public boolean hasCustomInventoryName() { return true; }
+    public String getName() {
+        return "info.cerios.electrocraft.drone.inventory";
+    }
 
     @Override
-    public String getInventoryName() {
-        return "info.cerios.electrocraft.drone.inventory";
+    public boolean hasCustomName() {
+        return true;
+    }
+
+    @Override
+    public IChatComponent getDisplayName() {
+        return new ChatComponentText("Drone Inventory");
     }
 
     @Override
@@ -154,7 +169,7 @@ public class InventoryDrone implements IInventory {
                 CompressedStreamTools.write(inventory, dos);
                 packet.id = 4;
                 packet.data = bos.toByteArray();
-                ElectroCraft.instance.getNetworkWrapper().sendToDimension(packet, drone.worldObj.provider.dimensionId);
+                ElectroCraft.instance.getNetworkWrapper().sendToDimension(packet, drone.worldObj.provider.getDimensionId());
             } catch (IOException e) {
                 ElectroCraft.instance.getLogger().fine("Error sending inventory update to entity!");
             }
@@ -167,16 +182,38 @@ public class InventoryDrone implements IInventory {
     }
 
     @Override
-    public void openInventory() {
+    public void openInventory(EntityPlayer player) {
     }
 
     @Override
-    public void closeInventory() {
+    public void closeInventory(EntityPlayer player) {
     }
 
     @Override
     public boolean isItemValidForSlot(int p_94041_1_, ItemStack p_94041_2_) {
         return true;
+    }
+
+    @Override
+    public int getField(int id) {
+        return 0;
+    }
+
+    @Override
+    public void setField(int id, int value) {
+
+    }
+
+    @Override
+    public int getFieldCount() {
+        return 0;
+    }
+
+    @Override
+    public void clear() {
+        for (int i = 0; i < this.mainInventory.length; i++) {
+            this.mainInventory[i] = null;
+        }
     }
 
     public void readFromNBT(NBTTagCompound tagCompound) {

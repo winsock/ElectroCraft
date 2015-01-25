@@ -121,15 +121,15 @@ end
 
 if drone ~= nil then
 	drone.forgeDir = {
-		up = 1, down = 0, north = 2, south = 3, east = 5, west = 4, unknown = 6
+		up = 1, down = 0, north = 2, south = 3, east = 5, west = 4
 	}
 
 	drone.dir = {
-		north = 0, west = 1, south = 2, east = 3, unknown = 4
+		north = 0, west = 1, south = 2, east = 3
 	}
 
 	drone.turnDir = {
-		left = 0, right = 1, arround = 2
+		left = 0, right = 1, around = 2
 	}
 
 	local nativeUseTool = drone.useTool
@@ -148,7 +148,7 @@ if drone ~= nil then
 			gyro.rotate(gyro.getRotation() - 90)
 		elseif turn == drone.turnDir.right then
 			gyro.rotate(gyro.getRotation() + 90)
-		elseif turn == drone.turnDir.arround then
+		elseif turn == drone.turnDir.around then
 			gyro.rotate(gyro.getRotation() - 180)
 		end
 		gyro.face(gyro.getDir())
